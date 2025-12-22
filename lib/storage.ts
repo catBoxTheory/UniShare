@@ -1,4 +1,4 @@
-import { S3Client, PutObjectCommand, HeadBucketCommand, CreateBucketCommand, PutBucketPolicyCommand } from "@aws-sdk/client-s3";
+import { S3Client, PutObjectCommand, HeadBucketCommand, CreateBucketCommand, PutBucketPolicyCommand, DeleteObjectCommand } from "@aws-sdk/client-s3";
 
 const s3Client = new S3Client({
   region: "us-east-1", // MinIO doesn't care, but SDK needs it
@@ -112,6 +112,39 @@ export async function uploadFileToMinio(
   } catch (error) {
     console.error("Error uploading to MinIO:", error);
     throw new Error("Failed to upload file");
+  }
+}
+
+/**
+ * Deletes a file from MinIO storage
+ * @param fileUrl - The full URL of the file to delete (e.g., http://localhost:9000/bucket/key)
+ */
+export async function deleteFileFromMinio(fileUrl: string): Promise<void> {
+  const bucketName = process.env.MINIO_BUCKET_NAME || "unistream-bucket";
+
+  try {
+    // Extract the key from the URL
+    // URL format: http://localhost:9000/bucket-name/filename
+    const url = new URL(fileUrl);
+    const pathParts = url.pathname.split('/').filter(Boolean);
+    
+    // First part is bucket name, rest is the key
+    if (pathParts.length < 2) {
+      throw new Error("Invalid file URL format");
+    }
+    
+    const key = pathParts.slice(1).join('/'); // Everything after bucket name
+
+    const command = new DeleteObjectCommand({
+      Bucket: bucketName,
+      Key: key,
+    });
+
+    await s3Client.send(command);
+    console.log(`Successfully deleted ${key} from MinIO`);
+  } catch (error) {
+    console.error("Error deleting from MinIO:", error);
+    throw new Error("Failed to delete file from storage");
   }
 }
 

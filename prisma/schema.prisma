@@ -95,17 +95,23 @@ model Course {
   @@unique([departmentId, code])
 }
 
+enum FolderType {
+  DOCUMENT
+  VIDEO
+}
+
 model Folder {
-  id        String    @id @default(uuid())
+  id        String     @id @default(uuid())
   name      String
+  type      FolderType @default(DOCUMENT)
   parentId  String?
-  parent    Folder?   @relation("FolderToFolder", fields: [parentId], references: [id], onDelete: Cascade)
-  children  Folder[]  @relation("FolderToFolder")
+  parent    Folder?    @relation("FolderToFolder", fields: [parentId], references: [id], onDelete: Cascade)
+  children  Folder[]   @relation("FolderToFolder")
   courseId  String
-  course    Course    @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  course    Course     @relation(fields: [courseId], references: [id], onDelete: Cascade)
   materials Material[]
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
 }
 
 enum MaterialType {

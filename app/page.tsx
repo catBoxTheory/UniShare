@@ -1,10 +1,10 @@
 import Link from "next/link";
 import { Search, BookOpen, Plus, GraduationCap } from "lucide-react";
 import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { getCourses } from "@/app/actions/courses";
 import { CreateCourseButton } from "@/components/course/CreateCourseButton";
+import { CourseCard } from "@/components/course/CourseCard";
 
 export default async function Home() {
   // Fetch real courses from the database
@@ -64,21 +64,7 @@ export default async function Home() {
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
               {courses.map((course) => (
-                <Link href={`/courses/${course.id}`} key={course.id} className="group">
-                  <Card className="h-full overflow-hidden transition-all hover:shadow-lg border-slate-200 hover:border-blue-300">
-                    <div className="h-28 bg-gradient-to-br from-blue-500 to-indigo-600 group-hover:from-blue-600 group-hover:to-indigo-700 transition-colors flex items-center justify-center">
-                      <span className="text-3xl font-bold text-white/90">{course.code}</span>
-                    </div>
-                    <CardContent className="p-5">
-                      <h3 className="font-bold text-lg mb-2 group-hover:text-blue-600 transition-colors line-clamp-2">
-                        {course.title}
-                      </h3>
-                      {course.department && (
-                        <p className="text-sm text-slate-500">{course.department.name}</p>
-                      )}
-                    </CardContent>
-                  </Card>
-                </Link>
+                <CourseCard key={course.id} course={course} />
               ))}
               
               {/* Create New Course Card */}
