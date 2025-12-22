@@ -1,4 +1,4 @@
-import { S3Client, PutObjectCommand, HeadBucketCommand, CreateBucketCommand } from "@aws-sdk/client-s3";
+import { S3Client, PutObjectCommand, HeadBucketCommand, CreateBucketCommand, PutBucketPolicyCommand } from "@aws-sdk/client-s3";
 
 const s3Client = new S3Client({
   region: "us-east-1", // MinIO doesn't care, but SDK needs it
@@ -54,6 +54,26 @@ async function ensureBucketExists(bucketName: string) {
       try {
         await s3Client.send(new CreateBucketCommand({ Bucket: bucketName }));
         console.log(`Bucket ${bucketName} created.`);
+        
+        // Set public read policy
+        const policy = {
+          Version: "2012-10-17",
+          Statement: [
+            {
+              Effect: "Allow",
+              Principal: { AWS: ["*"] },
+              Action: ["s3:GetObject"],
+              Resource: [`arn:aws:s3:::${bucketName}/*`],
+            },
+          ],
+        };
+
+        await s3Client.send(new PutBucketPolicyCommand({
+          Bucket: bucketName,
+          Policy: JSON.stringify(policy)
+        }));
+        console.log(`Public read policy set for bucket ${bucketName}`);
+
       } catch (createError) {
         console.error(`Error creating bucket ${bucketName}:`, createError);
         throw createError;

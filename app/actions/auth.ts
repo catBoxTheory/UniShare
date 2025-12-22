@@ -1,12 +1,10 @@
 "use server"
 
 import { z } from "zod"
-import { PrismaClient } from "@prisma/client"
 import bcrypt from "bcryptjs"
 import { signIn } from "@/auth"
 import { AuthError } from "next-auth"
-
-const prisma = new PrismaClient()
+import prisma from "@/lib/prisma"
 
 const registerSchema = z.object({
   email: z.string().email({
@@ -99,4 +97,3 @@ export async function authenticate(
     throw error
   }
 }
-

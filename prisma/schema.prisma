@@ -87,6 +87,7 @@ model Course {
   description  String?
   departmentId String
   department   Department @relation(fields: [departmentId], references: [id], onDelete: Cascade)
+  folders      Folder[]
   materials    Material[]
   createdAt    DateTime   @default(now())
   updatedAt    DateTime   @updatedAt
@@ -94,20 +95,39 @@ model Course {
   @@unique([departmentId, code])
 }
 
+model Folder {
+  id        String    @id @default(uuid())
+  name      String
+  parentId  String?
+  parent    Folder?   @relation("FolderToFolder", fields: [parentId], references: [id], onDelete: Cascade)
+  children  Folder[]  @relation("FolderToFolder")
+  courseId  String
+  course    Course    @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  materials Material[]
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+}
+
 enum MaterialType {
   LECTURE
   EXTRA
+  FILE
+  VIDEO
 }
 
 model Material {
   id         String       @id @default(uuid())
-  title      String // "Lec 01", "Midterm Review", etc.
+  title      String
   type       MaterialType
-  url        String // Video URL or File URL
-  folderName String? // For "Extra" category, user defined folder name
+  url        String
+  
+  // Relations
   courseId   String
   course     Course       @relation(fields: [courseId], references: [id], onDelete: Cascade)
-  sequence   Int          @default(0) // For ordering
+  
+  folderId   String?
+  folder     Folder?      @relation(fields: [folderId], references: [id], onDelete: Cascade)
+
   createdAt  DateTime     @default(now())
   updatedAt  DateTime     @updatedAt
 }
