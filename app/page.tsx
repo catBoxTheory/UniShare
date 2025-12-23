@@ -7,7 +7,7 @@ import { CreateCourseButton } from "@/components/course/CreateCourseButton";
 import { CourseCard } from "@/components/course/CourseCard";
 
 export default async function Home() {
-  // Fetch real courses from the database
+  // Fetch real courses from the database (All courses)
   const courses = await getCourses();
 
   return (
@@ -26,9 +26,10 @@ export default async function Home() {
           
           {/* Search Bar */}
           <div className="w-full max-w-lg mx-auto">
-            <form className="relative flex items-center">
+            <form className="relative flex items-center" action="/search">
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400" />
               <Input 
+                name="q"
                 className="pl-12 h-14 text-lg shadow-lg border-0 focus-visible:ring-2 focus-visible:ring-white rounded-full bg-white" 
                 placeholder="Search for courses (e.g. CS101)..." 
                 type="search"
@@ -68,7 +69,21 @@ export default async function Home() {
               ))}
               
               {/* Create New Course Card */}
-              <CreateCourseCard />
+              <CreateCourseButton>
+                <div className="group h-full cursor-pointer">
+                  <Card className="h-full overflow-hidden transition-all hover:shadow-lg border-2 border-dashed border-slate-300 hover:border-blue-400 bg-slate-50/50">
+                    <div className="h-full min-h-[200px] flex flex-col items-center justify-center p-6">
+                      <div className="w-14 h-14 rounded-full bg-blue-100 flex items-center justify-center mb-4 group-hover:bg-blue-200 transition-colors">
+                        <Plus className="w-7 h-7 text-blue-600" />
+                      </div>
+                      <h3 className="font-semibold text-slate-700 group-hover:text-blue-600 transition-colors">
+                        Create New Course
+                      </h3>
+                      <p className="text-sm text-slate-500 mt-1">Add your course materials</p>
+                    </div>
+                  </Card>
+                </div>
+              </CreateCourseButton>
             </div>
           )}
         </div>
@@ -121,21 +136,5 @@ export default async function Home() {
   );
 }
 
-// Create Course Card Component (inline for simplicity)
-function CreateCourseCard() {
-  return (
-    <div className="group">
-      <Card className="h-full overflow-hidden transition-all hover:shadow-lg border-2 border-dashed border-slate-300 hover:border-blue-400 bg-slate-50/50">
-        <div className="h-full min-h-[200px] flex flex-col items-center justify-center p-6">
-          <div className="w-14 h-14 rounded-full bg-blue-100 flex items-center justify-center mb-4 group-hover:bg-blue-200 transition-colors">
-            <Plus className="w-7 h-7 text-blue-600" />
-          </div>
-          <h3 className="font-semibold text-slate-700 group-hover:text-blue-600 transition-colors">
-            Create New Course
-          </h3>
-          <p className="text-sm text-slate-500 mt-1">Add your course materials</p>
-        </div>
-      </Card>
-    </div>
-  );
-}
+// Create Course Card Component (removed as it's now inline)
+// function CreateCourseCard() { ... }
