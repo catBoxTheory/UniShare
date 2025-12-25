@@ -9,12 +9,23 @@ datasource db {
 model User {
   id            String    @id @default(uuid())
   name          String?
+  firstName     String?
+  lastName      String?
   email         String    @unique
   password      String?
   emailVerified DateTime?
   image         String?
+  region        String?
+  startYear     Int?
+  universityId  String?
+  university    University? @relation(fields: [universityId], references: [id])
+  isOnboardingCompleted Boolean @default(false)
+  
   accounts      Account[]
   sessions      Session[]
+  enrollments   Enrollment[]
+  recentViews   RecentView[]
+  
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 }
@@ -51,11 +62,12 @@ model Session {
 }
 
 model VerificationToken {
+  id         String   @id @default(cuid())
   identifier String
   token      String
   expires    DateTime
 
-  @@id([identifier, token])
+  @@unique([identifier, token])
 }
 
 model University {
@@ -63,6 +75,7 @@ model University {
   name        String       @unique
   slug        String       @unique
   departments Department[]
+  users       User[]
   createdAt   DateTime     @default(now())
   updatedAt   DateTime     @updatedAt
 }
@@ -89,10 +102,34 @@ model Course {
   department   Department @relation(fields: [departmentId], references: [id], onDelete: Cascade)
   folders      Folder[]
   materials    Material[]
+  enrollments  Enrollment[]
+  recentViews  RecentView[]
   createdAt    DateTime   @default(now())
   updatedAt    DateTime   @updatedAt
 
   @@unique([departmentId, code])
+}
+
+model Enrollment {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  courseId  String
+  course    Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@unique([userId, courseId])
+}
+
+model RecentView {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  courseId  String
+  course    Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  viewedAt  DateTime @default(now())
+
+  @@unique([userId, courseId]) // Only keep one entry per course per user, update viewedAt
 }
 
 enum FolderType {

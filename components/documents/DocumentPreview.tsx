@@ -1,0 +1,265 @@
+"use client";
+
+import { useState, useEffect } from "react";
+import { FileText, Download, ExternalLink } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import PDFViewer from "./PDFViewer";
+
+interface Document {
+  id: string;
+  title: string;
+  url: string;
+}
+
+interface DocumentPreviewProps {
+  document: Document | null;
+}
+
+interface NotebookCell {
+  cell_type: "code" | "markdown" | "raw";
+  source: string[];
+  outputs?: any[];
+}
+
+interface NotebookData {
+  cells: NotebookCell[];
+}
+
+export function DocumentPreview({ document }: DocumentPreviewProps) {
+  const getProxyUrl = (originalUrl: string) => {
+    try {
+      if (!originalUrl) return "";
+      if (originalUrl.startsWith("/")) return originalUrl;
+      const url = new URL(originalUrl);
+      if (url.port === "9000") {
+        return `/api/proxy${url.pathname}`;
+      }
+      return originalUrl;
+    } catch (e) {
+      return originalUrl;
+    }
+  };
+
+  const safeUrl = document ? getProxyUrl(document.url) : "";
+
+  const [notebookData, setNotebookData] = useState<NotebookData | null>(null);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (document && document.title.toLowerCase().endsWith('.ipynb')) {
+      loadNotebook(safeUrl);
+    } else {
+      setNotebookData(null);
+    }
+  }, [document, safeUrl]);
+
+  const loadNotebook = async (url: string) => {
+    setLoading(true);
+    try {
+      const response = await fetch(url);
+      const data = await response.json();
+      setNotebookData(data);
+    } catch (error) {
+      console.error("Failed to load notebook:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (!document) {
+    return (
+      <div className="flex flex-col items-center justify-center h-full text-gray-400 p-8">
+        <FileText className="w-16 h-16 mb-4 opacity-50" />
+        <p className="text-center">Select a document to preview</p>
+      </div>
+    );
+  }
+
+  const fileName = document.title.toLowerCase();
+  const isPDF = fileName.endsWith('.pdf');
+  const isNotebook = fileName.endsWith('.ipynb');
+  const isPPT = fileName.endsWith('.ppt') || fileName.endsWith('.pptx');
+
+  // PDF Preview
+  if (isPDF) {
+    return (
+      <div className="h-full flex flex-col">
+        <div className="flex items-center justify-between p-3 border-b bg-gray-50">
+          <h3 className="font-medium text-sm truncate flex-1">{document.title}</h3>
+          <div className="flex gap-2">
+            <Button variant="outline" size="sm" asChild>
+              <a href={safeUrl} target="_blank" rel="noopener noreferrer">
+                <ExternalLink className="w-4 h-4 mr-1" />
+                Open
+              </a>
+            </Button>
+            <Button variant="outline" size="sm" asChild>
+              <a href={safeUrl} download>
+                <Download className="w-4 h-4 mr-1" />
+                Download
+              </a>
+            </Button>
+          </div>
+        </div>
+        <div className="flex-1 overflow-auto">
+          <PDFViewer url={safeUrl} />
+        </div>
+      </div>
+    );
+  }
+
+  // Notebook Preview
+  if (isNotebook) {
+    return (
+      <div className="h-full flex flex-col">
+        <div className="flex items-center justify-between p-3 border-b bg-gray-50">
+          <h3 className="font-medium text-sm truncate flex-1 flex items-center gap-2">
+            <span className="text-orange-500">📓</span>
+            {document.title}
+          </h3>
+          <Button variant="outline" size="sm" asChild>
+            <a href={safeUrl} download>
+              <Download className="w-4 h-4 mr-1" />
+              Download
+            </a>
+          </Button>
+        </div>
+        <div className="flex-1 overflow-auto p-4 bg-white">
+          {loading ? (
+            <div className="text-center py-8 text-gray-500">Loading notebook...</div>
+          ) : notebookData ? (
+            <div className="space-y-4">
+              {notebookData.cells.map((cell, index) => (
+                <NotebookCellPreview key={index} cell={cell} index={index} />
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-8 text-gray-500">Failed to load notebook</div>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  // PPT Preview (using Office Online Viewer)
+  if (isPPT) {
+    // Note: Office Online Viewer requires a publicly accessible URL
+    // For local MinIO, we'll show a download option instead
+    return (
+      <div className="h-full flex flex-col">
+        <div className="flex items-center justify-between p-3 border-b bg-gray-50">
+          <h3 className="font-medium text-sm truncate flex-1">{document.title}</h3>
+          <Button variant="outline" size="sm" asChild>
+            <a href={safeUrl} download>
+              <Download className="w-4 h-4 mr-1" />
+              Download
+            </a>
+          </Button>
+        </div>
+        <div className="flex-1 flex flex-col items-center justify-center p-8 bg-gradient-to-br from-orange-50 to-red-50">
+          <div className="w-32 h-40 bg-white rounded-lg shadow-lg flex items-center justify-center mb-6 border">
+            <FileText className="w-16 h-16 text-orange-500" />
+          </div>
+          <h4 className="text-lg font-medium text-gray-800 mb-2">PowerPoint Presentation</h4>
+          <p className="text-sm text-gray-500 text-center mb-4 max-w-xs">
+            Download the file to view it in Microsoft PowerPoint or Google Slides
+          </p>
+          <Button asChild>
+            <a href={safeUrl} download>
+              <Download className="w-4 h-4 mr-2" />
+              Download Presentation
+            </a>
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  // Fallback for other file types
+  return (
+    <div className="h-full flex flex-col items-center justify-center p-8">
+      <FileText className="w-16 h-16 text-gray-400 mb-4" />
+      <h4 className="text-lg font-medium text-gray-800 mb-2">{document.title}</h4>
+      <Button variant="outline" asChild>
+        <a href={safeUrl} download>
+          <Download className="w-4 h-4 mr-2" />
+          Download File
+        </a>
+      </Button>
+    </div>
+  );
+}
+
+// Notebook Cell Component
+function NotebookCellPreview({ cell, index }: { cell: NotebookCell; index: number }) {
+  const source = Array.isArray(cell.source) ? cell.source.join('') : cell.source;
+
+  if (cell.cell_type === 'markdown') {
+    return (
+      <div className="prose prose-sm max-w-none p-4 bg-white rounded border">
+        <div dangerouslySetInnerHTML={{ __html: parseMarkdown(source) }} />
+      </div>
+    );
+  }
+
+  if (cell.cell_type === 'code') {
+    return (
+      <div className="rounded border overflow-hidden">
+        <div className="flex items-center gap-2 px-3 py-1.5 bg-gray-100 border-b text-xs text-gray-500">
+          <span className="font-mono">[{index + 1}]</span>
+        </div>
+        <pre className="p-3 bg-gray-900 text-gray-100 text-sm overflow-x-auto">
+          <code>{source}</code>
+        </pre>
+        {cell.outputs && cell.outputs.length > 0 && (
+          <div className="p-3 bg-white border-t text-sm">
+            {cell.outputs.map((output, i) => (
+              <NotebookOutput key={i} output={output} />
+            ))}
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  return (
+    <pre className="p-3 bg-gray-50 rounded border text-sm overflow-x-auto">
+      {source}
+    </pre>
+  );
+}
+
+function NotebookOutput({ output }: { output: any }) {
+  if (output.output_type === 'stream') {
+    return <pre className="text-sm text-gray-700">{output.text?.join?.('') || output.text}</pre>;
+  }
+  if (output.output_type === 'execute_result' || output.output_type === 'display_data') {
+    const data = output.data;
+    if (data?.['text/plain']) {
+      return <pre className="text-sm text-gray-700">{data['text/plain'].join?.('') || data['text/plain']}</pre>;
+    }
+    if (data?.['image/png']) {
+      return <img src={`data:image/png;base64,${data['image/png']}`} alt="Output" className="max-w-full" />;
+    }
+  }
+  if (output.output_type === 'error') {
+    return (
+      <pre className="text-sm text-red-600">
+        {output.ename}: {output.evalue}
+      </pre>
+    );
+  }
+  return null;
+}
+
+function parseMarkdown(text: string): string {
+  // Simple markdown parsing - just handle basic formatting
+  return text
+    .replace(/^### (.*$)/gm, '<h3>$1</h3>')
+    .replace(/^## (.*$)/gm, '<h2>$1</h2>')
+    .replace(/^# (.*$)/gm, '<h1>$1</h1>')
+    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+    .replace(/\*(.*?)\*/g, '<em>$1</em>')
+    .replace(/`(.*?)`/g, '<code class="bg-gray-100 px-1 rounded">$1</code>')
+    .replace(/\n/g, '<br/>');
+}

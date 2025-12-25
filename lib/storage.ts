@@ -1,85 +1,54 @@
 import { S3Client, PutObjectCommand, HeadBucketCommand, CreateBucketCommand, PutBucketPolicyCommand, DeleteObjectCommand } from "@aws-sdk/client-s3";
 
+// Storage Configuration
+const endpoint = process.env.STORAGE_ENDPOINT || process.env.MINIO_ENDPOINT || "http://localhost:9000";
+const accessKeyId = process.env.STORAGE_ACCESS_KEY || process.env.MINIO_ACCESS_KEY || "minioadmin";
+const secretAccessKey = process.env.STORAGE_SECRET_KEY || process.env.MINIO_SECRET_KEY || "minioadmin";
+const bucketName = process.env.STORAGE_BUCKET_NAME || process.env.MINIO_BUCKET_NAME || "unishare-bucket";
+const publicUrl = process.env.STORAGE_PUBLIC_URL; // Optional: for R2 public domain or custom domain
+
 const s3Client = new S3Client({
-  region: "us-east-1", // MinIO doesn't care, but SDK needs it
-  endpoint: process.env.MINIO_ENDPOINT || "http://localhost:9000",
-  forcePathStyle: true, // Required for MinIO
+  region: "auto", // R2 uses 'auto', MinIO doesn't care
+  endpoint: endpoint,
+  forcePathStyle: endpoint.includes("localhost") || endpoint.includes("127.0.0.1"), // Path style for local MinIO, Virtual hosted for R2
   credentials: {
-    accessKeyId: process.env.MINIO_ACCESS_KEY || "minioadmin",
-    secretAccessKey: process.env.MINIO_SECRET_KEY || "minioadmin",
+    accessKeyId,
+    secretAccessKey,
   },
 });
 
-// #region agent log
-try {
-  fetch('http://127.0.0.1:7242/ingest/0c41b2f4-650b-4020-850e-d85b52635ad8', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      location: 'lib/storage.ts:global',
-      message: 'S3 Client initialized',
-      data: { endpoint: process.env.MINIO_ENDPOINT },
-      timestamp: Date.now(),
-      sessionId: 'debug-session',
-      runId: 'run1',
-      hypothesisId: 'minio-connection'
-    })
-  }).catch(() => {});
-} catch (e) {}
-// #endregion
-
-async function ensureBucketExists(bucketName: string) {
+async function ensureBucketExists(name: string) {
   try {
-    await s3Client.send(new HeadBucketCommand({ Bucket: bucketName }));
+    await s3Client.send(new HeadBucketCommand({ Bucket: name }));
   } catch (error: any) {
     if (error.name === "NotFound" || error.$metadata?.httpStatusCode === 404) {
-      console.log(`Bucket ${bucketName} not found, creating...`);
-      // #region agent log
+      // In R2, bucket creation is usually done in the dashboard, but we can try
       try {
-        fetch('http://127.0.0.1:7242/ingest/0c41b2f4-650b-4020-850e-d85b52635ad8', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            location: 'lib/storage.ts:ensureBucketExists',
-            message: 'Creating bucket',
-            data: { bucketName },
-            timestamp: Date.now(),
-            sessionId: 'debug-session',
-            runId: 'run1',
-            hypothesisId: 'minio-bucket-creation'
-          })
-        }).catch(() => {});
-      } catch (e) {}
-      // #endregion
-      try {
-        await s3Client.send(new CreateBucketCommand({ Bucket: bucketName }));
-        console.log(`Bucket ${bucketName} created.`);
+        console.log(`Bucket ${name} not found, creating...`);
+        await s3Client.send(new CreateBucketCommand({ Bucket: name }));
         
-        // Set public read policy
-        const policy = {
-          Version: "2012-10-17",
-          Statement: [
-            {
-              Effect: "Allow",
-              Principal: { AWS: ["*"] },
-              Action: ["s3:GetObject"],
-              Resource: [`arn:aws:s3:::${bucketName}/*`],
-            },
-          ],
-        };
-
-        await s3Client.send(new PutBucketPolicyCommand({
-          Bucket: bucketName,
-          Policy: JSON.stringify(policy)
-        }));
-        console.log(`Public read policy set for bucket ${bucketName}`);
-
+        // Public policies are handled via Cloudflare Dashboard for R2,
+        // but for MinIO we still try to set it.
+        if (endpoint.includes("localhost") || endpoint.includes("127.0.0.1")) {
+            const policy = {
+                Version: "2012-10-17",
+                Statement: [
+                    {
+                    Effect: "Allow",
+                    Principal: { AWS: ["*"] },
+                    Action: ["s3:GetObject"],
+                    Resource: [`arn:aws:s3:::${name}/*`],
+                    },
+                ],
+            };
+            await s3Client.send(new PutBucketPolicyCommand({
+                Bucket: name,
+                Policy: JSON.stringify(policy)
+            }));
+        }
       } catch (createError) {
-        console.error(`Error creating bucket ${bucketName}:`, createError);
-        throw createError;
+        console.error(`Bucket ${name} creation failed (it might already exist or permission denied):`, createError);
       }
-    } else {
-      throw error;
     }
   }
 }
@@ -89,12 +58,8 @@ export async function uploadFileToMinio(
   filename: string,
   contentType: string
 ): Promise<string> {
-  const bucketName = process.env.MINIO_BUCKET_NAME || "unistream-bucket";
-
-  // Ensure bucket exists before uploading
   await ensureBucketExists(bucketName);
 
-  // Ensure unique filename
   const key = `${Date.now()}-${filename}`;
 
   const command = new PutObjectCommand({
@@ -106,45 +71,52 @@ export async function uploadFileToMinio(
 
   try {
     await s3Client.send(command);
-    // Return the URL to access the file
-    // Note: In production, you might want to use a public URL or a signed URL
-    return `${process.env.MINIO_ENDPOINT || "http://localhost:9000"}/${bucketName}/${key}`;
-  } catch (error) {
-    console.error("Error uploading to MinIO:", error);
-    throw new Error("Failed to upload file");
-  }
-}
-
-/**
- * Deletes a file from MinIO storage
- * @param fileUrl - The full URL of the file to delete (e.g., http://localhost:9000/bucket/key)
- */
-export async function deleteFileFromMinio(fileUrl: string): Promise<void> {
-  const bucketName = process.env.MINIO_BUCKET_NAME || "unistream-bucket";
-
-  try {
-    // Extract the key from the URL
-    // URL format: http://localhost:9000/bucket-name/filename
-    const url = new URL(fileUrl);
-    const pathParts = url.pathname.split('/').filter(Boolean);
     
-    // First part is bucket name, rest is the key
-    if (pathParts.length < 2) {
-      throw new Error("Invalid file URL format");
+    // Generate the access URL
+    if (publicUrl) {
+        // If a public R2 URL is provided (e.g., https://pub-xxx.r2.dev or custom domain)
+        return `${publicUrl.replace(/\/$/, '')}/${key}`;
     }
     
-    const key = pathParts.slice(1).join('/'); // Everything after bucket name
-
-    const command = new DeleteObjectCommand({
-      Bucket: bucketName,
-      Key: key,
-    });
-
-    await s3Client.send(command);
-    console.log(`Successfully deleted ${key} from MinIO`);
+    // Fallback to S3 endpoint structure (standard for MinIO)
+    return `${endpoint.replace(/\/$/, '')}/${bucketName}/${key}`;
   } catch (error) {
-    console.error("Error deleting from MinIO:", error);
-    throw new Error("Failed to delete file from storage");
+    console.error("Storage upload error:", error);
+    throw new Error("Failed to upload file to storage");
   }
 }
 
+export async function deleteFileFromMinio(fileIdentifier: string): Promise<void> {
+  try {
+    let key = fileIdentifier;
+
+    if (fileIdentifier.startsWith("http")) {
+        try {
+            const url = new URL(fileIdentifier);
+            const pathParts = url.pathname.split('/').filter(Boolean);
+            
+            if (publicUrl && fileIdentifier.includes(publicUrl)) {
+                // If using R2 public URL, the key is the whole path
+                key = pathParts.join('/');
+            } else if (pathParts.length >= 2) {
+                // For MinIO: /bucket/key
+                key = pathParts.slice(1).join('/');
+            } else {
+                key = pathParts[pathParts.length - 1];
+            }
+        } catch (e) {
+            key = fileIdentifier;
+        }
+    }
+
+    if (!key) return;
+
+    await s3Client.send(new DeleteObjectCommand({
+      Bucket: bucketName,
+      Key: key,
+    }));
+    console.log(`Successfully deleted ${key} from storage`);
+  } catch (error) {
+    console.error("Storage deletion error:", error);
+  }
+}
