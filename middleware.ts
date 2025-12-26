@@ -1,24 +1,22 @@
 import { NextResponse } from "next/server";
-import type { NextRequest } from "next/request";
+import type { NextRequest } from "next/server";
 
 export default function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  // 1. 允许访问密码页面、静态资源和 Auth API
+  // 1. 严格放行静态资源、API 和 密码页
   if (
-    pathname === "/enter-password" ||
     pathname.startsWith("/_next") ||
-    pathname.startsWith("/api/auth") ||
-    pathname === "/favicon.ico" ||
-    pathname.startsWith("/images")
+    pathname.startsWith("/api") ||
+    pathname.startsWith("/images") ||
+    pathname === "/enter-password" ||
+    pathname === "/favicon.ico"
   ) {
     return NextResponse.next();
   }
 
-  // 2. 检查站点密码
+  // 2. 检查密码保护
   const sitePassword = process.env.SITE_PASSWORD;
-  
-  // 如果设置了密码，则进行拦截
   if (sitePassword) {
     const hasAccess = request.cookies.get("site-access")?.value === sitePassword;
     
@@ -32,7 +30,7 @@ export default function middleware(request: NextRequest) {
   return NextResponse.next();
 }
 
-// 匹配所有页面路径
 export const config = {
-  matcher: ["/((?!api/auth|_next/static|_next/image|favicon.ico).*)"],
+  // 排除所有静态文件路径
+  matcher: ["/((?!_next/static|_next/image|favicon.ico|api/auth).*)"],
 };
