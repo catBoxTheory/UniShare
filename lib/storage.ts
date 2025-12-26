@@ -8,9 +8,9 @@ const bucketName = process.env.STORAGE_BUCKET_NAME || process.env.MINIO_BUCKET_N
 const publicUrl = process.env.STORAGE_PUBLIC_URL; // Optional: for R2 public domain or custom domain
 
 const s3Client = new S3Client({
-  region: "auto", // R2 uses 'auto', MinIO doesn't care
+  region: "auto",
   endpoint: endpoint,
-  forcePathStyle: endpoint.includes("localhost") || endpoint.includes("127.0.0.1"), // Path style for local MinIO, Virtual hosted for R2
+  forcePathStyle: true, // Required for R2 and MinIO path-style access
   credentials: {
     accessKeyId,
     secretAccessKey,
@@ -21,35 +21,8 @@ async function ensureBucketExists(name: string) {
   try {
     await s3Client.send(new HeadBucketCommand({ Bucket: name }));
   } catch (error: any) {
-    if (error.name === "NotFound" || error.$metadata?.httpStatusCode === 404) {
-      // In R2, bucket creation is usually done in the dashboard, but we can try
-      try {
-        console.log(`Bucket ${name} not found, creating...`);
-        await s3Client.send(new CreateBucketCommand({ Bucket: name }));
-        
-        // Public policies are handled via Cloudflare Dashboard for R2,
-        // but for MinIO we still try to set it.
-        if (endpoint.includes("localhost") || endpoint.includes("127.0.0.1")) {
-            const policy = {
-                Version: "2012-10-17",
-                Statement: [
-                    {
-                    Effect: "Allow",
-                    Principal: { AWS: ["*"] },
-                    Action: ["s3:GetObject"],
-                    Resource: [`arn:aws:s3:::${name}/*`],
-                    },
-                ],
-            };
-            await s3Client.send(new PutBucketPolicyCommand({
-                Bucket: name,
-                Policy: JSON.stringify(policy)
-            }));
-        }
-      } catch (createError) {
-        console.error(`Bucket ${name} creation failed (it might already exist or permission denied):`, createError);
-      }
-    }
+    console.warn(`Bucket ${name} check failed or not found. Ensure it exists in R2/MinIO dashboard. Error:`, error.name);
+    // We continue anyway as some tokens don't allow HeadBucket but allow PutObject
   }
 }
 

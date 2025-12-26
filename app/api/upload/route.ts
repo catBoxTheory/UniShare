@@ -4,24 +4,6 @@ import prisma from "@/lib/prisma";
 import { MaterialType } from "@prisma/client";
 
 export async function POST(req: NextRequest) {
-  // #region agent log
-  try {
-    fetch('http://127.0.0.1:7242/ingest/0c41b2f4-650b-4020-850e-d85b52635ad8', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        location: 'app/api/upload/route.ts:POST',
-        message: 'Upload API called',
-        data: {},
-        timestamp: Date.now(),
-        sessionId: 'debug-session',
-        runId: 'run1',
-        hypothesisId: 'upload-flow'
-      })
-    }).catch(() => {});
-  } catch (e) {}
-  // #endregion
-
   try {
     const formData = await req.formData();
     const file = formData.get("file") as File;
@@ -36,6 +18,8 @@ export async function POST(req: NextRequest) {
     if (!courseId) {
       return NextResponse.json({ error: "No courseId provided" }, { status: 400 });
     }
+
+    console.log(`Uploading file: ${file.name}, size: ${file.size} bytes`);
 
     const buffer = Buffer.from(await file.arrayBuffer());
     const fileUrl = await uploadFileToMinio(

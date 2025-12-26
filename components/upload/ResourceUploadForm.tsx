@@ -43,13 +43,19 @@ export function ResourceUploadForm({ courseId, folderId }: { courseId?: string, 
     formData.append("file", values.file);
 
     try {
+      if (values.file.size > 4.5 * 1024 * 1024) {
+        alert("File is too large! Vercel limits uploads to 4.5MB. For larger files, please use a smaller version or contact support.");
+        return;
+      }
+
       const response = await fetch("/api/upload", {
         method: "POST",
         body: formData,
       });
 
       if (!response.ok) {
-        throw new Error("Upload failed");
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || "Upload failed");
       }
 
       const data = await response.json();
