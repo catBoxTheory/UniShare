@@ -11,7 +11,7 @@ const bucketName = (process.env.STORAGE_BUCKET_NAME || process.env.MINIO_BUCKET_
 const publicUrl = process.env.STORAGE_PUBLIC_URL?.trim();
 
 const s3Client = new S3Client({
-  region: "auto",
+  region: "us-east-1", // Using us-east-1 for better compatibility on Vercel/Node.js with R2
   endpoint: endpoint,
   // MANDATORY for Cloudflare R2 to avoid SSL SNI errors
   forcePathStyle: true, 
@@ -23,10 +23,10 @@ const s3Client = new S3Client({
 
 async function ensureBucketExists(name: string) {
   try {
+    // Some R2 tokens don't allow HeadBucket, so we catch errors
     await s3Client.send(new HeadBucketCommand({ Bucket: name }));
   } catch (error: any) {
-    console.warn(`Bucket ${name} check failed or not found. Ensure it exists in R2/MinIO dashboard. Error:`, error.name);
-    // We continue anyway as some tokens don't allow HeadBucket but allow PutObject
+    console.warn(`Bucket ${name} check skipped or failed:`, error.name);
   }
 }
 
@@ -35,8 +35,9 @@ export async function uploadFileToMinio(
   filename: string,
   contentType: string
 ): Promise<string> {
-  await ensureBucketExists(bucketName);
-
+  // We skip ensureBucketExists because it often causes SSL/Permission errors
+  // but doesn't prevent PutObject from working.
+  
   const key = `${Date.now()}-${filename}`;
 
   const command = new PutObjectCommand({
@@ -47,6 +48,7 @@ export async function uploadFileToMinio(
   });
 
   try {
+    console.log(`Uploading to R2: Bucket=${bucketName}, Key=${key}, Endpoint=${endpoint}`);
     await s3Client.send(command);
     
     // Generate the access URL
@@ -57,8 +59,12 @@ export async function uploadFileToMinio(
     
     // Fallback to S3 endpoint structure (standard for MinIO)
     return `${endpoint.replace(/\/$/, '')}/${bucketName}/${key}`;
-  } catch (error) {
-    console.error("Storage upload error:", error);
+  } catch (error: any) {
+    console.error("Storage upload error details:", error);
+    // Explicitly check for SSL errors to provide better guidance
+    if (error.code === 'EPROTO' || error.name === 'Error') {
+       console.error("SSL/TLS Handshake failure detected. Possible SNI/Endpoint mismatch.");
+    }
     throw new Error("Failed to upload file to storage");
   }
 }
