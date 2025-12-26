@@ -736,7 +736,7 @@ export function VideoZone({ courseId, initialVideos = [] }: VideoZoneProps) {
   };
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 h-auto items-start">
+    <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 h-auto items-start min-h-0">
       {/* Main Video Player */}
       <div className="lg:col-span-3 flex flex-col bg-white rounded-xl overflow-hidden shadow-lg h-fit">
         {/* Video Container - Enforce 16:9 Aspect Ratio */}
@@ -821,7 +821,7 @@ export function VideoZone({ courseId, initialVideos = [] }: VideoZoneProps) {
       </div>
 
       {/* Playlist Sidebar with Folders */}
-      <div className="lg:col-span-1 bg-white rounded-xl border shadow-sm flex flex-col overflow-hidden h-[500px] lg:h-[600px] min-h-0">
+      <div className="lg:col-span-1 bg-white rounded-xl border shadow-sm flex flex-col overflow-hidden h-[500px] lg:h-[600px] max-h-[80vh] min-h-0">
         {/* Playlist Header with Breadcrumbs */}
         <div className="p-3 border-b bg-gray-50">
           <div className="flex items-center justify-between mb-2">

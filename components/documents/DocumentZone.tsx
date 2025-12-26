@@ -409,11 +409,11 @@ export function DocumentZone({ courseId, initialDocuments = [] }: DocumentZonePr
   };
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 h-[600px]">
+    <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 h-[700px] max-h-[85vh]">
       {/* Left Column: Folders, Documents, Upload */}
-      <div className="lg:col-span-4 flex flex-col gap-4">
+      <div className="lg:col-span-4 flex flex-col gap-4 h-full overflow-hidden">
         {/* Upload Zone */}
-        <div className="bg-white rounded-xl border p-4 shadow-sm">
+        <div className="bg-white rounded-xl border p-4 shadow-sm shrink-0">
           <h3 className="font-semibold mb-3 text-gray-800">Upload Document</h3>
           <DocumentUpload 
             courseId={courseId} 
