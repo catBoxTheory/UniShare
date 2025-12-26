@@ -30,7 +30,12 @@ export async function getFolderContents(courseId: string, folderId?: string) {
       : { parentId: null, courseId };
 
     const folders = await prisma.folder.findMany({
-      where: whereCondition,
+      where: {
+        ...whereCondition,
+        NOT: {
+          name: "Root"
+        }
+      },
       orderBy: { name: "asc" },
     });
 

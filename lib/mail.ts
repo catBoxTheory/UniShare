@@ -11,17 +11,18 @@ const transporter = nodemailer.createTransport({
 })
 
 export const sendVerificationEmail = async (email: string, token: string) => {
-  const from = process.env.SMTP_FROM || "UniStream <onboarding@unistream.com>"
-  const subject = "Verify your email address"
+  const from = process.env.SMTP_FROM || '"UniShare" <nongfushanquan33@gmail.com>'
+  const subject = "Verification Code - UniShare"
   const html = `
-    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-      <h2>Verify your email address</h2>
-      <p>Thank you for signing up for UniShare. Please use the following code to verify your email address:</p>
-      <div style="background-color: #f4f4f4; padding: 15px; text-align: center; border-radius: 5px; margin: 20px 0;">
-        <h1 style="margin: 0; letter-spacing: 5px; color: #333;">${token}</h1>
+    <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e2e8f0; border-radius: 8px;">
+      <h2 style="color: #1a365d; text-align: center;">Welcome to UniShare</h2>
+      <p style="color: #4a5568; font-size: 16px;">Your verification code is:</p>
+      <div style="background-color: #f7fafc; padding: 20px; text-align: center; border-radius: 8px; margin: 20px 0;">
+        <span style="font-size: 32px; font-weight: bold; letter-spacing: 5px; color: #2b6cb0;">${token}</span>
       </div>
-      <p>This code will expire in 1 hour.</p>
-      <p>If you didn't request this code, you can safely ignore this email.</p>
+      <p style="color: #718096; font-size: 14px;">This code will expire in 1 hour. If you didn't request this email, please ignore it.</p>
+      <hr style="border: 0; border-top: 1px solid #e2e8f0; margin: 20px 0;">
+      <p style="color: #a0aec0; font-size: 12px; text-align: center;">&copy; 2025 UniShare. All rights reserved.</p>
     </div>
   `
 
@@ -54,4 +55,3 @@ export const sendVerificationEmail = async (email: string, token: string) => {
     throw new Error("Failed to send verification email")
   }
 }
-
