@@ -39,12 +39,15 @@ export default async function SearchPage({ searchParams }: { searchParams: { q?:
         {/* Header Section */}
         <div className="bg-white border-b border-slate-200 py-8">
           <div className="container px-4 md:px-6 mx-auto max-w-7xl">
-            <Button variant="ghost" asChild className="-ml-4 mb-6 text-blue-600 hover:text-blue-700 hover:bg-blue-50">
-              <Link href="/">
-                <ArrowLeft className="w-4 h-4 mr-2" />
-                Back to Dashboard
-              </Link>
-            </Button>
+            <Link 
+              href="/" 
+              className="inline-flex items-center text-sm font-medium text-slate-500 hover:text-blue-600 transition-colors mb-6 group"
+            >
+              <div className="w-8 h-8 rounded-full bg-slate-50 flex items-center justify-center mr-2 group-hover:bg-blue-50 group-hover:text-blue-600 transition-all border border-slate-100 group-hover:border-blue-100">
+                <ArrowLeft className="w-4 h-4" />
+              </div>
+              Back to Dashboard
+            </Link>
             
             <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
               <div>
