@@ -1,5 +1,6 @@
 import { S3Client, PutObjectCommand, DeleteObjectCommand } from "@aws-sdk/client-s3";
 import { NodeHttpHandler } from "@smithy/node-http-handler";
+import https from "https";
 
 // Storage Configuration
 const rawEndpoint = (process.env.STORAGE_ENDPOINT || process.env.MINIO_ENDPOINT || "http://localhost:9000").trim();
@@ -11,13 +12,16 @@ const bucketName = (process.env.STORAGE_BUCKET_NAME || process.env.MINIO_BUCKET_
 const publicUrl = process.env.STORAGE_PUBLIC_URL?.trim();
 
 const s3Client = new S3Client({
-  region: "auto",
+  region: "auto", 
   endpoint: endpoint,
   // MANDATORY for Cloudflare R2 to avoid SSL SNI errors
-  forcePathStyle: true,
+  forcePathStyle: true, 
   requestHandler: new NodeHttpHandler({
     connectionTimeout: 10000,
     socketTimeout: 10000,
+    httpsAgent: new https.Agent({
+      servername: new URL(endpoint).hostname,
+    }),
   }),
   credentials: {
     accessKeyId,
