@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Search, BookOpen, GraduationCap, Home } from "lucide-react";
+import { Search, BookOpen, GraduationCap, Home, ArrowLeft } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { getCourses } from "@/app/actions/courses";
@@ -39,9 +39,12 @@ export default async function SearchPage({ searchParams }: { searchParams: { q?:
         {/* Header Section */}
         <div className="bg-white border-b border-slate-200 py-8">
           <div className="container px-4 md:px-6 mx-auto max-w-7xl">
-            <Link href="/" className="text-sm text-blue-600 hover:underline mb-6 inline-block">
-              &larr; Back to Dashboard
-            </Link>
+            <Button variant="ghost" asChild className="-ml-4 mb-6 text-blue-600 hover:text-blue-700 hover:bg-blue-50">
+              <Link href="/">
+                <ArrowLeft className="w-4 h-4 mr-2" />
+                Back to Dashboard
+              </Link>
+            </Button>
             
             <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
               <div>
