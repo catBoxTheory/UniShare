@@ -1,9 +1,9 @@
-import { S3Client, PutObjectCommand, HeadBucketCommand, CreateBucketCommand, PutBucketPolicyCommand, DeleteObjectCommand } from "@aws-sdk/client-s3";
+import { S3Client, PutObjectCommand, DeleteObjectCommand } from "@aws-sdk/client-s3";
+import { NodeHttpHandler } from "@smithy/node-http-handler";
 
 // Storage Configuration
 const rawEndpoint = (process.env.STORAGE_ENDPOINT || process.env.MINIO_ENDPOINT || "http://localhost:9000").trim();
-// Ensure endpoint has no trailing slash
-const endpoint = rawEndpoint.endsWith('/') ? rawEndpoint.slice(0, -1) : rawEndpoint;
+const endpoint = rawEndpoint.replace(/\/$/, "");
 
 const accessKeyId = (process.env.STORAGE_ACCESS_KEY || process.env.MINIO_ACCESS_KEY || "minioadmin").trim();
 const secretAccessKey = (process.env.STORAGE_SECRET_KEY || process.env.MINIO_SECRET_KEY || "minioadmin").trim();
@@ -11,33 +11,25 @@ const bucketName = (process.env.STORAGE_BUCKET_NAME || process.env.MINIO_BUCKET_
 const publicUrl = process.env.STORAGE_PUBLIC_URL?.trim();
 
 const s3Client = new S3Client({
-  region: "us-east-1", // Using us-east-1 for better compatibility on Vercel/Node.js with R2
+  region: "auto",
   endpoint: endpoint,
   // MANDATORY for Cloudflare R2 to avoid SSL SNI errors
-  forcePathStyle: true, 
+  forcePathStyle: true,
+  requestHandler: new NodeHttpHandler({
+    connectionTimeout: 10000,
+    socketTimeout: 10000,
+  }),
   credentials: {
     accessKeyId,
     secretAccessKey,
   },
 });
 
-async function ensureBucketExists(name: string) {
-  try {
-    // Some R2 tokens don't allow HeadBucket, so we catch errors
-    await s3Client.send(new HeadBucketCommand({ Bucket: name }));
-  } catch (error: any) {
-    console.warn(`Bucket ${name} check skipped or failed:`, error.name);
-  }
-}
-
 export async function uploadFileToMinio(
   file: Buffer,
   filename: string,
   contentType: string
 ): Promise<string> {
-  // We skip ensureBucketExists because it often causes SSL/Permission errors
-  // but doesn't prevent PutObject from working.
-  
   const key = `${Date.now()}-${filename}`;
 
   const command = new PutObjectCommand({
@@ -62,10 +54,45 @@ export async function uploadFileToMinio(
   } catch (error: any) {
     console.error("Storage upload error details:", error);
     // Explicitly check for SSL errors to provide better guidance
-    if (error.code === 'EPROTO' || error.name === 'Error') {
-       console.error("SSL/TLS Handshake failure detected. Possible SNI/Endpoint mismatch.");
+    if (error.code === 'EPROTO' || error.name === 'Error' || error.message?.includes('handshake')) {
+       console.error("SSL/TLS Handshake failure detected. Using NodeHttpHandler to stabilize connection.");
     }
     throw new Error("Failed to upload file to storage");
+  }
+}
+
+export async function deleteFileFromMinio(fileIdentifier: string): Promise<void> {
+  try {
+    let key = fileIdentifier;
+
+    if (fileIdentifier.startsWith("http")) {
+        try {
+            const url = new URL(fileIdentifier);
+            const pathParts = url.pathname.split('/').filter(Boolean);
+            
+            if (publicUrl && fileIdentifier.includes(publicUrl)) {
+                // If using R2 public URL, the key is the whole path
+                key = pathParts.join('/');
+            } else if (pathParts.length >= 2) {
+                // For MinIO: /bucket/key
+                key = pathParts.slice(1).join('/');
+            } else {
+                key = pathParts[pathParts.length - 1];
+            }
+        } catch (e) {
+            key = fileIdentifier;
+        }
+    }
+
+    if (!key) return;
+
+    await s3Client.send(new DeleteObjectCommand({
+      Bucket: bucketName,
+      Key: key,
+    }));
+    console.log(`Successfully deleted ${key} from storage`);
+  } catch (error) {
+    console.error("Storage deletion error:", error);
   }
 }
 
