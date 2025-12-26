@@ -21,9 +21,10 @@ interface CreateCourseButtonProps {
   variant?: "default" | "outline" | "ghost";
   size?: "default" | "sm" | "lg";
   children?: React.ReactNode;
+  className?: string;
 }
 
-export function CreateCourseButton({ variant = "default", size, children }: CreateCourseButtonProps) {
+export function CreateCourseButton({ variant = "default", size, children, className }: CreateCourseButtonProps) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -66,7 +67,7 @@ export function CreateCourseButton({ variant = "default", size, children }: Crea
         {children ? (
           children
         ) : (
-          <Button variant={variant} size={size || "default"}>
+          <Button variant={variant} size={size || "default"} className={className}>
             <Plus className="w-4 h-4 mr-2" />
             Create Course
           </Button>

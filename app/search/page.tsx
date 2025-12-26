@@ -1,6 +1,7 @@
 import Link from "next/link";
-import { Search, BookOpen, GraduationCap } from "lucide-react";
+import { Search, BookOpen, GraduationCap, Home } from "lucide-react";
 import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 import { getCourses } from "@/app/actions/courses";
 import { CreateCourseButton } from "@/components/course/CreateCourseButton";
 import { CourseCard } from "@/components/course/CourseCard";
@@ -75,11 +76,14 @@ export default async function SearchPage({ searchParams }: { searchParams: { q?:
               <Search className="w-16 h-16 mx-auto mb-4 text-slate-300" />
               <h3 className="text-xl font-semibold text-slate-700 mb-2">No courses found</h3>
               <p className="text-slate-500 mb-6">Try searching for a different keyword or course code.</p>
-              <div className="flex justify-center gap-4">
-                  <Link href="/">
-                      <button className="text-blue-600 hover:underline">Go Home</button>
-                  </Link>
-                  <CreateCourseButton variant="default" />
+              <div className="flex flex-col sm:flex-row justify-center gap-3">
+                  <Button variant="outline" asChild className="min-w-[140px]">
+                      <Link href="/">
+                          <Home className="w-4 h-4 mr-2" />
+                          Go Home
+                      </Link>
+                  </Button>
+                  <CreateCourseButton variant="default" className="min-w-[140px]" />
               </div>
             </div>
           ) : (
