@@ -1,16 +1,20 @@
 import { S3Client, PutObjectCommand, HeadBucketCommand, CreateBucketCommand, PutBucketPolicyCommand, DeleteObjectCommand } from "@aws-sdk/client-s3";
 
 // Storage Configuration
-const endpoint = process.env.STORAGE_ENDPOINT || process.env.MINIO_ENDPOINT || "http://localhost:9000";
-const accessKeyId = process.env.STORAGE_ACCESS_KEY || process.env.MINIO_ACCESS_KEY || "minioadmin";
-const secretAccessKey = process.env.STORAGE_SECRET_KEY || process.env.MINIO_SECRET_KEY || "minioadmin";
-const bucketName = process.env.STORAGE_BUCKET_NAME || process.env.MINIO_BUCKET_NAME || "unishare-bucket";
-const publicUrl = process.env.STORAGE_PUBLIC_URL; // Optional: for R2 public domain or custom domain
+const rawEndpoint = (process.env.STORAGE_ENDPOINT || process.env.MINIO_ENDPOINT || "http://localhost:9000").trim();
+// Ensure endpoint has no trailing slash
+const endpoint = rawEndpoint.endsWith('/') ? rawEndpoint.slice(0, -1) : rawEndpoint;
+
+const accessKeyId = (process.env.STORAGE_ACCESS_KEY || process.env.MINIO_ACCESS_KEY || "minioadmin").trim();
+const secretAccessKey = (process.env.STORAGE_SECRET_KEY || process.env.MINIO_SECRET_KEY || "minioadmin").trim();
+const bucketName = (process.env.STORAGE_BUCKET_NAME || process.env.MINIO_BUCKET_NAME || "unishare-bucket").trim();
+const publicUrl = process.env.STORAGE_PUBLIC_URL?.trim();
 
 const s3Client = new S3Client({
   region: "auto",
   endpoint: endpoint,
-  forcePathStyle: false, // R2 generally prefers virtual-hosted style for SSL/TLS
+  // MANDATORY for Cloudflare R2 to avoid SSL SNI errors
+  forcePathStyle: true, 
   credentials: {
     accessKeyId,
     secretAccessKey,
