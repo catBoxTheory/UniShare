@@ -12,15 +12,18 @@ const bucketName = (process.env.STORAGE_BUCKET_NAME || process.env.MINIO_BUCKET_
 const publicUrl = process.env.STORAGE_PUBLIC_URL?.trim();
 
 // 核心修复：强制使用 TLS 1.2 以解决 Vercel 与 R2 之间的 SSL 握手失败 (SSL alert 40)
+// #region agent log
+fetch('http://127.0.0.1:7242/ingest/0c41b2f4-650b-4020-850e-d85b52635ad8',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'lib/storage.ts:Init',message:'S3 Client Init Params',data:{rawEndpoint:process.env.STORAGE_ENDPOINT,bucketName:process.env.STORAGE_BUCKET_NAME},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'A'})}).catch(()=>{});
+// #endregion
+
 const s3Client = new S3Client({
   region: "auto", 
   endpoint: endpoint,
-  // R2 账号级域名必须使用 Path-Style
   forcePathStyle: true, 
   requestHandler: new NodeHttpHandler({
     httpsAgent: new https.Agent({
       minVersion: 'TLSv1.2',
-      maxVersion: 'TLSv1.2', // 强制锁定协议版本，防止协商失败
+      maxVersion: 'TLSv1.2', 
       servername: new URL(endpoint).hostname,
     }),
   }),
@@ -37,6 +40,10 @@ export async function uploadFileToMinio(
 ): Promise<string> {
   const key = `${Date.now()}-${filename}`;
 
+  // #region agent log
+  fetch('http://127.0.0.1:7242/ingest/0c41b2f4-650b-4020-850e-d85b52635ad8',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'lib/storage.ts:uploadFileToMinio',message:'Pre-upload check',data:{key,contentType,bucketName,endpoint,hostname:new URL(endpoint).hostname},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'B'})}).catch(()=>{});
+  // #endregion
+
   const command = new PutObjectCommand({
     Bucket: bucketName,
     Key: key,
@@ -48,6 +55,10 @@ export async function uploadFileToMinio(
     console.log(`Uploading to R2 (Forced TLS 1.2): Bucket=${bucketName}, Key=${key}, Endpoint=${endpoint}`);
     await s3Client.send(command);
     
+    // #region agent log
+    fetch('http://127.0.0.1:7242/ingest/0c41b2f4-650b-4020-850e-d85b52635ad8',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'lib/storage.ts:uploadFileToMinio',message:'Upload success',data:{key},timestamp:Date.now(),sessionId:'debug-session'})}).catch(()=>{});
+    // #endregion
+
     // Generate the access URL
     if (publicUrl) {
         return `${publicUrl.replace(/\/$/, '')}/${key}`;
@@ -56,6 +67,9 @@ export async function uploadFileToMinio(
     // Fallback to S3 endpoint structure (standard for MinIO)
     return `${endpoint.replace(/\/$/, '')}/${bucketName}/${key}`;
   } catch (error: any) {
+    // #region agent log
+    fetch('http://127.0.0.1:7242/ingest/0c41b2f4-650b-4020-850e-d85b52635ad8',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'lib/storage.ts:uploadFileToMinio',message:'Upload error caught',data:{error:error.message,stack:error.stack,code:error.code},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'C'})}).catch(()=>{});
+    // #endregion
     console.error("Storage upload error details:", error);
     throw new Error("Failed to upload file to storage");
   }
