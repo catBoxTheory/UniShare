@@ -10,12 +10,19 @@ const secretAccessKey = (process.env.STORAGE_SECRET_KEY || process.env.MINIO_SEC
 const bucketName = (process.env.STORAGE_BUCKET_NAME || process.env.MINIO_BUCKET_NAME || "unishare-bucket").trim();
 const publicUrl = process.env.STORAGE_PUBLIC_URL?.trim();
 
-// Use FetchHttpHandler which is more compatible with Vercel's Edge/Serverless environments
+// 核心修复：构造存储桶级域名 (Virtual-Hosted Style) 以解决 SSL 握手问题
+// 如果 endpoint 是 https://<account_id>.r2.cloudflarestorage.com
+const accountIdMatch = endpoint.match(/https?:\/\/([^.]+)/);
+const accountId = accountIdMatch ? accountIdMatch[1] : "";
+const bucketSpecificEndpoint = endpoint.includes("r2.cloudflarestorage.com") 
+  ? `https://${bucketName}.${accountId}.r2.cloudflarestorage.com`
+  : endpoint;
+
 const s3Client = new S3Client({
   region: "auto", 
-  endpoint: endpoint,
-  // R2 account-level endpoints REQUIRE path-style access
-  forcePathStyle: true, 
+  endpoint: bucketSpecificEndpoint,
+  // 切换到 Virtual-Hosted Style
+  forcePathStyle: !endpoint.includes("r2.cloudflarestorage.com"), 
   requestHandler: new FetchHttpHandler(),
   credentials: {
     accessKeyId,
@@ -38,7 +45,7 @@ export async function uploadFileToMinio(
   });
 
   try {
-    console.log(`Uploading to R2 via Fetch: Bucket=${bucketName}, Key=${key}`);
+    console.log(`Uploading to R2 (Bucket-Specific): Bucket=${bucketName}, Key=${key}, Endpoint=${bucketSpecificEndpoint}`);
     await s3Client.send(command);
     
     // Generate the access URL
@@ -46,7 +53,10 @@ export async function uploadFileToMinio(
         return `${publicUrl.replace(/\/$/, '')}/${key}`;
     }
     
-    return `${endpoint.replace(/\/$/, '')}/${bucketName}/${key}`;
+    // Fallback URL logic
+    return endpoint.includes("r2.cloudflarestorage.com")
+      ? `${bucketSpecificEndpoint}/${key}`
+      : `${endpoint.replace(/\/$/, '')}/${bucketName}/${key}`;
   } catch (error: any) {
     console.error("Storage upload error details:", error);
     throw new Error("Failed to upload file to storage");
