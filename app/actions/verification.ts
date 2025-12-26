@@ -55,9 +55,10 @@ export async function sendCode(email: string) {
     }
 
     return { success: "Verification code sent!" }
-  } catch (error) {
+  } catch (error: any) {
     console.error("sendCode error:", error)
-    return { error: "Failed to send verification code." }
+    // 暂时返回具体的错误信息以供调试
+    return { error: `Failed: ${error.message || "Unknown error"}` }
   }
 }
 
