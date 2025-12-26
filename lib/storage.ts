@@ -1,6 +1,5 @@
 import { S3Client, PutObjectCommand, DeleteObjectCommand } from "@aws-sdk/client-s3";
-import { NodeHttpHandler } from "@smithy/node-http-handler";
-import https from "https";
+import { FetchHttpHandler } from "@smithy/fetch-http-handler";
 
 // Storage Configuration
 const rawEndpoint = (process.env.STORAGE_ENDPOINT || process.env.MINIO_ENDPOINT || "http://localhost:9000").trim();
@@ -11,18 +10,13 @@ const secretAccessKey = (process.env.STORAGE_SECRET_KEY || process.env.MINIO_SEC
 const bucketName = (process.env.STORAGE_BUCKET_NAME || process.env.MINIO_BUCKET_NAME || "unishare-bucket").trim();
 const publicUrl = process.env.STORAGE_PUBLIC_URL?.trim();
 
+// Use FetchHttpHandler which is more compatible with Vercel's Edge/Serverless environments
 const s3Client = new S3Client({
   region: "auto", 
   endpoint: endpoint,
-  // MANDATORY for Cloudflare R2 to avoid SSL SNI errors
+  // R2 account-level endpoints REQUIRE path-style access
   forcePathStyle: true, 
-  requestHandler: new NodeHttpHandler({
-    connectionTimeout: 10000,
-    socketTimeout: 10000,
-    httpsAgent: new https.Agent({
-      servername: new URL(endpoint).hostname,
-    }),
-  }),
+  requestHandler: new FetchHttpHandler(),
   credentials: {
     accessKeyId,
     secretAccessKey,
@@ -44,23 +38,17 @@ export async function uploadFileToMinio(
   });
 
   try {
-    console.log(`Uploading to R2: Bucket=${bucketName}, Key=${key}, Endpoint=${endpoint}`);
+    console.log(`Uploading to R2 via Fetch: Bucket=${bucketName}, Key=${key}`);
     await s3Client.send(command);
     
     // Generate the access URL
     if (publicUrl) {
-        // If a public R2 URL is provided (e.g., https://pub-xxx.r2.dev or custom domain)
         return `${publicUrl.replace(/\/$/, '')}/${key}`;
     }
     
-    // Fallback to S3 endpoint structure (standard for MinIO)
     return `${endpoint.replace(/\/$/, '')}/${bucketName}/${key}`;
   } catch (error: any) {
     console.error("Storage upload error details:", error);
-    // Explicitly check for SSL errors to provide better guidance
-    if (error.code === 'EPROTO' || error.name === 'Error' || error.message?.includes('handshake')) {
-       console.error("SSL/TLS Handshake failure detected. Using NodeHttpHandler to stabilize connection.");
-    }
     throw new Error("Failed to upload file to storage");
   }
 }
@@ -75,10 +63,8 @@ export async function deleteFileFromMinio(fileIdentifier: string): Promise<void>
             const pathParts = url.pathname.split('/').filter(Boolean);
             
             if (publicUrl && fileIdentifier.includes(publicUrl)) {
-                // If using R2 public URL, the key is the whole path
                 key = pathParts.join('/');
             } else if (pathParts.length >= 2) {
-                // For MinIO: /bucket/key
                 key = pathParts.slice(1).join('/');
             } else {
                 key = pathParts[pathParts.length - 1];
