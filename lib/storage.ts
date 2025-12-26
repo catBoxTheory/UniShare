@@ -90,29 +90,42 @@ export async function deleteFileFromMinio(fileIdentifier: string): Promise<void>
     if (fileIdentifier.startsWith("http")) {
         try {
             const url = new URL(fileIdentifier);
-            const pathParts = url.pathname.split('/').filter(Boolean);
+            // Decode URI component to handle spaces and special characters in the key
+            const decodedPath = decodeURIComponent(url.pathname);
+            const pathParts = decodedPath.split('/').filter(Boolean);
             
             if (publicUrl && fileIdentifier.includes(publicUrl)) {
+                // For public URLs, the key is the entire path
                 key = pathParts.join('/');
-            } else if (pathParts.length >= 2) {
-                key = pathParts.slice(1).join('/');
-            } else {
-                key = pathParts[pathParts.length - 1];
+            } else if (pathParts.length >= 1) {
+                // For S3 style URLs (endpoint/bucket/key), if the first part is the bucket name, skip it
+                if (pathParts[0] === storageBucketName) {
+                    key = pathParts.slice(1).join('/');
+                } else {
+                    // Otherwise, take the last part or join parts after potential bucket
+                    key = pathParts.join('/');
+                }
             }
         } catch (e) {
+            console.warn("[Storage] URL parsing failed for deletion, using raw identifier:", fileIdentifier);
             key = fileIdentifier;
         }
     }
 
-    if (!key) return;
+    if (!key) {
+        console.warn("[Storage] No key identified for deletion");
+        return;
+    }
+
+    console.log(`[Storage] Attempting to delete key: "${key}" from bucket: "${storageBucketName}"`);
 
     await s3Client.send(new DeleteObjectCommand({
       Bucket: storageBucketName,
       Key: key,
     }));
-    console.log(`Successfully deleted ${key} from storage`);
-  } catch (error) {
-    console.error("Storage deletion error:", error);
+    console.log(`[Storage] Successfully deleted "${key}" from R2`);
+  } catch (error: any) {
+    console.error("[Storage] Deletion error:", error.message);
   }
 }
 
