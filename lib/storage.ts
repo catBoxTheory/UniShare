@@ -95,38 +95,3 @@ export async function deleteFileFromMinio(fileIdentifier: string): Promise<void>
     console.error("Storage deletion error:", error);
   }
 }
-
-export async function deleteFileFromMinio(fileIdentifier: string): Promise<void> {
-  try {
-    let key = fileIdentifier;
-
-    if (fileIdentifier.startsWith("http")) {
-        try {
-            const url = new URL(fileIdentifier);
-            const pathParts = url.pathname.split('/').filter(Boolean);
-            
-            if (publicUrl && fileIdentifier.includes(publicUrl)) {
-                // If using R2 public URL, the key is the whole path
-                key = pathParts.join('/');
-            } else if (pathParts.length >= 2) {
-                // For MinIO: /bucket/key
-                key = pathParts.slice(1).join('/');
-            } else {
-                key = pathParts[pathParts.length - 1];
-            }
-        } catch (e) {
-            key = fileIdentifier;
-        }
-    }
-
-    if (!key) return;
-
-    await s3Client.send(new DeleteObjectCommand({
-      Bucket: bucketName,
-      Key: key,
-    }));
-    console.log(`Successfully deleted ${key} from storage`);
-  } catch (error) {
-    console.error("Storage deletion error:", error);
-  }
-}
