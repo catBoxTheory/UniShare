@@ -21,6 +21,7 @@ async function getUser(email: string) {
 
 export const { auth, handlers, signIn, signOut } = NextAuth({
   trustHost: true,
+  secret: process.env.AUTH_SECRET,
   adapter: PrismaAdapter(prisma),
   session: { strategy: "jwt" },
   cookies: {
