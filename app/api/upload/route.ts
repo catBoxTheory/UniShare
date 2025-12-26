@@ -22,8 +22,10 @@ export async function POST(req: NextRequest) {
     console.log(`Uploading file: ${file.name}, size: ${file.size} bytes`);
 
     const buffer = Buffer.from(await file.arrayBuffer());
+    const uint8Array = new Uint8Array(buffer);
+    
     const fileUrl = await uploadFileToMinio(
-      buffer,
+      uint8Array,
       file.name,
       file.type
     );
