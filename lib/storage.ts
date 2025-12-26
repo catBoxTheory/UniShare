@@ -10,7 +10,7 @@ const publicUrl = process.env.STORAGE_PUBLIC_URL; // Optional: for R2 public dom
 const s3Client = new S3Client({
   region: "auto",
   endpoint: endpoint,
-  forcePathStyle: true, // Required for R2 and MinIO path-style access
+  forcePathStyle: false, // R2 generally prefers virtual-hosted style for SSL/TLS
   credentials: {
     accessKeyId,
     secretAccessKey,
