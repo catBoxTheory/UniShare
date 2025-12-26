@@ -2,14 +2,14 @@
 
 import { useState, useEffect, useRef, useCallback, memo } from "react";
 import { 
-  Play, Pause, Volume2, VolumeX, Maximize, Minimize, Upload, Clock, 
-  PlayCircle, Trash2, Folder, FolderPlus, ChevronLeft, ChevronRight, Settings, Pencil 
+  Play, Pause, Volume2, VolumeX, Maximize, Minimize, Clock, 
+  PlayCircle, Trash2, Folder, FolderPlus, ChevronLeft, ChevronRight, Settings, Pencil,
+  Youtube, Link, Loader2
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
-import { saveMaterialToDb } from "@/app/actions/materials";
-import { MaterialType } from "@prisma/client";
+import { saveYouTubeVideo } from "@/app/actions/materials";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -209,7 +209,6 @@ export function VideoZone({ courseId, initialVideos = [] }: VideoZoneProps) {
   const [playbackRate, setPlaybackRate] = useState(1.0);
   const [isSeeking, setIsSeeking] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
-  const [isUploading, setIsUploading] = useState(false);
   const [mounted, setMounted] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [videoToDelete, setVideoToDelete] = useState<Video | null>(null);
@@ -230,10 +229,15 @@ export function VideoZone({ courseId, initialVideos = [] }: VideoZoneProps) {
   const [editingFolderId, setEditingFolderId] = useState<string | null>(null);
   const [editingVideoId, setEditingVideoId] = useState<string | null>(null);
   const [editValue, setEditValue] = useState("");
+
+  // YouTube URL input
+  const [youtubeUrl, setYoutubeUrl] = useState("");
+  const [youtubeTitle, setYoutubeTitle] = useState("");
+  const [isFetchingMetadata, setIsFetchingMetadata] = useState(false);
+  const [isAddingYoutube, setIsAddingYoutube] = useState(false);
   
   const videoRef = useRef<HTMLVideoElement>(null);
   const playerContainerRef = useRef<HTMLDivElement>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     setMounted(true);
@@ -409,74 +413,89 @@ export function VideoZone({ courseId, initialVideos = [] }: VideoZoneProps) {
     }
   }, [isMuted]);
 
-  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    if (!file.type.startsWith("video/")) {
-      alert("Please upload a video file (MP4, WebM, etc.)");
-      return;
-    }
-
-    setIsUploading(true);
-    try {
-      // 1. Get Presigned URL
-      const presignedRes = await fetch("/api/upload/presigned", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          fileName: file.name,
-          contentType: file.type || "video/mp4",
-        }),
-      });
-
-      if (!presignedRes.ok) throw new Error("Failed to get upload URL");
-      const { uploadUrl, publicUrl } = await presignedRes.json();
-
-      // 2. Upload directly to R2
-      const uploadRes = await fetch(uploadUrl, {
-        method: "PUT",
-        body: file,
-        headers: {
-          "Content-Type": file.type || "video/mp4",
-        },
-      });
-
-      if (!uploadRes.ok) throw new Error("Cloud upload failed");
-
-      // 3. Save to Database
-      const dbRes = await saveMaterialToDb({
-        title: file.name,
-        url: publicUrl,
-        type: MaterialType.VIDEO,
-        courseId,
-        folderId: currentFolderId,
-      });
-
-      if (!dbRes.success) throw new Error(dbRes.error);
-
-      await refreshContent();
-    } catch (error: any) {
-      console.error("Upload error:", error);
-      alert(`Failed to upload video: ${error.message}`);
-    } finally {
-      setIsUploading(false);
-      if (fileInputRef.current) {
-        fileInputRef.current.value = "";
-      }
-    }
-  };
-
   const getProxyUrl = (originalUrl: string) => {
     try {
       if (originalUrl.startsWith("/")) return originalUrl;
+      // Don't proxy YouTube URLs
+      if (originalUrl.includes("youtube.com") || originalUrl.includes("youtu.be")) {
+        return originalUrl;
+      }
       const url = new URL(originalUrl);
-      if (url.port === "9000") {
-        return `/api/proxy${url.pathname}`;
+      if (url.port === "9000" || url.hostname.includes("r2.dev") || url.hostname.includes("r2.cloudflarestorage.com")) {
+        const key = url.pathname.replace(/^\//, "").replace(/^unishare-bucket\//, "");
+        return `/api/proxy/${key}`;
       }
       return originalUrl;
     } catch (e) {
       return originalUrl;
+    }
+  };
+
+  // Check if URL is a YouTube URL
+  const isYouTubeUrl = (url: string) => {
+    return url.includes("youtube.com") || url.includes("youtu.be");
+  };
+
+  // Get YouTube thumbnail from video URL
+  const getYouTubeThumbnail = (url: string) => {
+    const match = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/|youtube\.com\/shorts\/)([^&\n?#]+)/);
+    if (match) {
+      return `https://img.youtube.com/vi/${match[1]}/mqdefault.jpg`;
+    }
+    return null;
+  };
+
+  // Fetch YouTube metadata when URL is pasted
+  const handleYoutubeUrlChange = async (url: string) => {
+    setYoutubeUrl(url);
+    setYoutubeTitle("");
+
+    if (!url.trim()) return;
+
+    // Basic YouTube URL validation
+    if (!url.includes("youtube.com") && !url.includes("youtu.be")) {
+      return;
+    }
+
+    setIsFetchingMetadata(true);
+    try {
+      const response = await fetch(`/api/youtube/metadata?url=${encodeURIComponent(url)}`);
+      if (response.ok) {
+        const data = await response.json();
+        setYoutubeTitle(data.title || "");
+      }
+    } catch (error) {
+      console.error("Failed to fetch YouTube metadata:", error);
+    } finally {
+      setIsFetchingMetadata(false);
+    }
+  };
+
+  // Add YouTube video
+  const handleAddYoutubeVideo = async () => {
+    if (!youtubeUrl.trim() || !youtubeTitle.trim()) return;
+
+    setIsAddingYoutube(true);
+    try {
+      const result = await saveYouTubeVideo({
+        title: youtubeTitle,
+        youtubeUrl: youtubeUrl,
+        courseId,
+        folderId: currentFolderId,
+      });
+
+      if (!result.success) {
+        throw new Error(result.error);
+      }
+
+      setYoutubeUrl("");
+      setYoutubeTitle("");
+      await refreshContent();
+    } catch (error: any) {
+      console.error("Failed to add YouTube video:", error);
+      alert(`Failed to add video: ${error.message}`);
+    } finally {
+      setIsAddingYoutube(false);
     }
   };
 
@@ -666,49 +685,62 @@ export function VideoZone({ courseId, initialVideos = [] }: VideoZoneProps) {
         {/* Video Container - Enforce 16:9 Aspect Ratio */}
         <div ref={playerContainerRef} className="relative aspect-video bg-black group flex-shrink-0">
           {currentVideo && mounted ? (
-            <>
-              <video
-                ref={videoRef}
+            isYouTubeUrl(currentVideo.url) ? (
+              // YouTube Player (iframe embed)
+              <iframe
                 key={currentVideo.id}
-                src={getProxyUrl(currentVideo.url)}
-                className="w-full h-full object-contain"
-                onTimeUpdate={handleTimeUpdate}
-                onLoadedMetadata={handleLoadedMetadata}
-                onEnded={() => setIsPlaying(false)}
-                onPlay={() => setIsPlaying(true)}
-                onPause={() => setIsPlaying(false)}
-                onError={(e) => console.error("Video error:", e)}
-                playsInline
-                preload="metadata"
-                onClick={togglePlay} // Click video to play/pause
+                src={`https://www.youtube.com/embed/${currentVideo.url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/|youtube\.com\/shorts\/)([^&\n?#]+)/)?.[1] || ""}?autoplay=1&rel=0`}
+                className="w-full h-full"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allowFullScreen
+                title={currentVideo.title}
               />
-              
-              {/* Center Play Button (Only when paused and hovered) */}
-              {!isPlaying && (
-                <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                   <div className="bg-black/50 p-4 rounded-full backdrop-blur-sm">
-                      <Play className="w-12 h-12 text-white fill-white" />
-                   </div>
-                </div>
-              )}
+            ) : (
+              // Native Video Player for uploaded files
+              <>
+                <video
+                  ref={videoRef}
+                  key={currentVideo.id}
+                  src={getProxyUrl(currentVideo.url)}
+                  className="w-full h-full object-contain"
+                  onTimeUpdate={handleTimeUpdate}
+                  onLoadedMetadata={handleLoadedMetadata}
+                  onEnded={() => setIsPlaying(false)}
+                  onPlay={() => setIsPlaying(true)}
+                  onPause={() => setIsPlaying(false)}
+                  onError={(e) => console.error("Video error:", e)}
+                  playsInline
+                  preload="metadata"
+                  onClick={togglePlay}
+                />
+                
+                {/* Center Play Button (Only when paused and hovered) */}
+                {!isPlaying && (
+                  <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                     <div className="bg-black/50 p-4 rounded-full backdrop-blur-sm">
+                        <Play className="w-12 h-12 text-white fill-white" />
+                     </div>
+                  </div>
+                )}
 
-              {/* Video Controls Overlay */}
-              <VideoControls 
-                isPlaying={isPlaying}
-                isMuted={isMuted}
-                progress={progress}
-                duration={duration}
-                playbackRate={playbackRate}
-                isFullscreen={isFullscreen}
-                onPlayPause={togglePlay}
-                onMuteToggle={toggleMute}
-                onFullscreenToggle={toggleFullscreen}
-                onPlaybackRateChange={changePlaybackRate}
-                onSeekChange={handleSeekChange}
-                onSeekMouseDown={handleSeekMouseDown}
-                onSeekMouseUp={handleSeekMouseUp}
-              />
-            </>
+                {/* Video Controls Overlay */}
+                <VideoControls 
+                  isPlaying={isPlaying}
+                  isMuted={isMuted}
+                  progress={progress}
+                  duration={duration}
+                  playbackRate={playbackRate}
+                  isFullscreen={isFullscreen}
+                  onPlayPause={togglePlay}
+                  onMuteToggle={toggleMute}
+                  onFullscreenToggle={toggleFullscreen}
+                  onPlaybackRateChange={changePlaybackRate}
+                  onSeekChange={handleSeekChange}
+                  onSeekMouseDown={handleSeekMouseDown}
+                  onSeekMouseUp={handleSeekMouseUp}
+                />
+              </>
+            )
           ) : (
             <div className="absolute inset-0 flex flex-col items-center justify-center text-gray-500">
               <PlayCircle className="w-20 h-20 mb-4 opacity-50" />
@@ -886,11 +918,24 @@ export function VideoZone({ courseId, initialVideos = [] }: VideoZoneProps) {
                       )}
                     >
                       <div className="relative w-16 h-10 bg-gray-200 rounded flex-shrink-0 flex items-center justify-center overflow-hidden">
-                        <video 
-                          src={getProxyUrl(video.url) + "#t=1.0"} 
-                          className="w-full h-full object-cover" 
-                          preload="metadata"
-                        />
+                        {isYouTubeUrl(video.url) ? (
+                          <>
+                            <img 
+                              src={getYouTubeThumbnail(video.url) || ""} 
+                              alt={video.title}
+                              className="w-full h-full object-cover"
+                            />
+                            <div className="absolute bottom-0.5 left-0.5">
+                              <Youtube className="w-3 h-3 text-red-500 bg-white rounded-sm" />
+                            </div>
+                          </>
+                        ) : (
+                          <video 
+                            src={getProxyUrl(video.url) + "#t=1.0"} 
+                            className="w-full h-full object-cover" 
+                            preload="metadata"
+                          />
+                        )}
                         <div className="absolute inset-0 bg-black/10 flex items-center justify-center">
                            {currentVideo?.id === video.id ? (
                              <div className="w-full h-full bg-blue-500/20 animate-pulse"></div>
@@ -967,25 +1012,41 @@ export function VideoZone({ courseId, initialVideos = [] }: VideoZoneProps) {
           )}
         </div>
 
-        {/* Upload Button */}
-        <div className="p-3 border-t bg-gray-50">
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept="video/*"
-            onChange={handleFileUpload}
-            className="hidden"
-            id="video-upload"
-          />
-          <Button
-            className="w-full"
-            size="sm"
-            onClick={() => fileInputRef.current?.click()}
-            disabled={isUploading}
-          >
-            <Upload className="w-4 h-4 mr-2" />
-            {isUploading ? "Uploading..." : "Upload Video"}
-          </Button>
+        {/* YouTube URL Input */}
+        <div className="p-3 border-t bg-gray-50 space-y-3">
+          <div className="flex items-center gap-2 text-sm font-medium text-gray-700">
+            <Youtube className="w-4 h-4 text-red-500" />
+            Add YouTube Video
+          </div>
+          <div className="space-y-2">
+            <div className="relative">
+              <Input
+                placeholder="Paste YouTube URL..."
+                value={youtubeUrl}
+                onChange={(e) => handleYoutubeUrlChange(e.target.value)}
+                className="pr-8"
+              />
+              {isFetchingMetadata && (
+                <Loader2 className="w-4 h-4 absolute right-2 top-1/2 -translate-y-1/2 animate-spin text-gray-400" />
+              )}
+            </div>
+            {youtubeUrl && (
+              <Input
+                placeholder="Video title"
+                value={youtubeTitle}
+                onChange={(e) => setYoutubeTitle(e.target.value)}
+              />
+            )}
+            <Button
+              className="w-full"
+              size="sm"
+              onClick={handleAddYoutubeVideo}
+              disabled={isAddingYoutube || !youtubeUrl.trim() || !youtubeTitle.trim()}
+            >
+              <Link className="w-4 h-4 mr-2" />
+              {isAddingYoutube ? "Adding..." : "Add Video"}
+            </Button>
+          </div>
         </div>
       </div>
 
