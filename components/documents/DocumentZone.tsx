@@ -105,6 +105,10 @@ export function DocumentZone({ courseId, initialDocuments = [] }: DocumentZonePr
   const [editingDocumentId, setEditingDocumentId] = useState<string | null>(null);
   const [editValue, setEditValue] = useState("");
 
+  // Drag and drop
+  const [draggedItemId, setDraggedItemId] = useState<string | null>(null);
+  const [dragOverFolderId, setDragOverFolderId] = useState<string | null>(null);
+
   useEffect(() => {
     refreshContent();
   }, [currentFolderId]);
@@ -351,6 +355,59 @@ export function DocumentZone({ courseId, initialDocuments = [] }: DocumentZonePr
     setEditValue("");
   };
 
+  // Drag and drop handlers
+  const handleDragStart = (e: React.DragEvent, docId: string) => {
+    setDraggedItemId(docId);
+    e.dataTransfer.effectAllowed = "move";
+    e.dataTransfer.setData("text/plain", docId);
+  };
+
+  const handleDragEnd = () => {
+    setDraggedItemId(null);
+    setDragOverFolderId(null);
+  };
+
+  const handleDragOver = (e: React.DragEvent, folderId: string) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "move";
+    if (dragOverFolderId !== folderId) {
+      setDragOverFolderId(folderId);
+    }
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    setDragOverFolderId(null);
+  };
+
+  const handleDrop = async (e: React.DragEvent, targetFolderId: string) => {
+    e.preventDefault();
+    const fileId = e.dataTransfer.getData("text/plain");
+    
+    if (!fileId || fileId === targetFolderId) {
+      setDraggedItemId(null);
+      setDragOverFolderId(null);
+      return;
+    }
+
+    try {
+      const response = await fetch("/api/files/move", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ fileId, targetFolderId }),
+      });
+
+      if (!response.ok) throw new Error("Move failed");
+      await refreshContent();
+    } catch (error) {
+      console.error("Move error:", error);
+      alert("Failed to move file. Please try again.");
+    } finally {
+      setDraggedItemId(null);
+      setDragOverFolderId(null);
+    }
+  };
+
   return (
     <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 h-[600px]">
       {/* Left Column: Folders, Documents, Upload */}
@@ -431,7 +488,13 @@ export function DocumentZone({ courseId, initialDocuments = [] }: DocumentZonePr
                           e.stopPropagation();
                           startFolderEdit(folder);
                         }}
-                        className="flex items-center gap-3 p-2 rounded-lg cursor-pointer hover:bg-gray-100 group"
+                        onDragOver={(e) => handleDragOver(e, folder.id)}
+                        onDragLeave={handleDragLeave}
+                        onDrop={(e) => handleDrop(e, folder.id)}
+                        className={cn(
+                          "flex items-center gap-3 p-2 rounded-lg cursor-pointer hover:bg-gray-100 group transition-all",
+                          dragOverFolderId === folder.id && "bg-blue-100 border-2 border-dashed border-blue-400 scale-[1.02]"
+                        )}
                       >
                         <div className="w-10 h-10 bg-blue-100 rounded flex items-center justify-center flex-shrink-0">
                           <Folder className="w-5 h-5 text-blue-600" />
@@ -507,16 +570,20 @@ export function DocumentZone({ courseId, initialDocuments = [] }: DocumentZonePr
                   <ContextMenu key={doc.id}>
                     <ContextMenuTrigger asChild>
                       <div
+                        draggable
+                        onDragStart={(e) => handleDragStart(e, doc.id)}
+                        onDragEnd={handleDragEnd}
                         onClick={() => setSelectedDocument(doc)}
                         onDoubleClick={(e) => {
                           e.stopPropagation();
                           startDocumentEdit(doc);
                         }}
                         className={cn(
-                          "flex items-center gap-3 p-2 rounded-lg cursor-pointer transition-colors group",
+                          "flex items-center gap-3 p-2 rounded-lg cursor-pointer transition-all group",
                           selectedDocument?.id === doc.id
                             ? "bg-blue-100 border border-blue-300"
-                            : "hover:bg-gray-100 border border-transparent"
+                            : "hover:bg-gray-100 border border-transparent",
+                          draggedItemId === doc.id && "opacity-50 scale-95"
                         )}
                       >
                         {getFileIcon(doc.title)}

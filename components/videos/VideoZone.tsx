@@ -235,6 +235,10 @@ export function VideoZone({ courseId, initialVideos = [] }: VideoZoneProps) {
   const [youtubeTitle, setYoutubeTitle] = useState("");
   const [isFetchingMetadata, setIsFetchingMetadata] = useState(false);
   const [isAddingYoutube, setIsAddingYoutube] = useState(false);
+
+  // Drag and drop
+  const [draggedItemId, setDraggedItemId] = useState<string | null>(null);
+  const [dragOverFolderId, setDragOverFolderId] = useState<string | null>(null);
   
   const videoRef = useRef<HTMLVideoElement>(null);
   const playerContainerRef = useRef<HTMLDivElement>(null);
@@ -496,6 +500,59 @@ export function VideoZone({ courseId, initialVideos = [] }: VideoZoneProps) {
       alert(`Failed to add video: ${error.message}`);
     } finally {
       setIsAddingYoutube(false);
+    }
+  };
+
+  // Drag and drop handlers
+  const handleDragStart = (e: React.DragEvent, videoId: string) => {
+    setDraggedItemId(videoId);
+    e.dataTransfer.effectAllowed = "move";
+    e.dataTransfer.setData("text/plain", videoId);
+  };
+
+  const handleDragEnd = () => {
+    setDraggedItemId(null);
+    setDragOverFolderId(null);
+  };
+
+  const handleDragOver = (e: React.DragEvent, folderId: string) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "move";
+    if (dragOverFolderId !== folderId) {
+      setDragOverFolderId(folderId);
+    }
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    setDragOverFolderId(null);
+  };
+
+  const handleDrop = async (e: React.DragEvent, targetFolderId: string) => {
+    e.preventDefault();
+    const fileId = e.dataTransfer.getData("text/plain");
+    
+    if (!fileId || fileId === targetFolderId) {
+      setDraggedItemId(null);
+      setDragOverFolderId(null);
+      return;
+    }
+
+    try {
+      const response = await fetch("/api/files/move", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ fileId, targetFolderId }),
+      });
+
+      if (!response.ok) throw new Error("Move failed");
+      await refreshContent();
+    } catch (error) {
+      console.error("Move error:", error);
+      alert("Failed to move video. Please try again.");
+    } finally {
+      setDraggedItemId(null);
+      setDragOverFolderId(null);
     }
   };
 
@@ -829,7 +886,13 @@ export function VideoZone({ courseId, initialVideos = [] }: VideoZoneProps) {
                         e.stopPropagation();
                         startFolderEdit(folder);
                       }}
-                      className="flex items-center gap-3 p-2 rounded-lg cursor-pointer hover:bg-gray-100 group"
+                      onDragOver={(e) => handleDragOver(e, folder.id)}
+                      onDragLeave={handleDragLeave}
+                      onDrop={(e) => handleDrop(e, folder.id)}
+                      className={cn(
+                        "flex items-center gap-3 p-2 rounded-lg cursor-pointer hover:bg-gray-100 group transition-all",
+                        dragOverFolderId === folder.id && "bg-blue-100 border-2 border-dashed border-blue-400 scale-[1.02]"
+                      )}
                     >
                       <div className="w-10 h-10 bg-blue-100 rounded flex items-center justify-center flex-shrink-0">
                         <Folder className="w-5 h-5 text-blue-600" />
@@ -905,16 +968,20 @@ export function VideoZone({ courseId, initialVideos = [] }: VideoZoneProps) {
                 <ContextMenu key={video.id}>
                   <ContextMenuTrigger asChild>
                     <div
+                      draggable
+                      onDragStart={(e) => handleDragStart(e, video.id)}
+                      onDragEnd={handleDragEnd}
                       onClick={() => handleVideoSelect(video)}
                       onDoubleClick={(e) => {
                         e.stopPropagation();
                         startVideoEdit(video);
                       }}
                       className={cn(
-                        "flex gap-3 p-2 rounded-lg cursor-pointer transition-colors group",
+                        "flex gap-3 p-2 rounded-lg cursor-pointer transition-all group",
                         currentVideo?.id === video.id
                           ? "bg-blue-100 border border-blue-300"
-                          : "hover:bg-gray-100"
+                          : "hover:bg-gray-100",
+                        draggedItemId === video.id && "opacity-50 scale-95"
                       )}
                     >
                       <div className="relative w-16 h-10 bg-gray-200 rounded flex-shrink-0 flex items-center justify-center overflow-hidden">
