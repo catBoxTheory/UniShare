@@ -39,14 +39,6 @@ export function MarketingPage() {
                   </Link>
                 </Button>
               </div>
-              <div className="pt-8 flex items-center gap-6 text-sm text-blue-200 font-medium">
-                <div className="flex items-center gap-2">
-                  <Users className="w-5 h-5" /> 10k+ Students
-                </div>
-                <div className="flex items-center gap-2">
-                  <BookOpen className="w-5 h-5" /> 50k+ Documents
-                </div>
-              </div>
             </motion.div>
 
             <motion.div 
