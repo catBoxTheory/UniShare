@@ -30,9 +30,12 @@ export function DocumentPreview({ document }: DocumentPreviewProps) {
     try {
       if (!originalUrl) return "";
       if (originalUrl.startsWith("/")) return originalUrl;
+      
       const url = new URL(originalUrl);
-      if (url.port === "9000") {
-        return `/api/proxy${url.pathname}`;
+      // If it's an R2 or MinIO URL, route through our proxy to handle CORS and auth
+      if (url.hostname.includes("r2.cloudflarestorage.com") || url.port === "9000") {
+        const path = url.pathname.replace(/^\/unishare-bucket\//, "");
+        return `/api/proxy/${path}`;
       }
       return originalUrl;
     } catch (e) {
@@ -41,6 +44,7 @@ export function DocumentPreview({ document }: DocumentPreviewProps) {
   };
 
   const safeUrl = document ? getProxyUrl(document.url) : "";
+  const directUrl = document ? document.url : "";
 
   const [notebookData, setNotebookData] = useState<NotebookData | null>(null);
   const [loading, setLoading] = useState(false);
@@ -57,10 +61,12 @@ export function DocumentPreview({ document }: DocumentPreviewProps) {
     setLoading(true);
     try {
       const response = await fetch(url);
+      if (!response.ok) throw new Error("Failed to fetch notebook");
       const data = await response.json();
       setNotebookData(data);
     } catch (error) {
       console.error("Failed to load notebook:", error);
+      setNotebookData(null);
     } finally {
       setLoading(false);
     }
@@ -143,33 +149,52 @@ export function DocumentPreview({ document }: DocumentPreviewProps) {
 
   // PPT Preview (using Office Online Viewer)
   if (isPPT) {
-    // Note: Office Online Viewer requires a publicly accessible URL
-    // For local MinIO, we'll show a download option instead
+    // Office Online Viewer requires a publicly accessible URL
+    const officeUrl = `https://view.officeapps.live.com/op/view.aspx?src=${encodeURIComponent(directUrl)}`;
+    
     return (
       <div className="h-full flex flex-col">
         <div className="flex items-center justify-between p-3 border-b bg-gray-50">
           <h3 className="font-medium text-sm truncate flex-1">{document.title}</h3>
-          <Button variant="outline" size="sm" asChild>
-            <a href={safeUrl} download>
-              <Download className="w-4 h-4 mr-1" />
-              Download
-            </a>
-          </Button>
-        </div>
-        <div className="flex-1 flex flex-col items-center justify-center p-8 bg-gradient-to-br from-orange-50 to-red-50">
-          <div className="w-32 h-40 bg-white rounded-lg shadow-lg flex items-center justify-center mb-6 border">
-            <FileText className="w-16 h-16 text-orange-500" />
+          <div className="flex gap-2">
+            <Button variant="outline" size="sm" asChild>
+              <a href={directUrl} target="_blank" rel="noopener noreferrer">
+                <ExternalLink className="w-4 h-4 mr-1" />
+                Open
+              </a>
+            </Button>
+            <Button variant="outline" size="sm" asChild>
+              <a href={directUrl} download>
+                <Download className="w-4 h-4 mr-1" />
+                Download
+              </a>
+            </Button>
           </div>
-          <h4 className="text-lg font-medium text-gray-800 mb-2">PowerPoint Presentation</h4>
-          <p className="text-sm text-gray-500 text-center mb-4 max-w-xs">
-            Download the file to view it in Microsoft PowerPoint or Google Slides
-          </p>
-          <Button asChild>
-            <a href={safeUrl} download>
-              <Download className="w-4 h-4 mr-2" />
-              Download Presentation
-            </a>
-          </Button>
+        </div>
+        <div className="flex-1">
+          {directUrl.includes('r2.dev') || directUrl.includes('cloudflarestorage.com') ? (
+            <iframe 
+              src={officeUrl} 
+              className="w-full h-full border-0" 
+              title="PPT Preview"
+            />
+          ) : (
+            <div className="flex-1 flex flex-col items-center justify-center p-8 bg-gradient-to-br from-orange-50 to-red-50 h-full">
+              <div className="w-32 h-40 bg-white rounded-lg shadow-lg flex items-center justify-center mb-6 border">
+                <FileText className="w-16 h-16 text-orange-500" />
+              </div>
+              <h4 className="text-lg font-medium text-gray-800 mb-2">PowerPoint Presentation</h4>
+              <p className="text-sm text-gray-500 text-center mb-4 max-w-xs">
+                Download the file to view it in Microsoft PowerPoint or Google Slides
+              </p>
+              <Button asChild>
+                <a href={directUrl} download>
+                  <Download className="w-4 h-4 mr-2" />
+                  Download Presentation
+                </a>
+              </Button>
+            </div>
+          )}
         </div>
       </div>
     );

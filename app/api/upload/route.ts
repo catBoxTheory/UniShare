@@ -24,6 +24,8 @@ export async function POST(req: NextRequest) {
     const buffer = Buffer.from(await file.arrayBuffer());
     const uint8Array = new Uint8Array(buffer);
     
+    // Note: On Vercel, this POST route is limited to 4.5MB.
+    // For larger files, we now use the /api/upload/presigned route.
     const fileUrl = await uploadFileToMinio(
       uint8Array,
       file.name,

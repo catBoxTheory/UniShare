@@ -5,7 +5,21 @@ export const dynamic = 'force-dynamic';
 
 export async function GET(req: NextRequest, { params }: { params: { path: string[] } }) {
   const path = params.path.join("/");
-  const minioUrl = `${process.env.MINIO_ENDPOINT || "http://localhost:9000"}/${path}`;
+  
+  // Storage Configuration
+  const cleanEnvVar = (val: string | undefined) => {
+      if (!val) return "";
+      let res = val.trim();
+      if (res.startsWith('"') && res.endsWith('"')) res = res.slice(1, -1);
+      if (res.startsWith("'") && res.endsWith("'")) res = res.slice(1, -1);
+      return res.trim();
+  };
+
+  const endpoint = cleanEnvVar(process.env.STORAGE_ENDPOINT || process.env.MINIO_ENDPOINT || "http://localhost:9000").replace(/\/$/, "");
+  const bucketName = cleanEnvVar(process.env.STORAGE_BUCKET_NAME || process.env.MINIO_BUCKET_NAME || "unishare-bucket");
+  
+  // Construct the correct URL for R2/MinIO (Path-Style)
+  const storageUrl = `${endpoint}/${bucketName}/${path}`;
 
   // Forward Range header for video seeking
   const rangeHeader = req.headers.get('range');
@@ -15,8 +29,8 @@ export async function GET(req: NextRequest, { params }: { params: { path: string
   }
 
   try {
-    const response = await fetch(minioUrl, {
-      cache: 'no-store',  // Disable caching to avoid 2MB limit error
+    const response = await fetch(storageUrl, {
+      cache: 'no-store',
       headers,
     });
     

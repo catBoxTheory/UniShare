@@ -4,6 +4,8 @@ import { useState, useCallback } from "react";
 import { Upload, FileText, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { saveMaterialToDb } from "@/app/actions/materials";
+import { MaterialType } from "@prisma/client";
 
 interface DocumentUploadProps {
   courseId: string;
@@ -14,6 +16,7 @@ interface DocumentUploadProps {
 export function DocumentUpload({ courseId, folderId, onUploadComplete }: DocumentUploadProps) {
   const [isDragging, setIsDragging] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
   const handleDragOver = useCallback((e: React.DragEvent) => {
@@ -57,31 +60,52 @@ export function DocumentUpload({ courseId, folderId, onUploadComplete }: Documen
     if (!selectedFile) return;
 
     setIsUploading(true);
+    setUploadProgress(0);
+    
     try {
-      const formData = new FormData();
-      formData.append("file", selectedFile);
-      formData.append("title", selectedFile.name);
-      formData.append("courseId", courseId);
-      if (folderId) {
-        formData.append("folderId", folderId);
-      }
-
-      const response = await fetch("/api/upload", {
+      // 1. Get Presigned URL
+      const presignedRes = await fetch("/api/upload/presigned", {
         method: "POST",
-        body: formData,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          fileName: selectedFile.name,
+          contentType: selectedFile.type || "application/octet-stream",
+        }),
       });
 
-      if (!response.ok) {
-        throw new Error("Upload failed");
-      }
+      if (!presignedRes.ok) throw new Error("Failed to get upload URL");
+      const { uploadUrl, publicUrl } = await presignedRes.json();
+
+      // 2. Upload directly to R2
+      const uploadRes = await fetch(uploadUrl, {
+        method: "PUT",
+        body: selectedFile,
+        headers: {
+          "Content-Type": selectedFile.type || "application/octet-stream",
+        },
+      });
+
+      if (!uploadRes.ok) throw new Error("Cloud upload failed");
+
+      // 3. Save to Database
+      const dbRes = await saveMaterialToDb({
+        title: selectedFile.name,
+        url: publicUrl,
+        type: MaterialType.FILE,
+        courseId,
+        folderId,
+      });
+
+      if (!dbRes.success) throw new Error(dbRes.error);
 
       setSelectedFile(null);
       onUploadComplete?.();
-    } catch (error) {
+    } catch (error: any) {
       console.error("Upload error:", error);
-      alert("Failed to upload file. Please try again.");
+      alert(`Upload failed: ${error.message}`);
     } finally {
       setIsUploading(false);
+      setUploadProgress(0);
     }
   };
 

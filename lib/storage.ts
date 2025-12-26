@@ -1,4 +1,5 @@
 import { S3Client, PutObjectCommand, DeleteObjectCommand } from "@aws-sdk/client-s3";
+import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { FetchHttpHandler } from "@smithy/fetch-http-handler";
 
 // Storage Configuration - Clean environment variables
@@ -27,6 +28,26 @@ const s3Client = new S3Client({
     secretAccessKey,
   },
 });
+
+export const getPresignedUploadUrl = async (fileName: string, contentType: string) => {
+  const key = `${Date.now()}-${fileName}`;
+  const command = new PutObjectCommand({
+    Bucket: bucketName,
+    Key: key,
+    ContentType: contentType,
+  });
+
+  const url = await getSignedUrl(s3Client, command, { expiresIn: 3600 });
+  
+  let finalPublicUrl = "";
+  if (publicUrl) {
+    finalPublicUrl = `${publicUrl.replace(/\/$/, '')}/${key}`;
+  } else {
+    finalPublicUrl = `${endpoint.replace(/\/$/, '')}/${bucketName}/${key}`;
+  }
+
+  return { uploadUrl: url, key, publicUrl: finalPublicUrl };
+};
 
 export async function uploadFileToMinio(
   file: Uint8Array,

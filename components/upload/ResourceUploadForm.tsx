@@ -18,10 +18,13 @@ import {
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 
+import { saveMaterialToDb } from "@/app/actions/materials"
+import { MaterialType } from "@prisma/client"
+
 const formSchema = z.object({
   title: z.string().optional(),
   file: z.any()
-    .refine((file) => file?.length !== 0, "File is required"),
+    .refine((file) => file && file instanceof File, "File is required"),
 })
 
 export function ResourceUploadForm({ courseId, folderId }: { courseId?: string, folderId?: string }) {
@@ -33,40 +36,58 @@ export function ResourceUploadForm({ courseId, folderId }: { courseId?: string, 
   })
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
-    console.log(values)
+    const file = values.file as File;
+    const title = values.title || file.name;
     
-    // Create FormData
-    const formData = new FormData();
-    if (values.title) formData.append("title", values.title);
-    if (courseId) formData.append("courseId", courseId);
-    if (folderId) formData.append("folderId", folderId);
-    formData.append("file", values.file);
-
     try {
-      if (values.file.size > 4.5 * 1024 * 1024) {
-        alert("File is too large! Vercel limits uploads to 4.5MB. For larger files, please use a smaller version or contact support.");
-        return;
-      }
-
-      const response = await fetch("/api/upload", {
+      // 1. Get Presigned URL
+      const presignedRes = await fetch("/api/upload/presigned", {
         method: "POST",
-        body: formData,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          fileName: file.name,
+          contentType: file.type || "application/octet-stream",
+        }),
       });
 
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.error || "Upload failed");
+      if (!presignedRes.ok) throw new Error("Failed to get upload URL");
+      const { uploadUrl, publicUrl } = await presignedRes.json();
+
+      // 2. Upload directly to R2
+      const uploadRes = await fetch(uploadUrl, {
+        method: "PUT",
+        body: file,
+        headers: {
+          "Content-Type": file.type || "application/octet-stream",
+        },
+      });
+
+      if (!uploadRes.ok) throw new Error("Cloud upload failed");
+
+      // 3. Determine Material Type
+      const videoExtensions = /\.(mp4|mov|avi|wmv|flv|webm|mkv|m4v|3gp)$/i;
+      const isVideo = file.type.startsWith("video/") || videoExtensions.test(file.name);
+      const materialType = isVideo ? MaterialType.VIDEO : MaterialType.FILE;
+
+      // 4. Save to Database
+      if (courseId) {
+        const dbRes = await saveMaterialToDb({
+          title,
+          url: publicUrl,
+          type: materialType,
+          courseId,
+          folderId,
+        });
+
+        if (!dbRes.success) throw new Error(dbRes.error);
       }
 
-      const data = await response.json();
-      console.log("File uploaded:", data.url);
-      alert(`File uploaded successfully!`);
-      // Optional: Refresh page or update list
+      alert(`Uploaded successfully!`);
       window.location.reload();
       
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error uploading file:", error);
-      alert("Error uploading file. Please try again.");
+      alert(`Error uploading file: ${error.message}`);
     }
   }
 

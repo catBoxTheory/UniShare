@@ -8,6 +8,8 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
+import { saveMaterialToDb } from "@/app/actions/materials";
+import { MaterialType } from "@prisma/client";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -418,25 +420,45 @@ export function VideoZone({ courseId, initialVideos = [] }: VideoZoneProps) {
 
     setIsUploading(true);
     try {
-      const formData = new FormData();
-      formData.append("file", file);
-      formData.append("title", file.name);
-      formData.append("courseId", courseId);
-      if (currentFolderId) {
-        formData.append("folderId", currentFolderId);
-      }
-
-      const response = await fetch("/api/upload", {
+      // 1. Get Presigned URL
+      const presignedRes = await fetch("/api/upload/presigned", {
         method: "POST",
-        body: formData,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          fileName: file.name,
+          contentType: file.type || "video/mp4",
+        }),
       });
 
-      if (!response.ok) throw new Error("Upload failed");
+      if (!presignedRes.ok) throw new Error("Failed to get upload URL");
+      const { uploadUrl, publicUrl } = await presignedRes.json();
+
+      // 2. Upload directly to R2
+      const uploadRes = await fetch(uploadUrl, {
+        method: "PUT",
+        body: file,
+        headers: {
+          "Content-Type": file.type || "video/mp4",
+        },
+      });
+
+      if (!uploadRes.ok) throw new Error("Cloud upload failed");
+
+      // 3. Save to Database
+      const dbRes = await saveMaterialToDb({
+        title: file.name,
+        url: publicUrl,
+        type: MaterialType.VIDEO,
+        courseId,
+        folderId: currentFolderId,
+      });
+
+      if (!dbRes.success) throw new Error(dbRes.error);
 
       await refreshContent();
-    } catch (error) {
+    } catch (error: any) {
       console.error("Upload error:", error);
-      alert("Failed to upload video. Please try again.");
+      alert(`Failed to upload video: ${error.message}`);
     } finally {
       setIsUploading(false);
       if (fileInputRef.current) {
