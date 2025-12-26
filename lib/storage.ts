@@ -1,5 +1,6 @@
 import { S3Client, PutObjectCommand, DeleteObjectCommand } from "@aws-sdk/client-s3";
-import { FetchHttpHandler } from "@smithy/fetch-http-handler";
+import { NodeHttpHandler } from "@smithy/node-http-handler";
+import https from "https";
 
 // Storage Configuration
 const rawEndpoint = (process.env.STORAGE_ENDPOINT || process.env.MINIO_ENDPOINT || "http://localhost:9000").trim();
@@ -10,20 +11,19 @@ const secretAccessKey = (process.env.STORAGE_SECRET_KEY || process.env.MINIO_SEC
 const bucketName = (process.env.STORAGE_BUCKET_NAME || process.env.MINIO_BUCKET_NAME || "unishare-bucket").trim();
 const publicUrl = process.env.STORAGE_PUBLIC_URL?.trim();
 
-// 核心修复：构造存储桶级域名 (Virtual-Hosted Style) 以解决 SSL 握手问题
-// 如果 endpoint 是 https://<account_id>.r2.cloudflarestorage.com
-const accountIdMatch = endpoint.match(/https?:\/\/([^.]+)/);
-const accountId = accountIdMatch ? accountIdMatch[1] : "";
-const bucketSpecificEndpoint = endpoint.includes("r2.cloudflarestorage.com") 
-  ? `https://${bucketName}.${accountId}.r2.cloudflarestorage.com`
-  : endpoint;
-
+// 核心修复：强制使用 TLS 1.2 以解决 Vercel 与 R2 之间的 SSL 握手失败 (SSL alert 40)
 const s3Client = new S3Client({
   region: "auto", 
-  endpoint: bucketSpecificEndpoint,
-  // 切换到 Virtual-Hosted Style
-  forcePathStyle: !endpoint.includes("r2.cloudflarestorage.com"), 
-  requestHandler: new FetchHttpHandler(),
+  endpoint: endpoint,
+  // R2 账号级域名必须使用 Path-Style
+  forcePathStyle: true, 
+  requestHandler: new NodeHttpHandler({
+    httpsAgent: new https.Agent({
+      minVersion: 'TLSv1.2',
+      maxVersion: 'TLSv1.2', // 强制锁定协议版本，防止协商失败
+      servername: new URL(endpoint).hostname,
+    }),
+  }),
   credentials: {
     accessKeyId,
     secretAccessKey,
@@ -45,7 +45,7 @@ export async function uploadFileToMinio(
   });
 
   try {
-    console.log(`Uploading to R2 (Bucket-Specific): Bucket=${bucketName}, Key=${key}, Endpoint=${bucketSpecificEndpoint}`);
+    console.log(`Uploading to R2 (Forced TLS 1.2): Bucket=${bucketName}, Key=${key}, Endpoint=${endpoint}`);
     await s3Client.send(command);
     
     // Generate the access URL
@@ -53,10 +53,8 @@ export async function uploadFileToMinio(
         return `${publicUrl.replace(/\/$/, '')}/${key}`;
     }
     
-    // Fallback URL logic
-    return endpoint.includes("r2.cloudflarestorage.com")
-      ? `${bucketSpecificEndpoint}/${key}`
-      : `${endpoint.replace(/\/$/, '')}/${bucketName}/${key}`;
+    // Fallback to S3 endpoint structure (standard for MinIO)
+    return `${endpoint.replace(/\/$/, '')}/${bucketName}/${key}`;
   } catch (error: any) {
     console.error("Storage upload error details:", error);
     throw new Error("Failed to upload file to storage");
