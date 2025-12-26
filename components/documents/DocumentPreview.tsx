@@ -32,10 +32,15 @@ export function DocumentPreview({ document }: DocumentPreviewProps) {
       if (originalUrl.startsWith("/")) return originalUrl;
       
       const url = new URL(originalUrl);
-      // If it's an R2 or MinIO URL, route through our proxy to handle CORS and auth
-      if (url.hostname.includes("r2.cloudflarestorage.com") || url.port === "9000") {
-        const path = url.pathname.replace(/^\/unishare-bucket\//, "");
-        return `/api/proxy/${path}`;
+      // If it's an R2 (public or private) or MinIO URL, route through our proxy to handle CORS
+      if (
+        url.hostname.includes("r2.cloudflarestorage.com") || 
+        url.hostname.includes("r2.dev") ||
+        url.port === "9000"
+      ) {
+        // Extract the file key from the pathname (remove leading slash)
+        const key = url.pathname.replace(/^\//, "").replace(/^unishare-bucket\//, "");
+        return `/api/proxy/${key}`;
       }
       return originalUrl;
     } catch (e) {
