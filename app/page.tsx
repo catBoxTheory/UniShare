@@ -5,6 +5,8 @@ import { Dashboard } from "@/components/home/Dashboard";
 import { getRecentCourses, getEnrolledCourses } from "@/app/actions/courses";
 import prisma from "@/lib/prisma";
 
+export const dynamic = 'force-dynamic';
+
 export default async function Home({ searchParams }: { searchParams: { tab?: string } }) {
   const session = await auth();
 
