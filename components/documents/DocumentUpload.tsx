@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useCallback } from "react";
-import { Upload, FileText, X } from "lucide-react";
+import { Upload, FileText, X, Check, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { saveMaterialToDb } from "@/app/actions/materials";
@@ -13,11 +13,15 @@ interface DocumentUploadProps {
   onUploadComplete?: () => void;
 }
 
+interface SelectedFile {
+  file: File;
+  status: "pending" | "uploading" | "done" | "error";
+}
+
 export function DocumentUpload({ courseId, folderId, onUploadComplete }: DocumentUploadProps) {
   const [isDragging, setIsDragging] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
-  const [uploadProgress, setUploadProgress] = useState(0);
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [selectedFiles, setSelectedFiles] = useState<SelectedFile[]>([]);
 
   const handleDragOver = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -33,21 +37,44 @@ export function DocumentUpload({ courseId, folderId, onUploadComplete }: Documen
     e.preventDefault();
     setIsDragging(false);
     
-    const file = e.dataTransfer.files[0];
-    if (file && isValidDocumentType(file)) {
-      setSelectedFile(file);
-    } else {
-      alert("Please upload a PDF, IPYNB, or PPT/PPTX file.");
+    const files = Array.from(e.dataTransfer.files);
+    const validFiles = files.filter(isValidDocumentType);
+    
+    if (validFiles.length === 0) {
+      alert("Please upload PDF, IPYNB, or PPT/PPTX files.");
+      return;
     }
+    
+    if (validFiles.length < files.length) {
+      alert(`${files.length - validFiles.length} file(s) skipped (unsupported format).`);
+    }
+    
+    setSelectedFiles(prev => [
+      ...prev,
+      ...validFiles.map(file => ({ file, status: "pending" as const }))
+    ]);
   }, []);
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file && isValidDocumentType(file)) {
-      setSelectedFile(file);
-    } else if (file) {
-      alert("Please upload a PDF, IPYNB, or PPT/PPTX file.");
+    const files = e.target.files ? Array.from(e.target.files) : [];
+    const validFiles = files.filter(isValidDocumentType);
+    
+    if (validFiles.length === 0 && files.length > 0) {
+      alert("Please upload PDF, IPYNB, or PPT/PPTX files.");
+      return;
     }
+    
+    if (validFiles.length < files.length) {
+      alert(`${files.length - validFiles.length} file(s) skipped (unsupported format).`);
+    }
+    
+    setSelectedFiles(prev => [
+      ...prev,
+      ...validFiles.map(file => ({ file, status: "pending" as const }))
+    ]);
+    
+    // Reset input
+    e.target.value = "";
   };
 
   const isValidDocumentType = (file: File): boolean => {
@@ -57,61 +84,86 @@ export function DocumentUpload({ courseId, folderId, onUploadComplete }: Documen
   };
 
   const handleUpload = async () => {
-    if (!selectedFile) return;
+    if (selectedFiles.length === 0) return;
 
     setIsUploading(true);
-    setUploadProgress(0);
     
-    try {
-      // 1. Get Presigned URL
-      const presignedRes = await fetch("/api/upload/presigned", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          fileName: selectedFile.name,
-          contentType: selectedFile.type || "application/octet-stream",
-        }),
-      });
+    for (let i = 0; i < selectedFiles.length; i++) {
+      const selectedFile = selectedFiles[i];
+      if (selectedFile.status !== "pending") continue;
+      
+      // Update status to uploading
+      setSelectedFiles(prev => prev.map((f, idx) => 
+        idx === i ? { ...f, status: "uploading" as const } : f
+      ));
+      
+      try {
+        // 1. Get Presigned URL
+        const presignedRes = await fetch("/api/upload/presigned", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            fileName: selectedFile.file.name,
+            contentType: selectedFile.file.type || "application/octet-stream",
+          }),
+        });
 
-      if (!presignedRes.ok) throw new Error("Failed to get upload URL");
-      const { uploadUrl, publicUrl } = await presignedRes.json();
+        if (!presignedRes.ok) throw new Error("Failed to get upload URL");
+        const { uploadUrl, publicUrl } = await presignedRes.json();
 
-      // 2. Upload directly to R2
-      const uploadRes = await fetch(uploadUrl, {
-        method: "PUT",
-        body: selectedFile,
-        headers: {
-          "Content-Type": selectedFile.type || "application/octet-stream",
-        },
-      });
+        // 2. Upload directly to R2
+        const uploadRes = await fetch(uploadUrl, {
+          method: "PUT",
+          body: selectedFile.file,
+          headers: {
+            "Content-Type": selectedFile.file.type || "application/octet-stream",
+          },
+        });
 
-      if (!uploadRes.ok) throw new Error("Cloud upload failed");
+        if (!uploadRes.ok) throw new Error("Cloud upload failed");
 
-      // 3. Save to Database
-      const dbRes = await saveMaterialToDb({
-        title: selectedFile.name,
-        url: publicUrl,
-        type: MaterialType.FILE,
-        courseId,
-        folderId,
-      });
+        // 3. Save to Database
+        const dbRes = await saveMaterialToDb({
+          title: selectedFile.file.name,
+          url: publicUrl,
+          type: MaterialType.FILE,
+          courseId,
+          folderId,
+        });
 
-      if (!dbRes.success) throw new Error(dbRes.error);
+        if (!dbRes.success) throw new Error(dbRes.error);
 
-      setSelectedFile(null);
-      onUploadComplete?.();
-    } catch (error: any) {
-      console.error("Upload error:", error);
-      alert(`Upload failed: ${error.message}`);
-    } finally {
-      setIsUploading(false);
-      setUploadProgress(0);
+        // Update status to done
+        setSelectedFiles(prev => prev.map((f, idx) => 
+          idx === i ? { ...f, status: "done" as const } : f
+        ));
+      } catch (error: any) {
+        console.error("Upload error:", error);
+        // Update status to error
+        setSelectedFiles(prev => prev.map((f, idx) => 
+          idx === i ? { ...f, status: "error" as const } : f
+        ));
+      }
     }
+    
+    setIsUploading(false);
+    onUploadComplete?.();
+    
+    // Clear completed files after a short delay
+    setTimeout(() => {
+      setSelectedFiles(prev => prev.filter(f => f.status === "error"));
+    }, 1500);
   };
 
-  const clearSelection = () => {
-    setSelectedFile(null);
+  const removeFile = (index: number) => {
+    setSelectedFiles(prev => prev.filter((_, i) => i !== index));
   };
+
+  const clearAll = () => {
+    setSelectedFiles([]);
+  };
+
+  const pendingCount = selectedFiles.filter(f => f.status === "pending").length;
 
   return (
     <div className="space-y-4">
@@ -132,6 +184,7 @@ export function DocumentUpload({ courseId, folderId, onUploadComplete }: Documen
           accept=".pdf,.ipynb,.ppt,.pptx"
           onChange={handleFileSelect}
           className="hidden"
+          multiple
         />
         <label htmlFor="document-upload" className="cursor-pointer">
           <Upload className="w-10 h-10 mx-auto mb-3 text-gray-400" />
@@ -139,43 +192,76 @@ export function DocumentUpload({ courseId, folderId, onUploadComplete }: Documen
             Drag & drop or click to upload
           </p>
           <p className="text-xs text-gray-400">
-            PDF, IPYNB, PPT, PPTX
+            PDF, IPYNB, PPT, PPTX (multiple files supported)
           </p>
         </label>
       </div>
 
-      {selectedFile && (
-        <div className="flex items-center gap-3 p-3 bg-blue-50 rounded-lg border border-blue-200">
-          <FileText className="w-8 h-8 text-blue-500 flex-shrink-0" />
-          <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium text-gray-900 truncate">
-              {selectedFile.name}
-            </p>
-            <p className="text-xs text-gray-500">
-              {(selectedFile.size / 1024 / 1024).toFixed(2)} MB
-            </p>
-          </div>
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={clearSelection}
-            className="flex-shrink-0"
-          >
-            <X className="w-4 h-4" />
-          </Button>
+      {selectedFiles.length > 0 && (
+        <div className="space-y-2 max-h-48 overflow-y-auto">
+          {selectedFiles.map((item, index) => (
+            <div 
+              key={index} 
+              className={cn(
+                "flex items-center gap-3 p-2 rounded-lg border",
+                item.status === "done" && "bg-green-50 border-green-200",
+                item.status === "error" && "bg-red-50 border-red-200",
+                item.status === "uploading" && "bg-blue-50 border-blue-200",
+                item.status === "pending" && "bg-gray-50 border-gray-200"
+              )}
+            >
+              <FileText className={cn(
+                "w-6 h-6 flex-shrink-0",
+                item.status === "done" && "text-green-500",
+                item.status === "error" && "text-red-500",
+                item.status === "uploading" && "text-blue-500",
+                item.status === "pending" && "text-gray-500"
+              )} />
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-gray-900 truncate">
+                  {item.file.name}
+                </p>
+                <p className="text-xs text-gray-500">
+                  {(item.file.size / 1024 / 1024).toFixed(2)} MB
+                </p>
+              </div>
+              {item.status === "uploading" && (
+                <Loader2 className="w-4 h-4 animate-spin text-blue-500" />
+              )}
+              {item.status === "done" && (
+                <Check className="w-4 h-4 text-green-500" />
+              )}
+              {item.status === "pending" && (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => removeFile(index)}
+                  className="h-6 w-6"
+                >
+                  <X className="w-3 h-3" />
+                </Button>
+              )}
+            </div>
+          ))}
         </div>
       )}
 
-      {selectedFile && (
-        <Button 
-          onClick={handleUpload} 
-          disabled={isUploading}
-          className="w-full"
-        >
-          {isUploading ? "Uploading..." : "Upload Document"}
-        </Button>
+      {selectedFiles.length > 0 && (
+        <div className="flex gap-2">
+          <Button 
+            onClick={handleUpload} 
+            disabled={isUploading || pendingCount === 0}
+            className="flex-1"
+          >
+            {isUploading ? "Uploading..." : `Upload ${pendingCount} File${pendingCount !== 1 ? 's' : ''}`}
+          </Button>
+          {!isUploading && (
+            <Button variant="outline" onClick={clearAll}>
+              Clear
+            </Button>
+          )}
+        </div>
       )}
     </div>
   );
 }
-

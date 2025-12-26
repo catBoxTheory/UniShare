@@ -821,7 +821,7 @@ export function VideoZone({ courseId, initialVideos = [] }: VideoZoneProps) {
       </div>
 
       {/* Playlist Sidebar with Folders */}
-      <div className="lg:col-span-1 bg-white rounded-xl border shadow-sm flex flex-col overflow-hidden h-[500px] lg:h-[600px]">
+      <div className="lg:col-span-1 bg-white rounded-xl border shadow-sm flex flex-col overflow-hidden h-[500px] lg:h-[600px] min-h-0">
         {/* Playlist Header with Breadcrumbs */}
         <div className="p-3 border-b bg-gray-50">
           <div className="flex items-center justify-between mb-2">
@@ -866,7 +866,7 @@ export function VideoZone({ courseId, initialVideos = [] }: VideoZoneProps) {
         </div>
 
         {/* Folders and Videos List */}
-        <div className="flex-1 overflow-y-auto">
+        <div className="flex-1 overflow-y-auto min-h-0">
           {folders.length === 0 && videos.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-full p-6 text-gray-400">
               <PlayCircle className="w-12 h-12 mb-3 opacity-50" />

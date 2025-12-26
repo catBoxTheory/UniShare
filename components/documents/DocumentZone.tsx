@@ -423,7 +423,7 @@ export function DocumentZone({ courseId, initialDocuments = [] }: DocumentZonePr
         </div>
 
         {/* Folder Navigation & Document List */}
-        <div className="bg-white rounded-xl border shadow-sm flex-1 overflow-hidden flex flex-col">
+        <div className="bg-white rounded-xl border shadow-sm flex-1 overflow-hidden flex flex-col min-h-0">
           {/* Header with Breadcrumbs */}
           <div className="p-3 border-b bg-gray-50">
             <div className="flex items-center justify-between mb-2">
@@ -468,7 +468,7 @@ export function DocumentZone({ courseId, initialDocuments = [] }: DocumentZonePr
           </div>
 
           {/* Folders and Documents List */}
-          <div className="flex-1 overflow-y-auto p-2">
+          <div className="flex-1 overflow-y-auto p-2 min-h-0">
             {folders.length === 0 && documents.length === 0 ? (
               <div className="flex flex-col items-center justify-center h-full text-gray-400">
                 <FileText className="w-12 h-12 mb-3 opacity-50" />
