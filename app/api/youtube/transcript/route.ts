@@ -4,9 +4,10 @@ import OpenAI from "openai";
 import he from "he";
 import { auth } from "@/auth";
 
-// Initialize OpenAI
+// Initialize OpenAI client for DeepSeek
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
+  baseURL: "https://api.deepseek.com", // DeepSeek API Endpoint
 });
 
 export const dynamic = 'force-dynamic';
@@ -78,12 +79,12 @@ export async function GET(req: NextRequest) {
     Do not output anything else.`;
 
     const completion = await openai.chat.completions.create({
-      model: "gpt-4o-mini",
+      model: "deepseek-chat",
       messages: [
         { role: "system", content: systemPrompt },
         { role: "user", content: textBlock }
       ],
-      temperature: 0.3,
+      temperature: 1.3, // DeepSeek recommended temperature for creative/translation tasks
     });
 
     const translatedText = completion.choices[0].message.content || "";
