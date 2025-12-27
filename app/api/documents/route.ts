@@ -7,9 +7,25 @@ export async function GET(req: NextRequest) {
     const { searchParams } = new URL(req.url);
     const courseId = searchParams.get("courseId");
     const folderId = searchParams.get("folderId");
+    const sort = searchParams.get("sort") || "name_asc";
 
     if (!courseId) {
       return NextResponse.json({ error: "courseId is required" }, { status: 400 });
+    }
+
+    // Determine order
+    let materialOrderBy: any = { title: "asc" };
+    let folderOrderBy: any = { name: "asc" };
+
+    if (sort === "name_desc") {
+      materialOrderBy = { title: "desc" };
+      folderOrderBy = { name: "desc" };
+    } else if (sort === "newest") {
+      materialOrderBy = { createdAt: "desc" };
+      folderOrderBy = { createdAt: "desc" };
+    } else if (sort === "oldest") {
+      materialOrderBy = { createdAt: "asc" };
+      folderOrderBy = { createdAt: "asc" };
     }
 
     // Build where clause for documents
@@ -33,9 +49,7 @@ export async function GET(req: NextRequest) {
     // Get documents in the specified folder
     const documents = await prisma.material.findMany({
       where: whereClause,
-      orderBy: {
-        title: "asc"
-      },
+      orderBy: materialOrderBy,
       select: {
         id: true,
         title: true,
@@ -52,9 +66,7 @@ export async function GET(req: NextRequest) {
         type: FolderType.DOCUMENT,
         parentId: folderId && folderId !== "root" ? folderId : null
       },
-      orderBy: {
-        name: "asc"
-      },
+      orderBy: folderOrderBy,
       select: {
         id: true,
         name: true,

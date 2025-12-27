@@ -1,12 +1,20 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { ChevronLeft, ChevronRight, FolderPlus, Folder, Trash2, FileText, Pencil } from "lucide-react";
+import { ChevronLeft, ChevronRight, FolderPlus, Folder, Trash2, FileText, Pencil, ArrowUpDown, Clock, SortAsc, SortDesc } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { DocumentUpload } from "./DocumentUpload";
 import { DocumentPreview } from "./DocumentPreview";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+  DropdownMenuSeparator,
+  DropdownMenuLabel,
+} from "@/components/ui/dropdown-menu";
 import {
   Dialog,
   DialogContent,
@@ -82,6 +90,7 @@ export function DocumentZone({ courseId, initialDocuments = [] }: DocumentZonePr
   const [currentFolder, setCurrentFolder] = useState<DocFolder | null>(null);
   const [folderPath, setFolderPath] = useState<DocFolder[]>([]);
   const [selectedDocument, setSelectedDocument] = useState<Document | null>(null);
+  const [sort, setSort] = useState<string>("name_asc");
   
   // Folder creation
   const [newFolderDialogOpen, setNewFolderDialogOpen] = useState(false);
@@ -111,12 +120,13 @@ export function DocumentZone({ courseId, initialDocuments = [] }: DocumentZonePr
 
   useEffect(() => {
     refreshContent();
-  }, [currentFolderId]);
+  }, [currentFolderId, sort]);
 
   const refreshContent = async () => {
     try {
       const folderParam = currentFolderId ? `&folderId=${currentFolderId}` : "";
-      const response = await fetch(`/api/documents?courseId=${courseId}${folderParam}`);
+      const sortParam = `&sort=${sort}`;
+      const response = await fetch(`/api/documents?courseId=${courseId}${folderParam}${sortParam}`);
       if (response.ok) {
         const data = await response.json();
         setDocuments(data.documents || []);
@@ -435,9 +445,40 @@ export function DocumentZone({ courseId, initialDocuments = [] }: DocumentZonePr
               ) : (
                 <h3 className="font-semibold text-gray-800">Documents</h3>
               )}
-              <Button variant="ghost" size="sm" onClick={() => setNewFolderDialogOpen(true)} className="h-8 px-2">
-                <FolderPlus className="w-4 h-4" />
-              </Button>
+              <div className="flex items-center gap-1">
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" size="sm" className="h-8 px-2 text-gray-500">
+                      <ArrowUpDown className="w-4 h-4 mr-1" />
+                      Sort
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-40">
+                    <DropdownMenuLabel className="text-xs">Sort by</DropdownMenuLabel>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onClick={() => setSort("name_asc")} className={cn(sort === "name_asc" && "bg-blue-50 text-blue-600 font-medium")}>
+                      <SortAsc className="w-4 h-4 mr-2" />
+                      Name (A-Z)
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => setSort("name_desc")} className={cn(sort === "name_desc" && "bg-blue-50 text-blue-600 font-medium")}>
+                      <SortDesc className="w-4 h-4 mr-2" />
+                      Name (Z-A)
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onClick={() => setSort("newest")} className={cn(sort === "newest" && "bg-blue-50 text-blue-600 font-medium")}>
+                      <Clock className="w-4 h-4 mr-2" />
+                      Newest
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => setSort("oldest")} className={cn(sort === "oldest" && "bg-blue-50 text-blue-600 font-medium")}>
+                      <Clock className="w-4 h-4 mr-2" />
+                      Oldest
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+                <Button variant="ghost" size="sm" onClick={() => setNewFolderDialogOpen(true)} className="h-8 px-2">
+                  <FolderPlus className="w-4 h-4" />
+                </Button>
+              </div>
             </div>
             
             {/* Breadcrumb path */}

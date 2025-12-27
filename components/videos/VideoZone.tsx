@@ -3,12 +3,20 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { 
   Clock, PlayCircle, Trash2, Folder, FolderPlus, ChevronLeft, ChevronRight, Pencil,
-  Youtube, Link, Loader2
+  Youtube, Link, Loader2, ArrowUpDown, SortAsc, SortDesc
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { saveYouTubeVideo } from "@/app/actions/materials";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+  DropdownMenuSeparator,
+  DropdownMenuLabel,
+} from "@/components/ui/dropdown-menu";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -80,6 +88,7 @@ export function VideoZone({ courseId, initialVideos = [] }: VideoZoneProps) {
   const [currentFolder, setCurrentFolder] = useState<VideoFolder | null>(null);
   const [folderPath, setFolderPath] = useState<VideoFolder[]>([]);
   const [currentVideo, setCurrentVideo] = useState<Video | null>(null);
+  const [sort, setSort] = useState<string>("name_asc");
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [mounted, setMounted] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -130,12 +139,13 @@ export function VideoZone({ courseId, initialVideos = [] }: VideoZoneProps) {
 
   useEffect(() => {
     refreshContent();
-  }, [currentFolderId]);
+  }, [currentFolderId, sort]);
 
   const refreshContent = async () => {
     try {
       const folderParam = currentFolderId ? `&folderId=${currentFolderId}` : "";
-      const response = await fetch(`/api/videos?courseId=${courseId}${folderParam}`);
+      const sortParam = `&sort=${sort}`;
+      const response = await fetch(`/api/videos?courseId=${courseId}${folderParam}${sortParam}`);
       if (response.ok) {
         const data = await response.json();
         setVideos(data.videos || []);
@@ -547,9 +557,40 @@ export function VideoZone({ courseId, initialVideos = [] }: VideoZoneProps) {
             ) : (
               <h3 className="font-semibold text-gray-800">Playlist</h3>
             )}
-            <Button variant="ghost" size="sm" onClick={() => setNewFolderDialogOpen(true)} className="h-8 px-2">
-              <FolderPlus className="w-4 h-4" />
-            </Button>
+            <div className="flex items-center gap-1">
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="sm" className="h-8 px-2 text-gray-500">
+                    <ArrowUpDown className="w-4 h-4 mr-1" />
+                    Sort
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-40">
+                  <DropdownMenuLabel className="text-xs">Sort by</DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={() => setSort("name_asc")} className={cn(sort === "name_asc" && "bg-blue-50 text-blue-600 font-medium")}>
+                    <SortAsc className="w-4 h-4 mr-2" />
+                    Name (A-Z)
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setSort("name_desc")} className={cn(sort === "name_desc" && "bg-blue-50 text-blue-600 font-medium")}>
+                    <SortDesc className="w-4 h-4 mr-2" />
+                    Name (Z-A)
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={() => setSort("newest")} className={cn(sort === "newest" && "bg-blue-50 text-blue-600 font-medium")}>
+                    <Clock className="w-4 h-4 mr-2" />
+                    Newest
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setSort("oldest")} className={cn(sort === "oldest" && "bg-blue-50 text-blue-600 font-medium")}>
+                    <Clock className="w-4 h-4 mr-2" />
+                    Oldest
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+              <Button variant="ghost" size="sm" onClick={() => setNewFolderDialogOpen(true)} className="h-8 px-2">
+                <FolderPlus className="w-4 h-4" />
+              </Button>
+            </div>
           </div>
           
           {/* Breadcrumb path */}
