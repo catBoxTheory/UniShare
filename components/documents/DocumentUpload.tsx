@@ -175,7 +175,13 @@ export function DocumentUpload({ courseId, folderId, onUploadComplete }: Documen
     setSelectedFiles([]);
   };
 
-  const uploadableCount = selectedFiles.filter(f => f.status === "pending" || f.status === "error").length;
+  const uploadableFiles = selectedFiles.filter(f => f.status === "pending" || f.status === "error");
+  const uploadableCount = uploadableFiles.length;
+
+  // Debug logging to help identify why files might not be seen as uploadable
+  if (selectedFiles.length > 0 && uploadableCount === 0) {
+    console.log("[DocumentUpload] Files selected but none are uploadable:", selectedFiles.map(f => ({ name: f.file.name, status: f.status })));
+  }
 
   return (
     <div className="space-y-4">
