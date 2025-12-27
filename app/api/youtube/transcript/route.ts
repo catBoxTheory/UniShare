@@ -112,6 +112,15 @@ export async function GET(req: NextRequest) {
 
   } catch (error: any) {
     console.error("Transcript/Translation error:", error);
+    
+    // Handle specific YouTube transcript errors
+    if (error.message?.includes("Transcript is disabled") || error.message?.includes("No transcript found")) {
+      return NextResponse.json({ 
+        error: "Subtitles are disabled or unavailable for this video.",
+        code: "NO_TRANSCRIPT" 
+      }, { status: 404 });
+    }
+
     return NextResponse.json({ 
       error: "Failed to process subtitles", 
       details: error.message 

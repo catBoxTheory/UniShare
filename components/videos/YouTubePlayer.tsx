@@ -35,6 +35,7 @@ export function YouTubePlayer({ videoId, title, autoPlay = false, onEnded }: You
   const [showSubtitles, setShowSubtitles] = useState(true);
   const [currentTime, setCurrentTime] = useState(0);
   const [hasTranscriptError, setHasTranscriptError] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
 
   // Load YouTube IFrame API
   useEffect(() => {
@@ -66,15 +67,24 @@ export function YouTubePlayer({ videoId, title, autoPlay = false, onEnded }: You
 
       try {
         const response = await fetch(`/api/youtube/transcript?videoId=${videoId}`);
-        if (!response.ok) throw new Error("Failed to fetch transcript");
+        
+        if (!response.ok) {
+          const errorData = await response.json();
+          // If it's a known "No Transcript" error, show a specific message
+          if (response.status === 404 && errorData.code === "NO_TRANSCRIPT") {
+            throw new Error("No subtitles available");
+          }
+          throw new Error("Failed to load subtitles");
+        }
         
         const data = await response.json();
         if (data.subtitles) {
           setSubtitles(data.subtitles);
         }
-      } catch (error) {
+      } catch (error: any) {
         console.error("Subtitle fetch error:", error);
         setHasTranscriptError(true);
+        setErrorMessage(error.message || "Subtitles unavailable");
       } finally {
         setIsLoadingSubtitles(false);
       }
@@ -190,8 +200,8 @@ export function YouTubePlayer({ videoId, title, autoPlay = false, onEnded }: You
       
       {/* Error Toast if fetch failed */}
       {hasTranscriptError && showSubtitles && (
-        <div className="absolute top-4 left-4 z-20 bg-red-500/80 text-white text-xs px-3 py-1.5 rounded backdrop-blur-md">
-          Subtitles unavailable for this video
+        <div className="absolute top-4 left-4 z-20 bg-black/60 text-white text-xs px-3 py-1.5 rounded backdrop-blur-md border border-white/10">
+          {errorMessage}
         </div>
       )}
     </div>
