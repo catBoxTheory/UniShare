@@ -95,6 +95,9 @@ export function DocumentUpload({ courseId, folderId, onUploadComplete }: Documen
     return new Promise((resolve, reject) => {
       const xhr = new XMLHttpRequest();
       
+      // Increase timeout for large files (10 minutes)
+      xhr.timeout = 600000;
+      
       xhr.upload.addEventListener("progress", (event) => {
         if (event.lengthComputable) {
           const percent = Math.round((event.loaded / event.total) * 100);
@@ -106,12 +109,23 @@ export function DocumentUpload({ courseId, folderId, onUploadComplete }: Documen
         if (xhr.status >= 200 && xhr.status < 300) {
           resolve();
         } else {
-          reject(new Error(`Upload failed: ${xhr.statusText || xhr.status}`));
+          // Try to get error details from response
+          let errorMsg = `Upload failed (${xhr.status})`;
+          try {
+            if (xhr.responseText) {
+              errorMsg += `: ${xhr.responseText.substring(0, 100)}`;
+            }
+          } catch (e) {}
+          reject(new Error(errorMsg));
         }
       });
       
       xhr.addEventListener("error", () => {
-        reject(new Error("Network error during upload"));
+        reject(new Error("Network error. Check CORS or try a smaller file."));
+      });
+      
+      xhr.addEventListener("timeout", () => {
+        reject(new Error("Upload timeout - connection too slow"));
       });
       
       xhr.addEventListener("abort", () => {
@@ -119,6 +133,7 @@ export function DocumentUpload({ courseId, folderId, onUploadComplete }: Documen
       });
       
       xhr.open("PUT", url);
+      // Only set Content-Type, let browser handle Content-Length
       xhr.setRequestHeader("Content-Type", contentType);
       xhr.send(file);
     });

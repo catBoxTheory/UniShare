@@ -32,17 +32,21 @@ export const s3Client = new S3Client({
 // Re-export GetObjectCommand for use in proxy
 export { GetObjectCommand };
 
-export const getPresignedUploadUrl = async (fileName: string, contentType: string) => {
+export const getPresignedUploadUrl = async (fileName: string, contentType: string, fileSize?: number) => {
   // Sanitize filename for the storage key
   const safeFileName = fileName.replace(/[^a-zA-Z0-9.-]/g, '_');
   const key = `${Date.now()}-${safeFileName}`;
+  
   const command = new PutObjectCommand({
     Bucket: storageBucketName,
     Key: key,
     ContentType: contentType,
   });
 
-  const url = await getSignedUrl(s3Client, command, { expiresIn: 3600 });
+  // Generate presigned URL - don't sign content-length to allow any file size
+  const url = await getSignedUrl(s3Client, command, { 
+    expiresIn: 3600,
+  });
   
   let finalPublicUrl = "";
   if (publicUrl) {
