@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { saveYouTubeVideo } from "@/app/actions/materials";
+import { YouTubePlayer } from "./YouTubePlayer";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -513,14 +514,11 @@ export function VideoZone({ courseId, initialVideos = [] }: VideoZoneProps) {
         {/* Video Container - Enforce 16:9 Aspect Ratio */}
         <div ref={playerContainerRef} className="relative aspect-video bg-black group flex-shrink-0">
           {currentVideo && mounted ? (
-            // YouTube Video - Use native iframe
-            <iframe
-              key={currentVideo.id}
-              src={`https://www.youtube.com/embed/${getYouTubeVideoId(currentVideo.url)}?autoplay=1&rel=0&modestbranding=1`}
-              className="w-full h-full"
-              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-              allowFullScreen
+            // YouTube Player with Bilingual Subtitles
+            <YouTubePlayer 
+              videoId={getYouTubeVideoId(currentVideo.url)}
               title={currentVideo.title}
+              autoPlay={true}
             />
           ) : (
             <div className="absolute inset-0 flex flex-col items-center justify-center text-gray-500">
