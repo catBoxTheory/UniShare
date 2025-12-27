@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState, useCallback } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Loader2, Subtitles, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -10,12 +10,6 @@ interface BilingualSubtitle {
   duration: number;
   textEn: string;
   textZh: string;
-}
-
-interface SubtitleSegment {
-  text: string;
-  start: number;
-  duration: number;
 }
 
 interface YouTubePlayerProps {
@@ -32,121 +26,6 @@ declare global {
   }
 }
 
-// Piped API instances to try
-const PIPED_INSTANCES = [
-  "https://pipedapi.kavin.rocks",
-  "https://pipedapi.adminforge.de",
-  "https://api.piped.yt",
-  "https://pipedapi.r4fo.com",
-];
-
-// Helper to decode HTML entities
-function decodeHtmlEntities(text: string): string {
-  const textarea = document.createElement('textarea');
-  textarea.innerHTML = text;
-  return textarea.value;
-}
-
-// Client-side: Fetch transcript from Piped API
-async function fetchTranscriptFromPiped(videoId: string): Promise<SubtitleSegment[] | null> {
-  for (const instance of PIPED_INSTANCES) {
-    try {
-      console.log(`[Client] Trying Piped: ${instance}`);
-      
-      // Get video info which includes subtitles
-      const response = await fetch(`${instance}/streams/${videoId}`, {
-        signal: AbortSignal.timeout(8000)
-      });
-      
-      if (!response.ok) {
-        console.log(`[Client] ${instance} returned ${response.status}`);
-        continue;
-      }
-      
-      const data = await response.json();
-      
-      // Find English subtitles
-      const subtitles = data.subtitles || [];
-      const englishSub = subtitles.find((s: any) => 
-        s.code === 'en' || 
-        s.code?.startsWith('en') ||
-        s.name?.toLowerCase().includes('english')
-      );
-      
-      if (!englishSub?.url) {
-        console.log(`[Client] No English subtitles at ${instance}`);
-        continue;
-      }
-      
-      console.log(`[Client] Found subtitle URL: ${englishSub.url}`);
-      
-      // Fetch the subtitle content
-      const subResponse = await fetch(englishSub.url, {
-        signal: AbortSignal.timeout(8000)
-      });
-      
-      if (!subResponse.ok) continue;
-      
-      const subText = await subResponse.text();
-      console.log(`[Client] Got subtitle text, length: ${subText.length}`);
-      
-      // Parse VTT format
-      const segments: SubtitleSegment[] = [];
-      const cues = subText.split(/\n\n+/);
-      
-      for (const cue of cues) {
-        const timestampMatch = cue.match(/(\d{2}):(\d{2}):(\d{2})\.(\d{3})\s*-->\s*(\d{2}):(\d{2}):(\d{2})\.(\d{3})/);
-        if (timestampMatch) {
-          const startMs = (parseInt(timestampMatch[1]) * 3600 + parseInt(timestampMatch[2]) * 60 + parseInt(timestampMatch[3])) * 1000 + parseInt(timestampMatch[4]);
-          const endMs = (parseInt(timestampMatch[5]) * 3600 + parseInt(timestampMatch[6]) * 60 + parseInt(timestampMatch[7])) * 1000 + parseInt(timestampMatch[8]);
-          
-          const lines = cue.split('\n');
-          const textLines = lines.slice(lines.findIndex(l => l.includes('-->')) + 1);
-          const text = decodeHtmlEntities(textLines.join(' ').replace(/<[^>]*>/g, '').trim());
-          
-          if (text) {
-            segments.push({
-              text,
-              start: startMs,
-              duration: endMs - startMs
-            });
-          }
-        }
-      }
-      
-      if (segments.length > 0) {
-        console.log(`[Client] Parsed ${segments.length} segments from Piped`);
-        return segments;
-      }
-      
-    } catch (e: any) {
-      console.log(`[Client] Piped ${instance} failed:`, e.message);
-    }
-  }
-  
-  return null;
-}
-
-// Client-side: Try to fetch from YouTube directly via cors-anywhere or similar
-async function fetchTranscriptDirect(videoId: string): Promise<SubtitleSegment[] | null> {
-  try {
-    // Try fetching via our proxy API which will attempt server-side methods
-    const response = await fetch(`/api/youtube/transcript?videoId=${videoId}&clientFallback=true`);
-    
-    if (response.ok) {
-      const data = await response.json();
-      if (data.subtitles && data.subtitles.length > 0) {
-        // Already translated, return as-is
-        return null; // Signal to use the full bilingual data
-      }
-    }
-  } catch (e) {
-    console.log('[Client] Direct fetch failed:', e);
-  }
-  
-  return null;
-}
-
 export function YouTubePlayer({ videoId, title, autoPlay = false, onEnded }: YouTubePlayerProps) {
   const playerRef = useRef<any>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -157,6 +36,7 @@ export function YouTubePlayer({ videoId, title, autoPlay = false, onEnded }: You
   const [hasTranscriptError, setHasTranscriptError] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const [retryCount, setRetryCount] = useState(0);
+  const [loadingStatus, setLoadingStatus] = useState("");
 
   // Load YouTube IFrame API
   useEffect(() => {
@@ -189,36 +69,45 @@ export function YouTubePlayer({ videoId, title, autoPlay = false, onEnded }: You
       setHasTranscriptError(false);
       setSubtitles([]);
       setCurrentSubtitle(null);
+      setLoadingStatus("正在獲取字幕...");
 
       try {
-        // Step 1: Try to get transcript from Piped API (client-side)
-        console.log(`[Client] Fetching subtitles for ${videoId}`);
-        const segments = await fetchTranscriptFromPiped(videoId);
+        // Step 1: Try Piped API via our proxy (avoids CORS issues)
+        console.log(`[Client] Fetching subtitles for ${videoId} via Piped proxy`);
+        setLoadingStatus("嘗試 Piped API...");
         
-        if (segments && segments.length > 0) {
-          console.log(`[Client] Got ${segments.length} segments, sending for translation`);
+        const pipedResponse = await fetch(`/api/youtube/piped?videoId=${videoId}`);
+        
+        if (pipedResponse.ok) {
+          const pipedData = await pipedResponse.json();
           
-          // Step 2: Send to server for translation only
-          const translateResponse = await fetch('/api/youtube/translate', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ 
-              segments: segments.slice(0, 100) // Limit to first 100 for performance
-            })
-          });
-          
-          if (!translateResponse.ok) {
-            throw new Error('Translation failed');
+          if (pipedData.segments && pipedData.segments.length > 0) {
+            console.log(`[Client] Got ${pipedData.segments.length} segments from Piped, translating...`);
+            setLoadingStatus("正在翻譯...");
+            
+            // Step 2: Send to server for translation
+            const translateResponse = await fetch('/api/youtube/translate', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ 
+                segments: pipedData.segments.slice(0, 100)
+              })
+            });
+            
+            if (translateResponse.ok) {
+              const translated = await translateResponse.json();
+              setSubtitles(translated.subtitles);
+              console.log(`[Client] Got ${translated.subtitles.length} translated subtitles`);
+              setLoadingStatus("");
+              return;
+            }
           }
-          
-          const translated = await translateResponse.json();
-          setSubtitles(translated.subtitles);
-          console.log(`[Client] Got ${translated.subtitles.length} translated subtitles`);
-          return;
         }
         
-        // Step 3: Fallback to server-side methods
-        console.log(`[Client] Piped failed, trying server-side methods`);
+        // Step 3: Fallback to original transcript API
+        console.log(`[Client] Piped failed, trying original transcript API`);
+        setLoadingStatus("嘗試其他方法...");
+        
         const response = await fetch(`/api/youtube/transcript?videoId=${videoId}`);
         
         if (!response.ok) {
@@ -240,6 +129,7 @@ export function YouTubePlayer({ videoId, title, autoPlay = false, onEnded }: You
         setErrorMessage(error.message || "Subtitles unavailable");
       } finally {
         setIsLoadingSubtitles(false);
+        setLoadingStatus("");
       }
     };
 
@@ -328,6 +218,18 @@ export function YouTubePlayer({ videoId, title, autoPlay = false, onEnded }: You
         </div>
       )}
 
+      {/* Loading Status */}
+      {isLoadingSubtitles && loadingStatus && (
+        <div className="absolute bottom-16 left-0 right-0 p-4 text-center pointer-events-none z-10">
+          <div className="inline-block bg-black/70 backdrop-blur-sm rounded-lg px-4 py-2">
+            <p className="text-white text-sm flex items-center gap-2">
+              <Loader2 className="w-4 h-4 animate-spin" />
+              {loadingStatus}
+            </p>
+          </div>
+        </div>
+      )}
+
       {/* Controls Overlay (Top Right) */}
       <div className="absolute top-4 right-4 z-20 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
         <Button
@@ -335,7 +237,7 @@ export function YouTubePlayer({ videoId, title, autoPlay = false, onEnded }: You
           size="sm"
           className={cn(
             "bg-black/60 hover:bg-black/80 text-white border-0 backdrop-blur-md",
-            showSubtitles && !hasTranscriptError && "text-blue-400"
+            showSubtitles && !hasTranscriptError && subtitles.length > 0 && "text-blue-400"
           )}
           onClick={toggleSubtitles}
           disabled={isLoadingSubtitles}
@@ -354,6 +256,7 @@ export function YouTubePlayer({ videoId, title, autoPlay = false, onEnded }: You
             size="sm"
             className="bg-black/60 hover:bg-black/80 text-white border-0 backdrop-blur-md"
             onClick={retryFetch}
+            title="重試"
           >
             <RefreshCw className="w-4 h-4" />
           </Button>
@@ -365,7 +268,7 @@ export function YouTubePlayer({ videoId, title, autoPlay = false, onEnded }: You
         <div className="absolute top-4 left-4 z-20 bg-black/60 text-white text-xs px-3 py-1.5 rounded backdrop-blur-md border border-white/10">
           {errorMessage === "No subtitles available" 
             ? "無字幕可用 (No subtitles available)" 
-            : `翻譯錯誤: ${errorMessage}`}
+            : `錯誤: ${errorMessage}`}
         </div>
       )}
     </div>
