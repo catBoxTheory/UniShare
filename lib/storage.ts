@@ -33,7 +33,9 @@ export const s3Client = new S3Client({
 export { GetObjectCommand };
 
 export const getPresignedUploadUrl = async (fileName: string, contentType: string) => {
-  const key = `${Date.now()}-${fileName}`;
+  // Sanitize filename for the storage key
+  const safeFileName = fileName.replace(/[^a-zA-Z0-9.-]/g, '_');
+  const key = `${Date.now()}-${safeFileName}`;
   const command = new PutObjectCommand({
     Bucket: storageBucketName,
     Key: key,

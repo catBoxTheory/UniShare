@@ -16,6 +16,7 @@ interface DocumentUploadProps {
 interface SelectedFile {
   file: File;
   status: "pending" | "uploading" | "done" | "error";
+  error?: string;
 }
 
 export function DocumentUpload({ courseId, folderId, onUploadComplete }: DocumentUploadProps) {
@@ -90,11 +91,12 @@ export function DocumentUpload({ courseId, folderId, onUploadComplete }: Documen
     
     for (let i = 0; i < selectedFiles.length; i++) {
       const selectedFile = selectedFiles[i];
-      if (selectedFile.status !== "pending") continue;
+      // Allow uploading pending or error files
+      if (selectedFile.status !== "pending" && selectedFile.status !== "error") continue;
       
       // Update status to uploading
       setSelectedFiles(prev => prev.map((f, idx) => 
-        idx === i ? { ...f, status: "uploading" as const } : f
+        idx === i ? { ...f, status: "uploading" as const, error: undefined } : f
       ));
       
       try {
@@ -108,7 +110,11 @@ export function DocumentUpload({ courseId, folderId, onUploadComplete }: Documen
           }),
         });
 
-        if (!presignedRes.ok) throw new Error("Failed to get upload URL");
+        if (!presignedRes.ok) {
+          const errorData = await presignedRes.json().catch(() => ({}));
+          throw new Error(errorData.error || "Failed to get upload URL");
+        }
+        
         const { uploadUrl, publicUrl } = await presignedRes.json();
 
         // 2. Upload directly to R2
@@ -120,7 +126,13 @@ export function DocumentUpload({ courseId, folderId, onUploadComplete }: Documen
           },
         });
 
-        if (!uploadRes.ok) throw new Error("Cloud upload failed");
+        if (!uploadRes.ok) {
+          // Check for CORS or other browser errors
+          if (uploadRes.status === 0) {
+            throw new Error("Network error or CORS policy blocked the upload. Please check bucket CORS settings.");
+          }
+          throw new Error(`Cloud upload failed: ${uploadRes.statusText}`);
+        }
 
         // 3. Save to Database
         const dbRes = await saveMaterialToDb({
@@ -141,7 +153,7 @@ export function DocumentUpload({ courseId, folderId, onUploadComplete }: Documen
         console.error("Upload error:", error);
         // Update status to error
         setSelectedFiles(prev => prev.map((f, idx) => 
-          idx === i ? { ...f, status: "error" as const } : f
+          idx === i ? { ...f, status: "error" as const, error: error.message } : f
         ));
       }
     }
@@ -151,8 +163,8 @@ export function DocumentUpload({ courseId, folderId, onUploadComplete }: Documen
     
     // Clear completed files after a short delay
     setTimeout(() => {
-      setSelectedFiles(prev => prev.filter(f => f.status === "error"));
-    }, 1500);
+      setSelectedFiles(prev => prev.filter(f => f.status !== "done"));
+    }, 2000);
   };
 
   const removeFile = (index: number) => {
@@ -163,7 +175,7 @@ export function DocumentUpload({ courseId, folderId, onUploadComplete }: Documen
     setSelectedFiles([]);
   };
 
-  const pendingCount = selectedFiles.filter(f => f.status === "pending").length;
+  const uploadableCount = selectedFiles.filter(f => f.status === "pending" || f.status === "error").length;
 
   return (
     <div className="space-y-4">
@@ -202,44 +214,53 @@ export function DocumentUpload({ courseId, folderId, onUploadComplete }: Documen
           {selectedFiles.map((item, index) => (
             <div 
               key={index} 
-              className={cn(
-                "flex items-center gap-3 p-2 rounded-lg border",
-                item.status === "done" && "bg-green-50 border-green-200",
-                item.status === "error" && "bg-red-50 border-red-200",
-                item.status === "uploading" && "bg-blue-50 border-blue-200",
-                item.status === "pending" && "bg-gray-50 border-gray-200"
-              )}
+              className="flex flex-col gap-1"
             >
-              <FileText className={cn(
-                "w-6 h-6 flex-shrink-0",
-                item.status === "done" && "text-green-500",
-                item.status === "error" && "text-red-500",
-                item.status === "uploading" && "text-blue-500",
-                item.status === "pending" && "text-gray-500"
-              )} />
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-gray-900 truncate">
-                  {item.file.name}
-                </p>
-                <p className="text-xs text-gray-500">
-                  {(item.file.size / 1024 / 1024).toFixed(2)} MB
-                </p>
+              <div 
+                className={cn(
+                  "flex items-center gap-3 p-2 rounded-lg border",
+                  item.status === "done" && "bg-green-50 border-green-200",
+                  item.status === "error" && "bg-red-50 border-red-200",
+                  item.status === "uploading" && "bg-blue-50 border-blue-200",
+                  item.status === "pending" && "bg-gray-50 border-gray-200"
+                )}
+              >
+                <FileText className={cn(
+                  "w-6 h-6 flex-shrink-0",
+                  item.status === "done" && "text-green-500",
+                  item.status === "error" && "text-red-500",
+                  item.status === "uploading" && "text-blue-500",
+                  item.status === "pending" && "text-gray-500"
+                )} />
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-gray-900 truncate">
+                    {item.file.name}
+                  </p>
+                  <p className="text-xs text-gray-500">
+                    {(item.file.size / 1024 / 1024).toFixed(2)} MB
+                  </p>
+                </div>
+                {item.status === "uploading" && (
+                  <Loader2 className="w-4 h-4 animate-spin text-blue-500" />
+                )}
+                {item.status === "done" && (
+                  <Check className="w-4 h-4 text-green-500" />
+                )}
+                {(item.status === "pending" || item.status === "error") && (
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => removeFile(index)}
+                    className="h-6 w-6"
+                  >
+                    <X className="w-3 h-3" />
+                  </Button>
+                )}
               </div>
-              {item.status === "uploading" && (
-                <Loader2 className="w-4 h-4 animate-spin text-blue-500" />
-              )}
-              {item.status === "done" && (
-                <Check className="w-4 h-4 text-green-500" />
-              )}
-              {item.status === "pending" && (
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => removeFile(index)}
-                  className="h-6 w-6"
-                >
-                  <X className="w-3 h-3" />
-                </Button>
+              {item.error && (
+                <p className="text-[10px] text-red-500 px-2 line-clamp-2">
+                  Error: {item.error}
+                </p>
               )}
             </div>
           ))}
@@ -250,10 +271,10 @@ export function DocumentUpload({ courseId, folderId, onUploadComplete }: Documen
         <div className="flex gap-2">
           <Button 
             onClick={handleUpload} 
-            disabled={isUploading || pendingCount === 0}
+            disabled={isUploading || uploadableCount === 0}
             className="flex-1"
           >
-            {isUploading ? "Uploading..." : `Upload ${pendingCount} File${pendingCount !== 1 ? 's' : ''}`}
+            {isUploading ? "Uploading..." : `Upload ${uploadableCount} File${uploadableCount !== 1 ? 's' : ''}`}
           </Button>
           {!isUploading && (
             <Button variant="outline" onClick={clearAll}>
