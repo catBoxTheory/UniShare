@@ -86,7 +86,6 @@ export function VideoZone({ courseId, initialVideos = [] }: VideoZoneProps) {
   const [videoToDelete, setVideoToDelete] = useState<Video | null>(null);
   const [folderToDelete, setFolderToDelete] = useState<VideoFolder | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
-  const [isAutoplayEnabled, setIsAutoplayEnabled] = useState(true);
   const [newFolderDialogOpen, setNewFolderDialogOpen] = useState(false);
   const [newFolderName, setNewFolderName] = useState("");
   const [isCreatingFolder, setIsCreatingFolder] = useState(false);
@@ -113,85 +112,6 @@ export function VideoZone({ courseId, initialVideos = [] }: VideoZoneProps) {
   const [dragOverFolderId, setDragOverFolderId] = useState<string | null>(null);
   
   const playerContainerRef = useRef<HTMLDivElement>(null);
-  const ytPlayerRef = useRef<any>(null);
-
-  // Load YouTube IFrame API
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-    
-    // Only load if not already loaded
-    if (!(window as any).YT) {
-      const tag = document.createElement('script');
-      tag.src = 'https://www.youtube.com/iframe_api';
-      const firstScriptTag = document.getElementsByTagName('script')[0];
-      firstScriptTag.parentNode?.insertBefore(tag, firstScriptTag);
-    }
-  }, []);
-
-  // Create YouTube player when video changes
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-    if (!currentVideo || !mounted) return;
-
-    const videoId = getYouTubeVideoId(currentVideo.url);
-    if (!videoId) return;
-
-    const initPlayer = () => {
-      // Destroy previous player if exists
-      if (ytPlayerRef.current) {
-        try {
-          ytPlayerRef.current.destroy();
-        } catch (e) {
-          // Ignore errors during cleanup
-        }
-        ytPlayerRef.current = null;
-      }
-
-      // Make sure the container element exists
-      const container = document.getElementById('youtube-player');
-      if (!container) return;
-
-      try {
-        ytPlayerRef.current = new (window as any).YT.Player('youtube-player', {
-          videoId: videoId,
-          playerVars: {
-            autoplay: 1,
-            rel: 0,
-            modestbranding: 1,
-          },
-          events: {
-            onStateChange: (event: any) => {
-              // 0 = ended
-              if (event.data === 0 && isAutoplayEnabled) {
-                playNextVideo();
-              }
-            },
-          },
-        });
-      } catch (e) {
-        console.error('Failed to create YouTube player:', e);
-      }
-    };
-
-    // Wait for YT API to be ready
-    if ((window as any).YT && (window as any).YT.Player) {
-      // Small delay to ensure DOM is ready
-      setTimeout(initPlayer, 100);
-    } else {
-      (window as any).onYouTubeIframeAPIReady = initPlayer;
-    }
-
-    return () => {
-      if (ytPlayerRef.current) {
-        try {
-          ytPlayerRef.current.destroy();
-        } catch (e) {
-          // Ignore errors during cleanup
-        }
-        ytPlayerRef.current = null;
-      }
-    };
-  }, [currentVideo, mounted, isAutoplayEnabled, playNextVideo]);
 
   useEffect(() => {
     setMounted(true);
@@ -264,16 +184,6 @@ export function VideoZone({ courseId, initialVideos = [] }: VideoZoneProps) {
     if (editingVideoId === video.id) return;
     setCurrentVideo(video);
   };
-
-  const playNextVideo = useCallback(() => {
-    if (!currentVideo || videos.length <= 1) return;
-    
-    const currentIndex = videos.findIndex(v => v.id === currentVideo.id);
-    if (currentIndex !== -1 && currentIndex < videos.length - 1) {
-      const nextVideo = videos[currentIndex + 1];
-      setCurrentVideo(nextVideo);
-    }
-  }, [currentVideo, videos]);
 
   const handleFolderClick = (folder: VideoFolder) => {
     if (editingFolderId === folder.id) return;
@@ -593,11 +503,14 @@ export function VideoZone({ courseId, initialVideos = [] }: VideoZoneProps) {
         {/* Video Container - Enforce 16:9 Aspect Ratio */}
         <div ref={playerContainerRef} className="relative aspect-video bg-black group flex-shrink-0">
           {currentVideo && mounted ? (
-            // YouTube Video - Container for YouTube IFrame API
-            <div 
+            // YouTube Video - Use native iframe
+            <iframe
               key={currentVideo.id}
-              id="youtube-player"
+              src={`https://www.youtube.com/embed/${getYouTubeVideoId(currentVideo.url)}?autoplay=1&rel=0&modestbranding=1`}
               className="w-full h-full"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+              allowFullScreen
+              title={currentVideo.title}
             />
           ) : (
             <div className="absolute inset-0 flex flex-col items-center justify-center text-gray-500">
