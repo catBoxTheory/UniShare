@@ -117,6 +117,8 @@ export function VideoZone({ courseId, initialVideos = [] }: VideoZoneProps) {
 
   // Load YouTube IFrame API
   useEffect(() => {
+    if (typeof window === 'undefined') return;
+    
     // Only load if not already loaded
     if (!(window as any).YT) {
       const tag = document.createElement('script');
@@ -128,6 +130,7 @@ export function VideoZone({ courseId, initialVideos = [] }: VideoZoneProps) {
 
   // Create YouTube player when video changes
   useEffect(() => {
+    if (typeof window === 'undefined') return;
     if (!currentVideo || !mounted) return;
 
     const videoId = getYouTubeVideoId(currentVideo.url);
@@ -136,38 +139,55 @@ export function VideoZone({ courseId, initialVideos = [] }: VideoZoneProps) {
     const initPlayer = () => {
       // Destroy previous player if exists
       if (ytPlayerRef.current) {
-        ytPlayerRef.current.destroy();
+        try {
+          ytPlayerRef.current.destroy();
+        } catch (e) {
+          // Ignore errors during cleanup
+        }
         ytPlayerRef.current = null;
       }
 
-      ytPlayerRef.current = new (window as any).YT.Player('youtube-player', {
-        videoId: videoId,
-        playerVars: {
-          autoplay: 1,
-          rel: 0,
-          modestbranding: 1,
-        },
-        events: {
-          onStateChange: (event: any) => {
-            // 0 = ended
-            if (event.data === 0 && isAutoplayEnabled) {
-              playNextVideo();
-            }
+      // Make sure the container element exists
+      const container = document.getElementById('youtube-player');
+      if (!container) return;
+
+      try {
+        ytPlayerRef.current = new (window as any).YT.Player('youtube-player', {
+          videoId: videoId,
+          playerVars: {
+            autoplay: 1,
+            rel: 0,
+            modestbranding: 1,
           },
-        },
-      });
+          events: {
+            onStateChange: (event: any) => {
+              // 0 = ended
+              if (event.data === 0 && isAutoplayEnabled) {
+                playNextVideo();
+              }
+            },
+          },
+        });
+      } catch (e) {
+        console.error('Failed to create YouTube player:', e);
+      }
     };
 
     // Wait for YT API to be ready
     if ((window as any).YT && (window as any).YT.Player) {
-      initPlayer();
+      // Small delay to ensure DOM is ready
+      setTimeout(initPlayer, 100);
     } else {
       (window as any).onYouTubeIframeAPIReady = initPlayer;
     }
 
     return () => {
       if (ytPlayerRef.current) {
-        ytPlayerRef.current.destroy();
+        try {
+          ytPlayerRef.current.destroy();
+        } catch (e) {
+          // Ignore errors during cleanup
+        }
         ytPlayerRef.current = null;
       }
     };
