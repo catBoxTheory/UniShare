@@ -744,10 +744,12 @@ export function VideoZone({ courseId, initialVideos = [] }: VideoZoneProps) {
                 muted={isMuted}
                 volume={volume}
                 playbackRate={playbackRate}
+                controls={isYouTubeUrl(currentVideo.url)}
                 onProgress={handleProgress}
                 onDuration={handleDuration}
                 onPlay={() => setIsPlaying(true)}
                 onPause={() => setIsPlaying(false)}
+                onReady={() => console.log("ReactPlayer ready")}
                 onEnded={() => {
                   if (isAutoplayEnabled) {
                     playNextVideo();
@@ -767,14 +769,15 @@ export function VideoZone({ courseId, initialVideos = [] }: VideoZoneProps) {
                     playerVars: { 
                       autoplay: 1,
                       rel: 0,
-                      modestbranding: 1
+                      modestbranding: 1,
+                      origin: typeof window !== 'undefined' ? window.location.origin : ''
                     }
                   }
                 }}
               />
               
-              {/* Center Play Button (Only when paused and hovered) */}
-              {!isPlaying && (
+              {/* Center Play Button (Only when paused and hovered) - Hide for YouTube */}
+              {!isPlaying && !isYouTubeUrl(currentVideo.url) && (
                 <div 
                   className="absolute inset-0 flex items-center justify-center cursor-pointer"
                   onClick={togglePlay}
@@ -785,24 +788,26 @@ export function VideoZone({ courseId, initialVideos = [] }: VideoZoneProps) {
                 </div>
               )}
 
-              {/* Video Controls Overlay */}
-              <VideoControls 
-                isPlaying={isPlaying}
-                isMuted={isMuted}
-                progress={progress}
-                duration={duration}
-                playbackRate={playbackRate}
-                isFullscreen={isFullscreen}
-                isAutoplayEnabled={isAutoplayEnabled}
-                onPlayPause={togglePlay}
-                onMuteToggle={toggleMute}
-                onFullscreenToggle={toggleFullscreen}
-                onAutoplayToggle={toggleAutoplay}
-                onPlaybackRateChange={changePlaybackRate}
-                onSeekChange={handleSeekChange}
-                onSeekMouseDown={handleSeekMouseDown}
-                onSeekMouseUp={handleSeekMouseUp}
-              />
+              {/* Video Controls Overlay - Hide for YouTube */}
+              {!isYouTubeUrl(currentVideo.url) && (
+                <VideoControls 
+                  isPlaying={isPlaying}
+                  isMuted={isMuted}
+                  progress={progress}
+                  duration={duration}
+                  playbackRate={playbackRate}
+                  isFullscreen={isFullscreen}
+                  isAutoplayEnabled={isAutoplayEnabled}
+                  onPlayPause={togglePlay}
+                  onMuteToggle={toggleMute}
+                  onFullscreenToggle={toggleFullscreen}
+                  onAutoplayToggle={toggleAutoplay}
+                  onPlaybackRateChange={changePlaybackRate}
+                  onSeekChange={handleSeekChange}
+                  onSeekMouseDown={handleSeekMouseDown}
+                  onSeekMouseUp={handleSeekMouseUp}
+                />
+              )}
             </>
           ) : (
             <div className="absolute inset-0 flex flex-col items-center justify-center text-gray-500">
