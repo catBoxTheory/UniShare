@@ -4,8 +4,9 @@ import { useState, useEffect, useRef, useCallback, memo } from "react";
 import { 
   Play, Pause, Volume2, VolumeX, Maximize, Minimize, Clock, 
   PlayCircle, Trash2, Folder, FolderPlus, ChevronLeft, ChevronRight, Settings, Pencil,
-  Youtube, Link, Loader2
+  Youtube, Link, Loader2, Check
 } from "lucide-react";
+import ReactPlayer from "react-player/lazy";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
@@ -70,9 +71,11 @@ interface VideoControlsProps {
   duration: number;
   playbackRate: number;
   isFullscreen: boolean;
+  isAutoplayEnabled: boolean;
   onPlayPause: () => void;
   onMuteToggle: () => void;
   onFullscreenToggle: () => void;
+  onAutoplayToggle: () => void;
   onPlaybackRateChange: (rate: number) => void;
   onSeekChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   onSeekMouseDown: () => void;
@@ -86,9 +89,11 @@ const VideoControls = memo(({
   duration,
   playbackRate,
   isFullscreen,
+  isAutoplayEnabled,
   onPlayPause,
   onMuteToggle,
   onFullscreenToggle,
+  onAutoplayToggle,
   onPlaybackRateChange,
   onSeekChange,
   onSeekMouseDown,
@@ -171,6 +176,11 @@ const VideoControls = memo(({
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent disablePortal align="end" className="bg-black/90 border-gray-800 text-white">
+              <DropdownMenuItem onClick={onAutoplayToggle} className="flex items-center justify-between gap-4">
+                <span>Autoplay</span>
+                {isAutoplayEnabled && <Check className="w-4 h-4 text-blue-400" />}
+              </DropdownMenuItem>
+              <ContextMenuSeparator className="bg-gray-800" />
               <DropdownMenuItem onClick={() => onPlaybackRateChange(0.5)}>0.5x</DropdownMenuItem>
               <DropdownMenuItem onClick={() => onPlaybackRateChange(1.0)}>1.0x (Normal)</DropdownMenuItem>
               <DropdownMenuItem onClick={() => onPlaybackRateChange(1.25)}>1.25x</DropdownMenuItem>
@@ -215,6 +225,7 @@ export function VideoZone({ courseId, initialVideos = [] }: VideoZoneProps) {
   const [folderToDelete, setFolderToDelete] = useState<VideoFolder | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const [volume, setVolume] = useState(1);
+  const [isAutoplayEnabled, setIsAutoplayEnabled] = useState(true);
   const [newFolderDialogOpen, setNewFolderDialogOpen] = useState(false);
   const [newFolderName, setNewFolderName] = useState("");
   const [isCreatingFolder, setIsCreatingFolder] = useState(false);
@@ -240,7 +251,7 @@ export function VideoZone({ courseId, initialVideos = [] }: VideoZoneProps) {
   const [draggedItemId, setDraggedItemId] = useState<string | null>(null);
   const [dragOverFolderId, setDragOverFolderId] = useState<string | null>(null);
   
-  const videoRef = useRef<HTMLVideoElement>(null);
+  const playerRef = useRef<ReactPlayer>(null);
   const playerContainerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -260,20 +271,6 @@ export function VideoZone({ courseId, initialVideos = [] }: VideoZoneProps) {
   useEffect(() => {
     refreshContent();
   }, [currentFolderId]);
-
-  // Auto-play when video changes
-  useEffect(() => {
-    if (videoRef.current && currentVideo) {
-      // Small timeout to ensure video element is ready
-      const timer = setTimeout(() => {
-        if (videoRef.current) {
-          videoRef.current.play().catch(console.error);
-          setIsPlaying(true);
-        }
-      }, 100);
-      return () => clearTimeout(timer);
-    }
-  }, [currentVideo]);
 
   const refreshContent = async () => {
     try {
@@ -327,8 +324,18 @@ export function VideoZone({ courseId, initialVideos = [] }: VideoZoneProps) {
     if (editingVideoId === video.id) return;
     setCurrentVideo(video);
     setProgress(0);
-    // isPlaying is set in the useEffect
+    setIsPlaying(true);
   };
+
+  const playNextVideo = useCallback(() => {
+    if (!currentVideo || videos.length <= 1) return;
+    
+    const currentIndex = videos.findIndex(v => v.id === currentVideo.id);
+    if (currentIndex !== -1 && currentIndex < videos.length - 1) {
+      const nextVideo = videos[currentIndex + 1];
+      handleVideoSelect(nextVideo);
+    }
+  }, [currentVideo, videos]);
 
   const handleFolderClick = (folder: VideoFolder) => {
     if (editingFolderId === folder.id) return;
@@ -344,28 +351,23 @@ export function VideoZone({ courseId, initialVideos = [] }: VideoZoneProps) {
   };
 
   // Optimize state updates to avoid excessive re-renders
-  const handleTimeUpdate = useCallback(() => {
-    if (videoRef.current && !isSeeking) {
-      const currentProgress = (videoRef.current.currentTime / videoRef.current.duration) * 100;
-      setProgress(isNaN(currentProgress) ? 0 : currentProgress);
+  const handleProgress = useCallback((state: { played: number; playedSeconds: number }) => {
+    if (!isSeeking) {
+      setProgress(state.played * 100);
     }
   }, [isSeeking]);
 
-  const handleLoadedMetadata = useCallback(() => {
-    if (videoRef.current) {
-      setDuration(videoRef.current.duration);
-      videoRef.current.playbackRate = playbackRate;
-      videoRef.current.volume = volume;
-    }
-  }, [playbackRate, volume]);
+  const handleDuration = useCallback((duration: number) => {
+    setDuration(duration);
+  }, []);
 
   const handleSeekChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const value = parseFloat(e.target.value);
     setProgress(value);
-    if (videoRef.current) {
-      videoRef.current.currentTime = (value / 100) * duration;
+    if (playerRef.current) {
+      playerRef.current.seekTo(value / 100);
     }
-  }, [duration]);
+  }, []);
 
   const handleSeekMouseDown = useCallback(() => {
     setIsSeeking(true);
@@ -379,9 +381,6 @@ export function VideoZone({ courseId, initialVideos = [] }: VideoZoneProps) {
     if (!document.fullscreenElement) {
       if (playerContainerRef.current?.requestFullscreen) {
         playerContainerRef.current.requestFullscreen();
-      } else if (videoRef.current && (videoRef.current as any).webkitEnterFullscreen) {
-        // Fallback for iOS
-        (videoRef.current as any).webkitEnterFullscreen();
       }
     } else {
       if (document.exitFullscreen) {
@@ -392,30 +391,19 @@ export function VideoZone({ courseId, initialVideos = [] }: VideoZoneProps) {
 
   const changePlaybackRate = useCallback((rate: number) => {
     setPlaybackRate(rate);
-    if (videoRef.current) {
-      videoRef.current.playbackRate = rate;
-    }
   }, []);
 
   const togglePlay = useCallback(() => {
-    if (videoRef.current) {
-      if (isPlaying) {
-        videoRef.current.pause();
-        setIsPlaying(false);
-      } else {
-        videoRef.current.play().catch(console.error);
-        setIsPlaying(true);
-      }
-    }
-  }, [isPlaying]);
+    setIsPlaying(prev => !prev);
+  }, []);
 
   const toggleMute = useCallback(() => {
-    if (videoRef.current) {
-      const newMutedState = !isMuted;
-      videoRef.current.muted = newMutedState;
-      setIsMuted(newMutedState);
-    }
-  }, [isMuted]);
+    setIsMuted(prev => !prev);
+  }, []);
+
+  const toggleAutoplay = useCallback(() => {
+    setIsAutoplayEnabled(prev => !prev);
+  }, []);
 
   const getProxyUrl = (originalUrl: string) => {
     try {
@@ -742,62 +730,76 @@ export function VideoZone({ courseId, initialVideos = [] }: VideoZoneProps) {
         {/* Video Container - Enforce 16:9 Aspect Ratio */}
         <div ref={playerContainerRef} className="relative aspect-video bg-black group flex-shrink-0">
           {currentVideo && mounted ? (
-            isYouTubeUrl(currentVideo.url) ? (
-              // YouTube Player (iframe embed)
-              <iframe
-                key={currentVideo.id}
-                src={`https://www.youtube.com/embed/${currentVideo.url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/|youtube\.com\/shorts\/)([^&\n?#]+)/)?.[1] || ""}?autoplay=1&rel=0`}
-                className="w-full h-full"
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                allowFullScreen
-                title={currentVideo.title}
+            <>
+              <ReactPlayer
+                ref={playerRef}
+                url={isYouTubeUrl(currentVideo.url) ? currentVideo.url : getProxyUrl(currentVideo.url)}
+                width="100%"
+                height="100%"
+                playing={isPlaying}
+                muted={isMuted}
+                volume={volume}
+                playbackRate={playbackRate}
+                onProgress={handleProgress}
+                onDuration={handleDuration}
+                onPlay={() => setIsPlaying(true)}
+                onPause={() => setIsPlaying(false)}
+                onEnded={() => {
+                  if (isAutoplayEnabled) {
+                    playNextVideo();
+                  } else {
+                    setIsPlaying(false);
+                  }
+                }}
+                config={{
+                  file: {
+                    attributes: {
+                      controlsList: 'nodownload',
+                      disablePictureInPicture: true,
+                      playsInline: true
+                    }
+                  },
+                  youtube: {
+                    playerVars: { 
+                      autoplay: 1,
+                      rel: 0,
+                      modestbranding: 1
+                    }
+                  }
+                }}
               />
-            ) : (
-              // Native Video Player for uploaded files
-              <>
-                <video
-                  ref={videoRef}
-                  key={currentVideo.id}
-                  src={getProxyUrl(currentVideo.url)}
-                  className="w-full h-full object-contain"
-                  onTimeUpdate={handleTimeUpdate}
-                  onLoadedMetadata={handleLoadedMetadata}
-                  onEnded={() => setIsPlaying(false)}
-                  onPlay={() => setIsPlaying(true)}
-                  onPause={() => setIsPlaying(false)}
-                  onError={(e) => console.error("Video error:", e)}
-                  playsInline
-                  preload="metadata"
+              
+              {/* Center Play Button (Only when paused and hovered) */}
+              {!isPlaying && (
+                <div 
+                  className="absolute inset-0 flex items-center justify-center cursor-pointer"
                   onClick={togglePlay}
-                />
-                
-                {/* Center Play Button (Only when paused and hovered) */}
-                {!isPlaying && (
-                  <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                     <div className="bg-black/50 p-4 rounded-full backdrop-blur-sm">
-                        <Play className="w-12 h-12 text-white fill-white" />
-                     </div>
-                  </div>
-                )}
+                >
+                   <div className="bg-black/50 p-4 rounded-full backdrop-blur-sm">
+                      <Play className="w-12 h-12 text-white fill-white" />
+                   </div>
+                </div>
+              )}
 
-                {/* Video Controls Overlay */}
-                <VideoControls 
-                  isPlaying={isPlaying}
-                  isMuted={isMuted}
-                  progress={progress}
-                  duration={duration}
-                  playbackRate={playbackRate}
-                  isFullscreen={isFullscreen}
-                  onPlayPause={togglePlay}
-                  onMuteToggle={toggleMute}
-                  onFullscreenToggle={toggleFullscreen}
-                  onPlaybackRateChange={changePlaybackRate}
-                  onSeekChange={handleSeekChange}
-                  onSeekMouseDown={handleSeekMouseDown}
-                  onSeekMouseUp={handleSeekMouseUp}
-                />
-              </>
-            )
+              {/* Video Controls Overlay */}
+              <VideoControls 
+                isPlaying={isPlaying}
+                isMuted={isMuted}
+                progress={progress}
+                duration={duration}
+                playbackRate={playbackRate}
+                isFullscreen={isFullscreen}
+                isAutoplayEnabled={isAutoplayEnabled}
+                onPlayPause={togglePlay}
+                onMuteToggle={toggleMute}
+                onFullscreenToggle={toggleFullscreen}
+                onAutoplayToggle={toggleAutoplay}
+                onPlaybackRateChange={changePlaybackRate}
+                onSeekChange={handleSeekChange}
+                onSeekMouseDown={handleSeekMouseDown}
+                onSeekMouseUp={handleSeekMouseUp}
+              />
+            </>
           ) : (
             <div className="absolute inset-0 flex flex-col items-center justify-center text-gray-500">
               <PlayCircle className="w-20 h-20 mb-4 opacity-50" />
