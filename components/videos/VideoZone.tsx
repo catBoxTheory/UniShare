@@ -1,17 +1,11 @@
 "use client";
 
-import { useState, useEffect, useRef, useCallback, memo } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { 
-  Play, Pause, Volume2, VolumeX, Maximize, Minimize, Clock, 
-  PlayCircle, Trash2, Folder, FolderPlus, ChevronLeft, ChevronRight, Settings, Pencil,
-  Youtube, Link, Loader2, Check
+  Clock, PlayCircle, Trash2, Folder, FolderPlus, ChevronLeft, ChevronRight, Pencil,
+  Youtube, Link, Loader2
 } from "lucide-react";
-import dynamic from "next/dynamic";
-import type ReactPlayerType from "react-player";
 import { Button } from "@/components/ui/button";
-
-// Dynamically import ReactPlayer to avoid SSR issues and resolve build errors
-const ReactPlayer = dynamic(() => import("react-player"), { ssr: false });
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { saveYouTubeVideo } from "@/app/actions/materials";
@@ -33,12 +27,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import {
   ContextMenu,
   ContextMenuContent,
@@ -67,148 +55,6 @@ interface VideoZoneProps {
   initialVideos?: Video[];
 }
 
-// Memoized Controls Component to prevent flickering
-interface VideoControlsProps {
-  isPlaying: boolean;
-  isMuted: boolean;
-  progress: number;
-  duration: number;
-  playbackRate: number;
-  isFullscreen: boolean;
-  isAutoplayEnabled: boolean;
-  onPlayPause: () => void;
-  onMuteToggle: () => void;
-  onFullscreenToggle: () => void;
-  onAutoplayToggle: () => void;
-  onPlaybackRateChange: (rate: number) => void;
-  onSeekChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
-  onSeekMouseDown: () => void;
-  onSeekMouseUp: () => void;
-}
-
-const VideoControls = memo(({
-  isPlaying,
-  isMuted,
-  progress,
-  duration,
-  playbackRate,
-  isFullscreen,
-  isAutoplayEnabled,
-  onPlayPause,
-  onMuteToggle,
-  onFullscreenToggle,
-  onAutoplayToggle,
-  onPlaybackRateChange,
-  onSeekChange,
-  onSeekMouseDown,
-  onSeekMouseUp
-}: VideoControlsProps) => {
-  const formatTime = (seconds: number) => {
-    if (isNaN(seconds)) return "0:00";
-    const mins = Math.floor(seconds / 60);
-    const secs = Math.floor(seconds % 60);
-    return `${mins}:${secs.toString().padStart(2, "0")}`;
-  };
-
-  return (
-    <div className={cn(
-      "absolute bottom-0 left-0 right-0 z-50 flex flex-col justify-end px-4 pb-3 pt-12",
-      "bg-gradient-to-t from-black/80 via-black/40 to-transparent",
-      "opacity-0 group-hover:opacity-100 transition-opacity duration-300",
-      !isPlaying && "opacity-100" // Keep visible when paused
-    )}>
-      {/* Progress Bar Container */}
-      <div className="group/progress relative h-1.5 hover:h-2.5 w-full cursor-pointer mb-3 transition-all">
-        {/* Background Track */}
-        <div className="absolute top-0 bottom-0 left-0 right-0 bg-white/20 rounded-full"></div>
-        
-        {/* Play Progress */}
-        <div 
-          className="absolute top-0 bottom-0 left-0 bg-red-600 rounded-full"
-          style={{ width: `${progress}%` }}
-        >
-           {/* Scrubber Knob (visible on hover) */}
-           <div className="absolute right-0 top-1/2 -translate-y-1/2 w-3.5 h-3.5 bg-red-600 rounded-full scale-0 group-hover/progress:scale-100 transition-transform"></div>
-        </div>
-
-        {/* Input Range (Invisible but interactive) */}
-        <input
-          type="range"
-          min="0"
-          max="100"
-          step="0.1"
-          value={progress}
-          onChange={onSeekChange}
-          onMouseDown={onSeekMouseDown}
-          onMouseUp={onSeekMouseUp}
-          className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-        />
-      </div>
-
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <Button 
-            variant="ghost" 
-            size="icon" 
-            onClick={onPlayPause} 
-            className="text-white hover:bg-white/10 hover:text-white w-10 h-10"
-          >
-            {isPlaying ? <Pause className="w-6 h-6 fill-white" /> : <Play className="w-6 h-6 fill-white" />}
-          </Button>
-          
-          <div className="flex items-center group/volume">
-            <Button 
-              variant="ghost" 
-              size="icon" 
-              onClick={onMuteToggle} 
-              className="text-white hover:bg-white/10 hover:text-white w-10 h-10"
-            >
-              {isMuted ? <VolumeX className="w-6 h-6" /> : <Volume2 className="w-6 h-6" />}
-            </Button>
-          </div>
-
-          <span className="text-sm font-medium text-white ml-2">
-            {formatTime((progress / 100) * duration)} / {formatTime(duration)}
-          </span>
-        </div>
-
-        <div className="flex items-center gap-2">
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon" className="text-white hover:bg-white/10 hover:text-white w-10 h-10">
-                <Settings className="w-5 h-5" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent disablePortal align="end" className="bg-black/90 border-gray-800 text-white">
-              <DropdownMenuItem onClick={onAutoplayToggle} className="flex items-center justify-between gap-4">
-                <span>Autoplay</span>
-                {isAutoplayEnabled && <Check className="w-4 h-4 text-blue-400" />}
-              </DropdownMenuItem>
-              <ContextMenuSeparator className="bg-gray-800" />
-              <DropdownMenuItem onClick={() => onPlaybackRateChange(0.5)}>0.5x</DropdownMenuItem>
-              <DropdownMenuItem onClick={() => onPlaybackRateChange(1.0)}>1.0x (Normal)</DropdownMenuItem>
-              <DropdownMenuItem onClick={() => onPlaybackRateChange(1.25)}>1.25x</DropdownMenuItem>
-              <DropdownMenuItem onClick={() => onPlaybackRateChange(1.5)}>1.5x</DropdownMenuItem>
-              <DropdownMenuItem onClick={() => onPlaybackRateChange(2.0)}>2.0x</DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-
-          <Button 
-            variant="ghost" 
-            size="icon" 
-            onClick={onFullscreenToggle} 
-            className="text-white hover:bg-white/10 hover:text-white w-10 h-10"
-          >
-            {isFullscreen ? <Minimize className="w-6 h-6" /> : <Maximize className="w-6 h-6" />}
-          </Button>
-        </div>
-      </div>
-    </div>
-  );
-});
-
-VideoControls.displayName = "VideoControls";
-
 export function VideoZone({ courseId, initialVideos = [] }: VideoZoneProps) {
   const [videos, setVideos] = useState<Video[]>(initialVideos);
   const [folders, setFolders] = useState<VideoFolder[]>([]);
@@ -216,19 +62,12 @@ export function VideoZone({ courseId, initialVideos = [] }: VideoZoneProps) {
   const [currentFolder, setCurrentFolder] = useState<VideoFolder | null>(null);
   const [folderPath, setFolderPath] = useState<VideoFolder[]>([]);
   const [currentVideo, setCurrentVideo] = useState<Video | null>(null);
-  const [isPlaying, setIsPlaying] = useState(false);
-  const [isMuted, setIsMuted] = useState(false);
-  const [progress, setProgress] = useState(0);
-  const [duration, setDuration] = useState(0);
-  const [playbackRate, setPlaybackRate] = useState(1.0);
-  const [isSeeking, setIsSeeking] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [mounted, setMounted] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [videoToDelete, setVideoToDelete] = useState<Video | null>(null);
   const [folderToDelete, setFolderToDelete] = useState<VideoFolder | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
-  const [volume, setVolume] = useState(1);
   const [isAutoplayEnabled, setIsAutoplayEnabled] = useState(true);
   const [newFolderDialogOpen, setNewFolderDialogOpen] = useState(false);
   const [newFolderName, setNewFolderName] = useState("");
@@ -255,7 +94,6 @@ export function VideoZone({ courseId, initialVideos = [] }: VideoZoneProps) {
   const [draggedItemId, setDraggedItemId] = useState<string | null>(null);
   const [dragOverFolderId, setDragOverFolderId] = useState<string | null>(null);
   
-  const playerRef = useRef<ReactPlayerType>(null);
   const playerContainerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -266,11 +104,31 @@ export function VideoZone({ courseId, initialVideos = [] }: VideoZoneProps) {
       setIsFullscreen(!!document.fullscreenElement);
     };
 
+    // Listen for YouTube player state changes via postMessage
+    const handleMessage = (event: MessageEvent) => {
+      if (event.origin !== "https://www.youtube.com") return;
+      
+      try {
+        const data = typeof event.data === 'string' ? JSON.parse(event.data) : event.data;
+        // YouTube player state: 0 = ended
+        if (data.event === 'onStateChange' && data.info === 0) {
+          if (isAutoplayEnabled) {
+            playNextVideo();
+          }
+        }
+      } catch (e) {
+        // Ignore parsing errors
+      }
+    };
+
     document.addEventListener("fullscreenchange", handleFullscreenChange);
+    window.addEventListener("message", handleMessage);
+    
     return () => {
       document.removeEventListener("fullscreenchange", handleFullscreenChange);
+      window.removeEventListener("message", handleMessage);
     };
-  }, []);
+  }, [isAutoplayEnabled, playNextVideo]);
 
   useEffect(() => {
     refreshContent();
@@ -327,8 +185,6 @@ export function VideoZone({ courseId, initialVideos = [] }: VideoZoneProps) {
   const handleVideoSelect = (video: Video) => {
     if (editingVideoId === video.id) return;
     setCurrentVideo(video);
-    setProgress(0);
-    setIsPlaying(true);
   };
 
   const playNextVideo = useCallback(() => {
@@ -337,7 +193,7 @@ export function VideoZone({ courseId, initialVideos = [] }: VideoZoneProps) {
     const currentIndex = videos.findIndex(v => v.id === currentVideo.id);
     if (currentIndex !== -1 && currentIndex < videos.length - 1) {
       const nextVideo = videos[currentIndex + 1];
-      handleVideoSelect(nextVideo);
+      setCurrentVideo(nextVideo);
     }
   }, [currentVideo, videos]);
 
@@ -354,33 +210,6 @@ export function VideoZone({ courseId, initialVideos = [] }: VideoZoneProps) {
     }
   };
 
-  // Optimize state updates to avoid excessive re-renders
-  const handleProgress = useCallback((state: { played: number; playedSeconds: number }) => {
-    if (!isSeeking) {
-      setProgress(state.played * 100);
-    }
-  }, [isSeeking]);
-
-  const handleDuration = useCallback((duration: number) => {
-    setDuration(duration);
-  }, []);
-
-  const handleSeekChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = parseFloat(e.target.value);
-    setProgress(value);
-    if (playerRef.current) {
-      playerRef.current.seekTo(value / 100);
-    }
-  }, []);
-
-  const handleSeekMouseDown = useCallback(() => {
-    setIsSeeking(true);
-  }, []);
-
-  const handleSeekMouseUp = useCallback(() => {
-    setIsSeeking(false);
-  }, []);
-
   const toggleFullscreen = useCallback(() => {
     if (!document.fullscreenElement) {
       if (playerContainerRef.current?.requestFullscreen) {
@@ -392,40 +221,6 @@ export function VideoZone({ courseId, initialVideos = [] }: VideoZoneProps) {
       }
     }
   }, []);
-
-  const changePlaybackRate = useCallback((rate: number) => {
-    setPlaybackRate(rate);
-  }, []);
-
-  const togglePlay = useCallback(() => {
-    setIsPlaying(prev => !prev);
-  }, []);
-
-  const toggleMute = useCallback(() => {
-    setIsMuted(prev => !prev);
-  }, []);
-
-  const toggleAutoplay = useCallback(() => {
-    setIsAutoplayEnabled(prev => !prev);
-  }, []);
-
-  const getProxyUrl = (originalUrl: string) => {
-    try {
-      if (originalUrl.startsWith("/")) return originalUrl;
-      // Don't proxy YouTube URLs
-      if (originalUrl.includes("youtube.com") || originalUrl.includes("youtu.be")) {
-        return originalUrl;
-      }
-      const url = new URL(originalUrl);
-      if (url.port === "9000" || url.hostname.includes("r2.dev") || url.hostname.includes("r2.cloudflarestorage.com")) {
-        const key = url.pathname.replace(/^\//, "").replace(/^unishare-bucket\//, "");
-        return `/api/proxy/${key}`;
-      }
-      return originalUrl;
-    } catch (e) {
-      return originalUrl;
-    }
-  };
 
   // Check if URL is a YouTube URL
   const isYouTubeUrl = (url: string) => {
@@ -740,82 +535,16 @@ export function VideoZone({ courseId, initialVideos = [] }: VideoZoneProps) {
         {/* Video Container - Enforce 16:9 Aspect Ratio */}
         <div ref={playerContainerRef} className="relative aspect-video bg-black group flex-shrink-0">
           {currentVideo && mounted ? (
-            isYouTubeUrl(currentVideo.url) ? (
-              // YouTube Video - Use native iframe for reliability
-              <iframe
-                key={currentVideo.id}
-                src={`https://www.youtube.com/embed/${getYouTubeVideoId(currentVideo.url)}?autoplay=1&rel=0&modestbranding=1`}
-                className="w-full h-full"
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                allowFullScreen
-                title={currentVideo.title}
-              />
-            ) : (
-              // Local/Uploaded Video - Use ReactPlayer
-              <>
-                <ReactPlayer
-                  ref={playerRef}
-                  url={getProxyUrl(currentVideo.url)}
-                  width="100%"
-                  height="100%"
-                  playing={isPlaying}
-                  muted={isMuted}
-                  volume={volume}
-                  playbackRate={playbackRate}
-                  onProgress={handleProgress}
-                  onDuration={handleDuration}
-                  onPlay={() => setIsPlaying(true)}
-                  onPause={() => setIsPlaying(false)}
-                  onEnded={() => {
-                    if (isAutoplayEnabled) {
-                      playNextVideo();
-                    } else {
-                      setIsPlaying(false);
-                    }
-                  }}
-                  config={{
-                    file: {
-                      attributes: {
-                        controlsList: 'nodownload',
-                        disablePictureInPicture: true,
-                        playsInline: true
-                      }
-                    }
-                  }}
-                />
-                
-                {/* Center Play Button (Only when paused) */}
-                {!isPlaying && (
-                  <div 
-                    className="absolute inset-0 flex items-center justify-center cursor-pointer"
-                    onClick={togglePlay}
-                  >
-                     <div className="bg-black/50 p-4 rounded-full backdrop-blur-sm">
-                        <Play className="w-12 h-12 text-white fill-white" />
-                     </div>
-                  </div>
-                )}
-
-                {/* Video Controls Overlay */}
-                <VideoControls 
-                  isPlaying={isPlaying}
-                  isMuted={isMuted}
-                  progress={progress}
-                  duration={duration}
-                  playbackRate={playbackRate}
-                  isFullscreen={isFullscreen}
-                  isAutoplayEnabled={isAutoplayEnabled}
-                  onPlayPause={togglePlay}
-                  onMuteToggle={toggleMute}
-                  onFullscreenToggle={toggleFullscreen}
-                  onAutoplayToggle={toggleAutoplay}
-                  onPlaybackRateChange={changePlaybackRate}
-                  onSeekChange={handleSeekChange}
-                  onSeekMouseDown={handleSeekMouseDown}
-                  onSeekMouseUp={handleSeekMouseUp}
-                />
-              </>
-            )
+            // YouTube Video - Use iframe with enablejsapi for autoplay detection
+            <iframe
+              key={currentVideo.id}
+              id="youtube-player"
+              src={`https://www.youtube.com/embed/${getYouTubeVideoId(currentVideo.url)}?autoplay=1&rel=0&modestbranding=1&enablejsapi=1`}
+              className="w-full h-full"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+              allowFullScreen
+              title={currentVideo.title}
+            />
           ) : (
             <div className="absolute inset-0 flex flex-col items-center justify-center text-gray-500">
               <PlayCircle className="w-20 h-20 mb-4 opacity-50" />
