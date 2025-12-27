@@ -101,18 +101,23 @@ export function DocumentUpload({ courseId, folderId, onUploadComplete }: Documen
       
       try {
         // 1. Get Presigned URL
-        const presignedRes = await fetch("/api/upload/presigned", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            fileName: selectedFile.file.name,
-            contentType: selectedFile.file.type || "application/octet-stream",
-          }),
-        });
+        let presignedRes: Response;
+        try {
+          presignedRes = await fetch("/api/upload/presigned", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              fileName: selectedFile.file.name,
+              contentType: selectedFile.file.type || "application/octet-stream",
+            }),
+          });
+        } catch (fetchError: any) {
+          throw new Error(`Network error: ${fetchError.message}`);
+        }
 
         if (!presignedRes.ok) {
           const errorData = await presignedRes.json().catch(() => ({}));
-          throw new Error(errorData.error || "Failed to get upload URL");
+          throw new Error(errorData.error || `Server error (${presignedRes.status})`);
         }
         
         const { uploadUrl, publicUrl } = await presignedRes.json();
