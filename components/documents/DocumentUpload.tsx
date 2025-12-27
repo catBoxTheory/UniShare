@@ -176,6 +176,9 @@ export function DocumentUpload({ courseId, folderId, onUploadComplete }: Documen
         }
         
         const { uploadUrl, publicUrl } = await presignedRes.json();
+        
+        // Debug: Log the first part of the upload URL (safely)
+        console.log(`[DocumentUpload] Starting upload to: ${uploadUrl.split('?')[0]}`);
 
         // 2. Upload directly to R2 with progress tracking
         const contentType = selectedFile.file.type || "application/octet-stream";

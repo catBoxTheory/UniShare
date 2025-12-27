@@ -11,7 +11,19 @@ const cleanEnvVar = (val: string | undefined) => {
     return res.trim();
 };
 
-const endpoint = cleanEnvVar(process.env.STORAGE_ENDPOINT || process.env.MINIO_ENDPOINT || "http://localhost:9000").replace(/\/$/, "");
+const rawEndpoint = cleanEnvVar(process.env.STORAGE_ENDPOINT || process.env.MINIO_ENDPOINT || "http://localhost:9000").replace(/\/$/, "");
+
+// Sanitize endpoint: R2 endpoints often come with the bucket name appended in the UI, 
+// but the S3 client needs the base URL only when forcePathStyle is true.
+let endpoint = rawEndpoint;
+if (rawEndpoint.includes("r2.cloudflarestorage.com")) {
+  const match = rawEndpoint.match(/https:\/\/[^/]+/);
+  if (match) {
+    endpoint = match[0];
+    console.log(`[Storage] Sanitized R2 endpoint from ${rawEndpoint} to ${endpoint}`);
+  }
+}
+
 const accessKeyId = cleanEnvVar(process.env.STORAGE_ACCESS_KEY || process.env.MINIO_ACCESS_KEY || "minioadmin");
 const secretAccessKey = cleanEnvVar(process.env.STORAGE_SECRET_KEY || process.env.MINIO_SECRET_KEY || "minioadmin");
 export const storageBucketName = cleanEnvVar(process.env.STORAGE_BUCKET_NAME || process.env.MINIO_BUCKET_NAME || "unishare-bucket");
