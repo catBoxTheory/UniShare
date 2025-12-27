@@ -53,7 +53,7 @@ const CoursePage = async ({ params, searchParams }: CoursePageProps) => {
       courseId: params.courseId,
       type: { not: MaterialType.VIDEO }
     },
-    orderBy: { createdAt: "desc" },
+    orderBy: { title: "asc" },
     select: {
       id: true,
       title: true,
@@ -68,7 +68,7 @@ const CoursePage = async ({ params, searchParams }: CoursePageProps) => {
       courseId: params.courseId,
       type: MaterialType.VIDEO
     },
-    orderBy: { createdAt: "desc" },
+    orderBy: { title: "asc" },
     select: {
       id: true,
       title: true,

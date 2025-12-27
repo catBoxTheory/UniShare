@@ -34,7 +34,7 @@ export async function GET(req: NextRequest) {
     const videos = await prisma.material.findMany({
       where: whereClause,
       orderBy: {
-        createdAt: "desc"
+        title: "asc"
       },
       select: {
         id: true,
