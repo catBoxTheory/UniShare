@@ -40,28 +40,48 @@ export async function GET(req: NextRequest) {
 
   try {
     // 1. Fetch transcript list to find available languages
-    const transcriptList = await YoutubeTranscript.fetchTranscript(videoId, { lang: 'en' }).catch(() => null);
-    
-    let transcript = transcriptList;
+    let transcript = await YoutubeTranscript.fetchTranscript(videoId, { lang: 'en' }).catch(() => null);
 
-    // If default English fetch failed, try to list all available transcripts and pick one
+    // If default English fetch failed, try deep extraction from video page
     if (!transcript) {
       try {
-        const videoPageResponse = await fetch(`https://www.youtube.com/watch?v=${videoId}`);
+        const videoPageResponse = await fetch(`https://www.youtube.com/watch?v=${videoId}`, {
+          headers: {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+            'Accept-Language': 'en-US,en;q=0.9',
+          }
+        });
         const videoPageHtml = await videoPageResponse.text();
+        
+        // Extract captionTracks json
         const captionDataMatch = videoPageHtml.match(/"captionTracks":(\[.*?\])/);
         
         if (captionDataMatch) {
           const captionTracks = JSON.parse(captionDataMatch[1]);
-          // Find any English track (auto-generated or manual)
-          const englishTrack = captionTracks.find((track: any) => track.languageCode.startsWith('en'));
+          // Prioritize manually created English, then auto-generated English
+          const englishTrack = captionTracks.find((track: any) => track.languageCode === 'en' && !track.kind) || 
+                               captionTracks.find((track: any) => track.languageCode.startsWith('en'));
           
-          if (englishTrack) {
-            transcript = await YoutubeTranscript.fetchTranscript(videoId, { lang: englishTrack.languageCode });
+          if (englishTrack && englishTrack.baseUrl) {
+            // Fetch the XML transcript from the baseUrl
+            const xmlResponse = await fetch(englishTrack.baseUrl);
+            const xmlText = await xmlResponse.text();
+            
+            // Simple XML parsing to match YoutubeTranscript format
+            // XML format: <text start="0.0" dur="1.2">Hello</text>
+            const matches = [...xmlText.matchAll(/<text start="([\d.]+)" dur="([\d.]+)"[^>]*>(.*?)<\/text>/g)];
+            
+            if (matches.length > 0) {
+              transcript = matches.map(m => ({
+                text: he.decode(m[3]),
+                offset: parseFloat(m[1]) * 1000, // Convert to ms
+                duration: parseFloat(m[2]) * 1000
+              }));
+            }
           }
         }
       } catch (e) {
-        console.log("Fallback transcript search failed");
+        console.error("Deep extraction failed:", e);
       }
     }
     
