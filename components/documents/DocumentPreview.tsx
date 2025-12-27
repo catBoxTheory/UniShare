@@ -62,7 +62,7 @@ export function DocumentPreview({ document }: DocumentPreviewProps) {
       loadNotebook(safeUrl);
     } else if (document && document.title.toLowerCase().endsWith('.csv')) {
       loadCSV(safeUrl);
-    } else if (document && document.title.toLowerCase().endsWith('.txt')) {
+    } else if (document && (document.title.toLowerCase().endsWith('.txt') || document.title.toLowerCase().endsWith('.py'))) {
       loadText(safeUrl);
     } else {
       setNotebookData(null);
@@ -133,6 +133,7 @@ export function DocumentPreview({ document }: DocumentPreviewProps) {
   const isPPT = fileName.endsWith('.ppt') || fileName.endsWith('.pptx');
   const isCSV = fileName.endsWith('.csv');
   const isTXT = fileName.endsWith('.txt');
+  const isPY = fileName.endsWith('.py');
   const isDOC = fileName.endsWith('.doc') || fileName.endsWith('.docx');
 
   // PDF Preview
@@ -347,6 +348,37 @@ export function DocumentPreview({ document }: DocumentPreviewProps) {
             </div>
           ) : (
             <div className="text-center py-8 text-gray-500">Failed to load CSV</div>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  // Python Preview
+  if (isPY) {
+    return (
+      <div className="h-full flex flex-col">
+        <div className="flex items-center justify-between p-3 border-b bg-gray-50">
+          <h3 className="font-medium text-sm truncate flex-1 flex items-center gap-2">
+            <span className="text-blue-500 font-bold">Py</span>
+            {document.title}
+          </h3>
+          <Button variant="outline" size="sm" asChild>
+            <a href={safeUrl} download>
+              <Download className="w-4 h-4 mr-1" />
+              Download
+            </a>
+          </Button>
+        </div>
+        <div className="flex-1 overflow-auto p-4 bg-[#1e1e1e]">
+          {loading ? (
+            <div className="text-center py-8 text-gray-400">Loading code...</div>
+          ) : textData !== null ? (
+            <pre className="whitespace-pre-wrap font-mono text-sm text-[#d4d4d4]">
+              {textData}
+            </pre>
+          ) : (
+            <div className="text-center py-8 text-gray-400">Failed to load code content</div>
           )}
         </div>
       </div>
