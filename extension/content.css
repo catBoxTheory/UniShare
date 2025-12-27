@@ -1,74 +1,79 @@
-/* UniShare Bilingual Subtitles - Styles */
+/* UniShare 雙語字幕樣式 */
 
 #unishare-bilingual-captions {
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-  transition: opacity 0.2s ease;
+  position: fixed;
+  bottom: 100px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 2147483647;
+  pointer-events: none;
+  text-align: center;
+  max-width: 85%;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+#unishare-bilingual-captions.visible {
+  opacity: 1;
 }
 
 .unishare-caption-box {
   display: inline-block;
-  background: rgba(0, 0, 0, 0.85);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-  padding: 12px 20px;
-  border-radius: 8px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+  background: rgba(0, 0, 0, 0.9);
+  padding: 10px 18px;
+  border-radius: 6px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.5);
   max-width: 100%;
+  border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .unishare-caption-en {
   color: #ffffff;
-  font-size: 18px;
+  font-size: 17px;
   font-weight: 500;
-  line-height: 1.4;
-  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
-  margin-bottom: 6px;
+  line-height: 1.5;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8);
 }
 
 .unishare-caption-zh {
   color: #ffd700;
-  font-size: 16px;
+  font-size: 15px;
   font-weight: 400;
-  line-height: 1.4;
-  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
+  line-height: 1.5;
+  margin-top: 4px;
+  font-family: -apple-system, BlinkMacSystemFont, 'Microsoft JhengHei', 'PingFang TC', sans-serif;
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8);
 }
 
-.unishare-caption-zh.unishare-loading {
-  color: #888;
-  font-style: italic;
-}
-
-/* Fullscreen adjustments */
-:fullscreen #unishare-bilingual-captions,
-:-webkit-full-screen #unishare-bilingual-captions {
-  bottom: 100px;
-}
-
-.unishare-caption-box:only-child .unishare-caption-en:only-child {
+/* 只有英文時不需要 margin */
+.unishare-caption-box .unishare-caption-en:only-child {
   margin-bottom: 0;
 }
 
-/* Animation */
-@keyframes unishare-fade-in {
-  from {
-    opacity: 0;
-    transform: translateY(10px);
+/* 全螢幕模式調整 */
+:fullscreen #unishare-bilingual-captions,
+:-webkit-full-screen #unishare-bilingual-captions,
+:-moz-full-screen #unishare-bilingual-captions {
+  bottom: 120px;
+}
+
+/* 小螢幕調整 */
+@media (max-width: 768px) {
+  #unishare-bilingual-captions {
+    bottom: 80px;
+    max-width: 95%;
   }
-  to {
-    opacity: 1;
-    transform: translateY(0);
+  
+  .unishare-caption-en {
+    font-size: 15px;
+  }
+  
+  .unishare-caption-zh {
+    font-size: 13px;
+  }
+  
+  .unishare-caption-box {
+    padding: 8px 14px;
   }
 }
-
-.unishare-caption-box {
-  animation: unishare-fade-in 0.2s ease;
-}
-
-/* Hide YouTube's default captions when our extension is active */
-/* Uncomment if you want to hide YouTube's captions completely */
-/*
-.ytp-caption-window-container {
-  display: none !important;
-}
-*/
-

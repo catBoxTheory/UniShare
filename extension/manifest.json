@@ -1,14 +1,16 @@
 {
   "manifest_version": 3,
-  "name": "UniShare Bilingual Subtitles",
-  "version": "1.0.0",
-  "description": "Real-time English to Traditional Chinese subtitle translation for YouTube videos",
+  "name": "UniShare 雙語字幕",
+  "version": "1.1.0",
+  "description": "YouTube 英文字幕即時翻譯成繁體中文",
   "permissions": [
     "activeTab",
     "storage"
   ],
   "host_permissions": [
     "https://www.youtube.com/*",
+    "https://*.youtube.com/*",
+    "https://unishare.dpdns.org/*",
     "https://api.deepseek.com/*"
   ],
   "action": {
@@ -21,16 +23,21 @@
   },
   "content_scripts": [
     {
-      "matches": ["https://www.youtube.com/*"],
+      "matches": [
+        "https://www.youtube.com/*",
+        "https://*.youtube.com/*",
+        "https://unishare.dpdns.org/*"
+      ],
       "js": ["content.js"],
       "css": ["content.css"],
-      "run_at": "document_start"
+      "run_at": "document_idle",
+      "all_frames": true
     }
   ],
   "web_accessible_resources": [
     {
       "resources": ["images/*.png"],
-      "matches": ["https://www.youtube.com/*"]
+      "matches": ["<all_urls>"]
     }
   ],
   "icons": {
@@ -39,4 +46,3 @@
     "128": "images/icon128.png"
   }
 }
-

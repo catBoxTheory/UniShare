@@ -1,10 +1,10 @@
-// UniShare Bilingual Subtitles - Content Script
-// This script runs on YouTube pages and intercepts caption data
+// UniShare 雙語字幕 - Content Script
+// 支援 YouTube.com 和 UniShare 嵌入式影片
 
 (function() {
   'use strict';
 
-  // DeepSeek API Key (hardcoded for convenience)
+  // DeepSeek API Key
   const DEEPSEEK_API_KEY = 'sk-08c0456fbccd466b9b94b660bd6fbcb6';
   
   // Settings
@@ -16,12 +16,12 @@
   
   // State
   let captionContainer = null;
-  let currentVideoId = null;
-  let captionData = [];
   let translationCache = new Map();
-  let isTranslating = false;
   let lastCaptionText = '';
-  let observer = null;
+  let currentTranslation = '';
+  let isTranslating = false;
+  let hideTimeout = null;
+  let checkInterval = null;
 
   // Load settings
   chrome.storage.local.get({
@@ -39,31 +39,20 @@
   chrome.runtime.onMessage.addListener((message) => {
     if (message.type === 'settingsChanged') {
       Object.assign(settings, message);
-      
       if (settings.enabled) {
         init();
       } else {
         cleanup();
       }
-      
-      updateCaptionVisibility();
     }
   });
 
   function init() {
-    console.log('[UniShare] Initializing bilingual subtitles...');
+    console.log('[UniShare] 初始化雙語字幕...');
+    console.log('[UniShare] 當前頁面:', window.location.href);
     
-    // Create caption container
     createCaptionContainer();
-    
-    // Start observing for caption changes
-    startCaptionObserver();
-    
-    // Also try to intercept caption data from page
-    interceptCaptionData();
-    
-    // Monitor for video changes
-    monitorVideoChanges();
+    startCaptionMonitor();
   }
 
   function cleanup() {
@@ -71,144 +60,159 @@
       captionContainer.remove();
       captionContainer = null;
     }
-    if (observer) {
-      observer.disconnect();
-      observer = null;
+    if (checkInterval) {
+      clearInterval(checkInterval);
+      checkInterval = null;
     }
   }
 
   function createCaptionContainer() {
-    if (captionContainer) return;
+    // Remove existing container if any
+    const existing = document.getElementById('unishare-bilingual-captions');
+    if (existing) existing.remove();
     
     captionContainer = document.createElement('div');
     captionContainer.id = 'unishare-bilingual-captions';
-    captionContainer.style.cssText = `
-      position: fixed;
-      bottom: 80px;
-      left: 50%;
-      transform: translateX(-50%);
-      z-index: 999999;
-      pointer-events: none;
-      text-align: center;
-      max-width: 80%;
-      display: none;
-    `;
-    
     document.body.appendChild(captionContainer);
+    
+    console.log('[UniShare] 字幕容器已創建');
   }
 
-  function startCaptionObserver() {
-    // Observe YouTube's caption container for changes
-    const checkForCaptions = () => {
-      // YouTube's caption container
-      const ytCaptions = document.querySelector('.ytp-caption-window-container');
-      
-      if (ytCaptions && !observer) {
-        console.log('[UniShare] Found YouTube caption container, starting observer...');
-        
-        observer = new MutationObserver((mutations) => {
-          for (const mutation of mutations) {
-            if (mutation.type === 'childList' || mutation.type === 'characterData') {
-              handleCaptionChange();
-            }
-          }
-        });
-        
-        observer.observe(ytCaptions, {
-          childList: true,
-          subtree: true,
-          characterData: true
-        });
-        
-        // Also observe the parent for visibility changes
-        const captionWindow = document.querySelector('.ytp-caption-window-container');
-        if (captionWindow) {
-          observer.observe(captionWindow, {
-            attributes: true,
-            attributeFilter: ['style', 'class']
-          });
-        }
-      }
-    };
-    
-    // Check periodically for caption container
-    const interval = setInterval(() => {
-      checkForCaptions();
-      
-      // Also check for caption text directly
-      const captionSegments = document.querySelectorAll('.ytp-caption-segment');
-      if (captionSegments.length > 0) {
-        handleCaptionChange();
-      }
-    }, 500);
-    
-    // Store interval for cleanup
-    window._unishareInterval = interval;
-  }
-
-  function handleCaptionChange() {
-    if (!settings.enabled) return;
-    
-    // Get current caption text from YouTube's captions
-    const captionSegments = document.querySelectorAll('.ytp-caption-segment');
-    let captionText = '';
-    
-    captionSegments.forEach(segment => {
-      captionText += segment.textContent + ' ';
-    });
-    
-    captionText = captionText.trim();
-    
-    if (captionText && captionText !== lastCaptionText) {
-      lastCaptionText = captionText;
-      displayBilingualCaption(captionText);
+  function startCaptionMonitor() {
+    if (checkInterval) {
+      clearInterval(checkInterval);
     }
+    
+    // Check for captions every 200ms
+    checkInterval = setInterval(() => {
+      if (!settings.enabled) return;
+      
+      const captionText = findCaptionText();
+      
+      if (captionText && captionText !== lastCaptionText) {
+        lastCaptionText = captionText;
+        handleNewCaption(captionText);
+      }
+    }, 200);
+    
+    console.log('[UniShare] 字幕監控已啟動');
   }
 
-  async function displayBilingualCaption(englishText) {
+  function findCaptionText() {
+    // Method 1: YouTube's caption segments (direct YouTube)
+    let segments = document.querySelectorAll('.ytp-caption-segment');
+    if (segments.length > 0) {
+      return Array.from(segments).map(s => s.textContent).join(' ').trim();
+    }
+    
+    // Method 2: Look for captions in iframes (for embedded videos)
+    // Note: Due to cross-origin, we can only access same-origin iframes
+    const iframes = document.querySelectorAll('iframe[src*="youtube"]');
+    for (const iframe of iframes) {
+      try {
+        const iframeDoc = iframe.contentDocument || iframe.contentWindow?.document;
+        if (iframeDoc) {
+          segments = iframeDoc.querySelectorAll('.ytp-caption-segment');
+          if (segments.length > 0) {
+            return Array.from(segments).map(s => s.textContent).join(' ').trim();
+          }
+        }
+      } catch (e) {
+        // Cross-origin iframe, can't access
+      }
+    }
+    
+    // Method 3: Check for caption window container
+    const captionWindow = document.querySelector('.caption-window');
+    if (captionWindow) {
+      return captionWindow.textContent?.trim();
+    }
+    
+    // Method 4: Any element with caption-related class
+    const captionElements = document.querySelectorAll('[class*="caption"], [class*="subtitle"]');
+    for (const el of captionElements) {
+      const text = el.textContent?.trim();
+      if (text && text.length > 5 && text.length < 500) {
+        // Looks like a caption
+        return text;
+      }
+    }
+    
+    return null;
+  }
+
+  async function handleNewCaption(englishText) {
     if (!captionContainer || !settings.enabled) return;
     
-    // Check cache first
-    let chineseText = translationCache.get(englishText);
+    console.log('[UniShare] 新字幕:', englishText.substring(0, 50) + '...');
     
-    if (!chineseText && !isTranslating) {
-      isTranslating = true;
-      chineseText = await translateText(englishText);
-      if (chineseText) {
-        translationCache.set(englishText, chineseText);
-      }
-      isTranslating = false;
+    // Check cache first
+    if (translationCache.has(englishText)) {
+      currentTranslation = translationCache.get(englishText);
+      displayCaption(englishText, currentTranslation);
+      return;
     }
     
-    // Build caption HTML
+    // Show English immediately, translation will come
+    displayCaption(englishText, null);
+    
+    // Don't start new translation if one is in progress
+    if (isTranslating) {
+      return;
+    }
+    
+    // Translate
+    isTranslating = true;
+    const translation = await translateText(englishText);
+    isTranslating = false;
+    
+    if (translation) {
+      translationCache.set(englishText, translation);
+      currentTranslation = translation;
+      
+      // Only display if this is still the current caption
+      if (lastCaptionText === englishText) {
+        displayCaption(englishText, translation);
+      }
+    }
+  }
+
+  function displayCaption(englishText, chineseText) {
+    if (!captionContainer) return;
+    
+    // Clear hide timeout
+    if (hideTimeout) {
+      clearTimeout(hideTimeout);
+    }
+    
     let html = '<div class="unishare-caption-box">';
     
-    if (settings.showEnglish) {
+    if (settings.showEnglish && englishText) {
       html += `<div class="unishare-caption-en">${escapeHtml(englishText)}</div>`;
     }
     
-    if (settings.showChinese && chineseText) {
-      html += `<div class="unishare-caption-zh">${escapeHtml(chineseText)}</div>`;
-    } else if (settings.showChinese && !chineseText) {
-      html += `<div class="unishare-caption-zh unishare-loading">翻譯中...</div>`;
+    if (settings.showChinese) {
+      if (chineseText) {
+        html += `<div class="unishare-caption-zh">${escapeHtml(chineseText)}</div>`;
+      }
+      // Don't show "翻譯中" - just show English until translation is ready
     }
     
     html += '</div>';
     
     captionContainer.innerHTML = html;
-    captionContainer.style.display = 'block';
+    captionContainer.classList.add('visible');
     
-    // Hide after a delay if no new caption
-    clearTimeout(window._unishareHideTimeout);
-    window._unishareHideTimeout = setTimeout(() => {
+    // Hide after 5 seconds of no new caption
+    hideTimeout = setTimeout(() => {
       if (captionContainer) {
-        captionContainer.style.display = 'none';
+        captionContainer.classList.remove('visible');
       }
     }, 5000);
   }
 
   async function translateText(text) {
-    if (!text || text.length === 0) return '';
+    if (!text || text.length === 0) return null;
     
     try {
       const response = await fetch('https://api.deepseek.com/v1/chat/completions', {
@@ -222,216 +226,32 @@
           messages: [
             {
               role: 'system',
-              content: 'Translate the following English subtitle text to Traditional Chinese (繁體中文). Only output the translation, nothing else. Keep it concise for subtitles.'
+              content: '將以下英文字幕翻譯成繁體中文。只輸出翻譯結果，不要任何解釋。保持簡潔，適合字幕顯示。'
             },
             {
               role: 'user',
               content: text
             }
           ],
-          temperature: 0.7,
+          temperature: 0.3,
           max_tokens: 200
         })
       });
       
       if (!response.ok) {
-        console.error('[UniShare] Translation API error:', response.status);
+        console.error('[UniShare] 翻譯 API 錯誤:', response.status);
         return null;
       }
       
       const data = await response.json();
-      return data.choices?.[0]?.message?.content?.trim() || null;
+      const translation = data.choices?.[0]?.message?.content?.trim();
+      
+      console.log('[UniShare] 翻譯完成:', translation?.substring(0, 30) + '...');
+      return translation || null;
       
     } catch (error) {
-      console.error('[UniShare] Translation error:', error);
+      console.error('[UniShare] 翻譯錯誤:', error);
       return null;
-    }
-  }
-
-  function interceptCaptionData() {
-    // Try to intercept YouTube's internal caption data
-    // This is more reliable than scraping the DOM
-    
-    const script = document.createElement('script');
-    script.textContent = `
-      (function() {
-        // Intercept XMLHttpRequest for timedtext API
-        const originalOpen = XMLHttpRequest.prototype.open;
-        XMLHttpRequest.prototype.open = function(method, url) {
-          if (url && url.includes('timedtext')) {
-            this._isTimedText = true;
-            this._timedTextUrl = url;
-          }
-          return originalOpen.apply(this, arguments);
-        };
-        
-        const originalSend = XMLHttpRequest.prototype.send;
-        XMLHttpRequest.prototype.send = function() {
-          if (this._isTimedText) {
-            this.addEventListener('load', function() {
-              if (this.responseText) {
-                window.postMessage({
-                  type: 'UNISHARE_CAPTION_DATA',
-                  data: this.responseText,
-                  url: this._timedTextUrl
-                }, '*');
-              }
-            });
-          }
-          return originalSend.apply(this, arguments);
-        };
-        
-        // Also intercept fetch for modern YouTube
-        const originalFetch = window.fetch;
-        window.fetch = function(url, options) {
-          const promise = originalFetch.apply(this, arguments);
-          
-          if (url && typeof url === 'string' && url.includes('timedtext')) {
-            promise.then(response => {
-              response.clone().text().then(text => {
-                window.postMessage({
-                  type: 'UNISHARE_CAPTION_DATA',
-                  data: text,
-                  url: url
-                }, '*');
-              });
-            });
-          }
-          
-          return promise;
-        };
-        
-        console.log('[UniShare] Caption interceptor installed');
-      })();
-    `;
-    
-    document.documentElement.appendChild(script);
-    script.remove();
-    
-    // Listen for intercepted caption data
-    window.addEventListener('message', (event) => {
-      if (event.data && event.data.type === 'UNISHARE_CAPTION_DATA') {
-        console.log('[UniShare] Intercepted caption data');
-        parseCaptionData(event.data.data);
-      }
-    });
-  }
-
-  function parseCaptionData(data) {
-    try {
-      // Try to parse as XML
-      if (data.includes('<text')) {
-        const parser = new DOMParser();
-        const doc = parser.parseFromString(data, 'text/xml');
-        const textElements = doc.querySelectorAll('text');
-        
-        captionData = Array.from(textElements).map(el => ({
-          start: parseFloat(el.getAttribute('start')) * 1000,
-          duration: parseFloat(el.getAttribute('dur')) * 1000,
-          text: el.textContent
-        }));
-        
-        console.log('[UniShare] Parsed', captionData.length, 'caption segments');
-        
-        // Pre-translate all captions
-        preTranslateCaptions();
-      }
-    } catch (error) {
-      console.error('[UniShare] Failed to parse caption data:', error);
-    }
-  }
-
-  async function preTranslateCaptions() {
-    // Translate captions in batches
-    const untranslated = captionData.filter(c => !translationCache.has(c.text));
-    
-    if (untranslated.length === 0) return;
-    
-    console.log('[UniShare] Pre-translating', untranslated.length, 'captions...');
-    
-    // Batch translate (10 at a time)
-    for (let i = 0; i < untranslated.length; i += 10) {
-      const batch = untranslated.slice(i, i + 10);
-      const texts = batch.map((c, idx) => `${idx}|${c.text}`).join('\n');
-      
-      try {
-        const response = await fetch('https://api.deepseek.com/v1/chat/completions', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${DEEPSEEK_API_KEY}`
-          },
-          body: JSON.stringify({
-            model: 'deepseek-chat',
-            messages: [
-              {
-                role: 'system',
-                content: 'Translate English subtitles to Traditional Chinese. Input: "index|English". Output: "index|Chinese". One per line. Keep translations concise.'
-              },
-              { role: 'user', content: texts }
-            ],
-            temperature: 0.7
-          })
-        });
-        
-        if (response.ok) {
-          const data = await response.json();
-          const translated = data.choices?.[0]?.message?.content || '';
-          
-          translated.split('\n').forEach(line => {
-            const match = line.match(/^(\d+)\|(.*)$/);
-            if (match) {
-              const idx = parseInt(match[1]);
-              if (batch[idx]) {
-                translationCache.set(batch[idx].text, match[2].trim());
-              }
-            }
-          });
-        }
-      } catch (error) {
-        console.error('[UniShare] Batch translation error:', error);
-      }
-      
-      // Small delay between batches
-      await new Promise(r => setTimeout(r, 500));
-    }
-    
-    console.log('[UniShare] Pre-translation complete');
-  }
-
-  function monitorVideoChanges() {
-    // Watch for video ID changes
-    let lastUrl = location.href;
-    
-    const checkUrl = () => {
-      if (location.href !== lastUrl) {
-        lastUrl = location.href;
-        console.log('[UniShare] URL changed, resetting...');
-        
-        // Reset state
-        captionData = [];
-        lastCaptionText = '';
-        
-        // Re-initialize after a short delay
-        setTimeout(init, 1000);
-      }
-    };
-    
-    // Check periodically
-    setInterval(checkUrl, 1000);
-    
-    // Also listen for YouTube's navigation events
-    document.addEventListener('yt-navigate-finish', () => {
-      console.log('[UniShare] YouTube navigation detected');
-      setTimeout(init, 500);
-    });
-  }
-
-  function updateCaptionVisibility() {
-    if (!captionContainer) return;
-    
-    if (!settings.enabled) {
-      captionContainer.style.display = 'none';
     }
   }
 
@@ -441,14 +261,75 @@
     return div.innerHTML;
   }
 
-  // Initialize when DOM is ready
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', () => {
-      if (settings.enabled) init();
+  // Also try to observe YouTube's caption container directly
+  function observeYouTubeCaptions() {
+    const observer = new MutationObserver(() => {
+      const captionText = findCaptionText();
+      if (captionText && captionText !== lastCaptionText) {
+        lastCaptionText = captionText;
+        handleNewCaption(captionText);
+      }
     });
-  } else {
-    if (settings.enabled) init();
+    
+    // Try to find and observe YouTube's caption container
+    const findAndObserve = () => {
+      const captionContainer = document.querySelector('.ytp-caption-window-container');
+      if (captionContainer) {
+        observer.observe(captionContainer, {
+          childList: true,
+          subtree: true,
+          characterData: true
+        });
+        console.log('[UniShare] 正在觀察 YouTube 字幕容器');
+        return true;
+      }
+      return false;
+    };
+    
+    // Keep trying until found
+    if (!findAndObserve()) {
+      const retryInterval = setInterval(() => {
+        if (findAndObserve()) {
+          clearInterval(retryInterval);
+        }
+      }, 1000);
+      
+      // Stop trying after 30 seconds
+      setTimeout(() => clearInterval(retryInterval), 30000);
+    }
   }
 
-})();
+  // Initialize
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', () => {
+      if (settings.enabled) {
+        init();
+        observeYouTubeCaptions();
+      }
+    });
+  } else {
+    if (settings.enabled) {
+      init();
+      observeYouTubeCaptions();
+    }
+  }
 
+  // Re-initialize on YouTube navigation
+  document.addEventListener('yt-navigate-finish', () => {
+    console.log('[UniShare] YouTube 導航完成，重新初始化...');
+    lastCaptionText = '';
+    currentTranslation = '';
+    if (settings.enabled) {
+      init();
+      observeYouTubeCaptions();
+    }
+  });
+
+  // Also handle regular page visibility changes
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible' && settings.enabled) {
+      startCaptionMonitor();
+    }
+  });
+
+})();
