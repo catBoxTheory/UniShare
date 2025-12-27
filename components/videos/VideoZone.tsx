@@ -6,8 +6,12 @@ import {
   PlayCircle, Trash2, Folder, FolderPlus, ChevronLeft, ChevronRight, Settings, Pencil,
   Youtube, Link, Loader2, Check
 } from "lucide-react";
-import ReactPlayer from "react-player/lazy";
+import dynamic from "next/dynamic";
+import type ReactPlayerType from "react-player";
 import { Button } from "@/components/ui/button";
+
+// Dynamically import ReactPlayer to avoid SSR issues and resolve build errors
+const ReactPlayer = dynamic(() => import("react-player"), { ssr: false });
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { saveYouTubeVideo } from "@/app/actions/materials";
@@ -251,7 +255,7 @@ export function VideoZone({ courseId, initialVideos = [] }: VideoZoneProps) {
   const [draggedItemId, setDraggedItemId] = useState<string | null>(null);
   const [dragOverFolderId, setDragOverFolderId] = useState<string | null>(null);
   
-  const playerRef = useRef<ReactPlayer>(null);
+  const playerRef = useRef<ReactPlayerType>(null);
   const playerContainerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
