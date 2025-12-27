@@ -33,6 +33,68 @@ const INVIDIOUS_INSTANCES = [
   "https://invidious.protokolla.fi",
 ];
 
+// Direct YouTube timedtext API - try various language codes
+async function fetchFromTimedTextAPI(videoId: string): Promise<SubtitleSegment[] | null> {
+  // Try different language codes and formats
+  const langCodes = ['en', 'en-US', 'en-GB', 'a.en', 'asr'];
+  const formats = ['srv3', 'vtt', 'ttml', 'srv1'];
+  
+  for (const lang of langCodes) {
+    for (const fmt of formats) {
+      try {
+        // Try with auto-generated (asr) kind
+        const urls = [
+          `https://www.youtube.com/api/timedtext?v=${videoId}&lang=${lang}&fmt=${fmt}`,
+          `https://www.youtube.com/api/timedtext?v=${videoId}&lang=${lang}&fmt=${fmt}&kind=asr`,
+          `https://www.youtube.com/api/timedtext?v=${videoId}&lang=en&tlang=en&fmt=${fmt}`,
+        ];
+        
+        for (const url of urls) {
+          console.log(`[TimedText] Trying: ${url}`);
+          
+          const response = await fetch(url, {
+            headers: {
+              'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+              'Accept': '*/*',
+              'Accept-Language': 'en-US,en;q=0.9',
+              'Referer': `https://www.youtube.com/watch?v=${videoId}`,
+            }
+          });
+          
+          if (!response.ok) continue;
+          
+          const text = await response.text();
+          if (text.length < 100) continue;
+          
+          console.log(`[TimedText] Got response, length: ${text.length}`);
+          
+          // Try to parse as XML
+          if (text.includes('<text') || text.includes('<?xml')) {
+            const segments = parseXmlTranscript(text);
+            if (segments.length > 0) {
+              console.log(`[TimedText] Parsed ${segments.length} segments`);
+              return segments;
+            }
+          }
+          
+          // Try to parse as VTT
+          if (text.includes('WEBVTT') || text.includes('-->')) {
+            const segments = parseVttTranscript(text);
+            if (segments.length > 0) {
+              console.log(`[TimedText] Parsed ${segments.length} VTT segments`);
+              return segments;
+            }
+          }
+        }
+      } catch (e: any) {
+        console.log(`[TimedText] ${lang}/${fmt} failed: ${e.message}`);
+      }
+    }
+  }
+  
+  return null;
+}
+
 // Parse XML transcript format
 function parseXmlTranscript(xmlText: string): SubtitleSegment[] {
   const segments: SubtitleSegment[] = [];
@@ -448,27 +510,36 @@ export async function GET(req: NextRequest) {
       console.log(`[Transcript] youtube-transcript failed: ${e.message}`);
     }
     
-    // Method 2: Try YouTube Innertube API
+    // Method 2: Try direct TimedText API
     if (!transcript) {
-      console.log(`[Transcript] Method 2: YouTube Innertube API`);
+      console.log(`[Transcript] Method 2: Direct TimedText API`);
+      transcript = await fetchFromTimedTextAPI(videoId);
+      if (transcript) {
+        console.log(`[Transcript] SUCCESS via TimedText API: ${transcript.length} segments`);
+      }
+    }
+    
+    // Method 3: Try YouTube Innertube API
+    if (!transcript) {
+      console.log(`[Transcript] Method 3: YouTube Innertube API`);
       transcript = await fetchFromInnertube(videoId);
       if (transcript) {
         console.log(`[Transcript] SUCCESS via Innertube: ${transcript.length} segments`);
       }
     }
     
-    // Method 3: Try YouTube page scraping
+    // Method 4: Try YouTube page scraping
     if (!transcript) {
-      console.log(`[Transcript] Method 3: YouTube page scraping`);
+      console.log(`[Transcript] Method 4: YouTube page scraping`);
       transcript = await fetchFromYouTubeScrape(videoId);
       if (transcript) {
         console.log(`[Transcript] SUCCESS via YT-Scrape: ${transcript.length} segments`);
       }
     }
     
-    // Method 4: Try Invidious API
+    // Method 5: Try Invidious API
     if (!transcript) {
-      console.log(`[Transcript] Method 4: Invidious API`);
+      console.log(`[Transcript] Method 5: Invidious API`);
       transcript = await fetchFromInvidious(videoId);
       if (transcript) {
         console.log(`[Transcript] SUCCESS via Invidious: ${transcript.length} segments`);
