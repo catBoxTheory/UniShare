@@ -201,7 +201,9 @@ export function YouTubePlayer({ videoId, title, autoPlay = false, onEnded }: You
       {/* Error Toast if fetch failed */}
       {hasTranscriptError && showSubtitles && (
         <div className="absolute top-4 left-4 z-20 bg-black/60 text-white text-xs px-3 py-1.5 rounded backdrop-blur-md border border-white/10">
-          {errorMessage}
+          {errorMessage === "No subtitles available" 
+            ? "無字幕可用 (No subtitles available)" 
+            : `翻譯錯誤: ${errorMessage}`}
         </div>
       )}
     </div>
