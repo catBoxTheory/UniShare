@@ -92,50 +92,51 @@ export function DocumentUpload({ courseId, folderId, onUploadComplete }: Documen
     contentType: string,
     onProgress: (percent: number) => void
   ): Promise<void> => {
-    return new Promise((resolve, reject) => {
-      const xhr = new XMLHttpRequest();
-      
-      // Increase timeout for large files (10 minutes)
-      xhr.timeout = 600000;
-      
-      xhr.upload.addEventListener("progress", (event) => {
-        if (event.lengthComputable) {
-          const percent = Math.round((event.loaded / event.total) * 100);
-          onProgress(percent);
-        }
-      });
-      
-      xhr.addEventListener("load", () => {
-        if (xhr.status >= 200 && xhr.status < 300) {
-          resolve();
-        } else {
-          // Try to get error details from response
-          let errorMsg = `Upload failed (${xhr.status})`;
-          try {
-            if (xhr.responseText) {
-              errorMsg += `: ${xhr.responseText.substring(0, 100)}`;
-            }
-          } catch (e) {}
-          reject(new Error(errorMsg));
-        }
-      });
-      
-      xhr.addEventListener("error", () => {
-        reject(new Error("Network error. Check CORS or try a smaller file."));
-      });
-      
-      xhr.addEventListener("timeout", () => {
-        reject(new Error("Upload timeout - connection too slow"));
-      });
-      
-      xhr.addEventListener("abort", () => {
-        reject(new Error("Upload aborted"));
-      });
-      
-      xhr.open("PUT", url);
-      // Only set Content-Type, let browser handle Content-Length
-      xhr.setRequestHeader("Content-Type", contentType);
-      xhr.send(file);
+    return new Promise(async (resolve, reject) => {
+      try {
+        const xhr = new XMLHttpRequest();
+        
+        // Remove artificial timeout to let browser handle slow connections
+        xhr.timeout = 0;
+        
+        xhr.upload.addEventListener("progress", (event) => {
+          if (event.lengthComputable) {
+            const percent = Math.round((event.loaded / event.total) * 100);
+            onProgress(percent);
+          }
+        });
+        
+        xhr.addEventListener("load", () => {
+          if (xhr.status >= 200 && xhr.status < 300) {
+            resolve();
+          } else {
+            let errorMsg = `Upload failed (${xhr.status})`;
+            try {
+              if (xhr.responseText) {
+                errorMsg += `: ${xhr.responseText.substring(0, 100)}`;
+              }
+            } catch (e) {}
+            reject(new Error(errorMsg));
+          }
+        });
+        
+        xhr.addEventListener("error", () => {
+          reject(new Error("Network error. This might be a CORS issue or a temporary connection drop."));
+        });
+        
+        xhr.addEventListener("abort", () => {
+          reject(new Error("Upload aborted"));
+        });
+        
+        xhr.open("PUT", url);
+        xhr.setRequestHeader("Content-Type", contentType);
+
+        // Convert file to ArrayBuffer before sending - more stable for some browsers/networks
+        const arrayBuffer = await file.arrayBuffer();
+        xhr.send(arrayBuffer);
+      } catch (err: any) {
+        reject(new Error(`Pre-upload error: ${err.message}`));
+      }
     });
   };
 
