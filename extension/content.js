@@ -1,5 +1,5 @@
-// UniShare Bilingual Subtitles - Content Script
-// Final Robust "Tracy-like" implementation: Active Fetching + No Flickering
+// UniShare Bilingual Subtitles - Content Script (Active Fetch Mode)
+// Solves: Blinking, CC-off support, Fullscreen
 
 (function() {
   'use strict';
@@ -12,16 +12,19 @@
     showChinese: true
   };
   
-  // State
   let player = null;
   let videoElement = null;
   let subtitleContainer = null;
+  
+  // Data State
   let currentVideoId = null;
   let transcriptData = []; // [{start, duration, text, textZh}]
-  let translationCache = new Map(); // text -> textZh
+  let translationCache = new Map();
+  
+  // UI State
   let currentSubtitleIndex = -1;
+  let lastRenderedText = '';
   let isTranslating = false;
-  let hasFetchedForCurrentVideo = false;
   
   // Initialize
   chrome.storage.local.get(settings).then(s => {
@@ -33,22 +36,17 @@
     if (message.type === 'settingsChanged') {
       Object.assign(settings, message);
       if (settings.enabled) {
-        init();
+        if (!player) init();
+        else updateDisplay(true);
       } else {
         if (subtitleContainer) subtitleContainer.style.display = 'none';
       }
-      // Force update to show/hide languages
-      updateDisplay(true);
     }
   });
 
   function init() {
-    console.log('[UniShare] Initializing Active Fetch mode...');
-    
-    // 1. Hook into the player
+    console.log('[UniShare] Initializing Active Fetch Mode...');
     findPlayer();
-    
-    // 2. Monitor URL changes (SPA navigation)
     monitorUrl();
   }
 
@@ -57,166 +55,142 @@
     setInterval(() => {
       if (location.href !== lastUrl) {
         lastUrl = location.href;
-        handleVideoChange();
+        checkVideoChange();
       }
     }, 1000);
   }
 
-  function handleVideoChange() {
+  function checkVideoChange() {
     const urlParams = new URLSearchParams(window.location.search);
     const newVideoId = urlParams.get('v');
     
     if (newVideoId && newVideoId !== currentVideoId) {
-      console.log(`[UniShare] Video changed: ${newVideoId}`);
+      console.log(`[UniShare] New video detected: ${newVideoId}`);
       currentVideoId = newVideoId;
-      resetState();
+      transcriptData = [];
+      currentSubtitleIndex = -1;
+      lastRenderedText = '';
+      if (subtitleContainer) subtitleContainer.innerHTML = '';
       
-      // Delay slightly to let page load
-      setTimeout(() => fetchTranscript(newVideoId), 1000);
+      // Active Fetch: Don't wait for YouTube, fetch it ourselves
+      fetchCaptionTrack(newVideoId);
     }
   }
 
-  function resetState() {
-    transcriptData = [];
-    currentSubtitleIndex = -1;
-    hasFetchedForCurrentVideo = false;
-    if (subtitleContainer) subtitleContainer.innerHTML = '';
-  }
-
   function findPlayer() {
-    const interval = setInterval(() => {
+    const i = setInterval(() => {
       player = document.getElementById('movie_player') || document.querySelector('.html5-video-player');
       videoElement = document.querySelector('video');
       
       if (player && videoElement) {
-        clearInterval(interval);
-        console.log('[UniShare] Player found.');
-        createSubtitleContainer();
-        
-        // Use 'timeupdate' for sync
+        clearInterval(i);
+        setupContainer();
         videoElement.addEventListener('timeupdate', handleTimeUpdate);
-        
-        // Initial fetch if we have a video ID
-        const urlParams = new URLSearchParams(window.location.search);
-        const vid = urlParams.get('v');
-        if (vid) {
-          currentVideoId = vid;
-          fetchTranscript(vid);
-        }
+        checkVideoChange(); // Check immediately
       }
     }, 500);
   }
 
-  function createSubtitleContainer() {
-    if (document.getElementById('unishare-tracy-captions')) return;
-    
+  function setupContainer() {
+    if (subtitleContainer) return;
     subtitleContainer = document.createElement('div');
     subtitleContainer.id = 'unishare-tracy-captions';
     player.appendChild(subtitleContainer);
   }
 
-  // --- Active Fetching Logic ---
+  // --- Active Fetch Logic (The "Tracy" Secret) ---
 
-  async function fetchTranscript(videoId) {
-    if (hasFetchedForCurrentVideo) return;
-    hasFetchedForCurrentVideo = true;
-    
-    console.log(`[UniShare] Active fetching for ${videoId}...`);
-    
+  async function fetchCaptionTrack(videoId) {
     try {
-      // 1. Try to get ytInitialPlayerResponse from the page
-      // This works even if CC is off because the data is in the page source
-      let playerResponse = window.ytInitialPlayerResponse;
+      // 1. Get the video page content to find caption tracks
+      // This works even if CC is off because ytInitialPlayerResponse is always there
+      const response = await fetch(`https://www.youtube.com/watch?v=${videoId}`);
+      const html = await response.text();
       
-      // If variable not available (SPA navigation), fetch the page HTML
-      if (!playerResponse || !playerResponse.captions) {
-        console.log('[UniShare] Fetching page source for captions...');
-        const pageResponse = await fetch(`https://www.youtube.com/watch?v=${videoId}`);
-        const html = await pageResponse.text();
-        const match = html.match(/var\s+ytInitialPlayerResponse\s*=\s*(\{.+?\});/);
-        if (match) {
-          playerResponse = JSON.parse(match[1]);
-        }
-      }
-
-      if (!playerResponse || !playerResponse.captions) {
-        console.log('[UniShare] No captions found in player response.');
+      // Extract ytInitialPlayerResponse
+      const match = html.match(/ytInitialPlayerResponse\s*=\s*(\{.+?\});/);
+      if (!match) {
+        console.log('[UniShare] Could not find player response.');
         return;
       }
 
-      const tracks = playerResponse.captions.playerCaptionsTracklistRenderer?.captionTracks;
-      if (!tracks || tracks.length === 0) return;
+      const data = JSON.parse(match[1]);
+      const tracks = data.captions?.playerCaptionsTracklistRenderer?.captionTracks;
 
-      // Prioritize English
-      const englishTrack = tracks.find(t => t.languageCode === 'en' && !t.kind) || 
-                           tracks.find(t => t.languageCode === 'en') || 
-                           tracks.find(t => t.languageCode?.startsWith('en'));
+      if (!tracks || tracks.length === 0) {
+        console.log('[UniShare] No captions available.');
+        return;
+      }
 
-      if (!englishTrack) {
+      // Find English track (Prioritize manual over auto-generated)
+      const track = tracks.find(t => t.languageCode === 'en' && !t.kind) || 
+                    tracks.find(t => t.languageCode === 'en') ||
+                    tracks.find(t => t.languageCode?.startsWith('en'));
+
+      if (!track) {
         console.log('[UniShare] No English track found.');
         return;
       }
 
-      console.log(`[UniShare] Found track: ${englishTrack.baseUrl}`);
+      console.log(`[UniShare] Fetching transcript from: ${track.baseUrl}`);
       
-      // 2. Fetch the XML transcript
-      const xmlResponse = await fetch(englishTrack.baseUrl);
+      // 2. Fetch the XML transcript directly
+      const xmlResponse = await fetch(track.baseUrl);
       const xml = await xmlResponse.text();
       
-      parseTranscript(xml);
+      parseTranscriptXML(xml);
 
     } catch (e) {
       console.error('[UniShare] Fetch error:', e);
     }
   }
 
-  function parseTranscript(xml) {
+  function parseTranscriptXML(xml) {
     const parser = new DOMParser();
     const doc = parser.parseFromString(xml, 'text/xml');
-    const nodes = doc.querySelectorAll('text');
+    const textNodes = doc.querySelectorAll('text');
     
-    transcriptData = Array.from(nodes).map(node => ({
+    transcriptData = Array.from(textNodes).map(node => ({
       start: parseFloat(node.getAttribute('start')),
       duration: parseFloat(node.getAttribute('dur') || 0),
       text: decodeHTML(node.textContent),
-      textZh: null
+      textZh: null // Placeholder
     }));
 
-    console.log(`[UniShare] Parsed ${transcriptData.length} lines.`);
+    console.log(`[UniShare] Loaded ${transcriptData.length} lines.`);
     
-    // Start background translation
+    // Start translation immediately
     startBackgroundTranslation();
   }
 
-  function decodeHTML(html) {
-    const txt = document.createElement('textarea');
-    txt.innerHTML = html;
-    return txt.value.replace(/\n/g, ' ');
-  }
-
-  // --- Sync & Display (No Blinking) ---
+  // --- Display Logic (Anti-Blink) ---
 
   function handleTimeUpdate() {
     if (!transcriptData.length || !settings.enabled) return;
     
     const time = videoElement.currentTime;
     
-    // Find active subtitle
-    let activeIndex = -1;
-    
-    // Optimization: Check current or next
+    // Efficient search: start from current index
+    let index = -1;
     if (currentSubtitleIndex !== -1 && isInside(currentSubtitleIndex, time)) {
-      activeIndex = currentSubtitleIndex;
-    } else if (currentSubtitleIndex + 1 < transcriptData.length && isInside(currentSubtitleIndex + 1, time)) {
-      activeIndex = currentSubtitleIndex + 1;
+      index = currentSubtitleIndex;
     } else {
-      // Binary search could be better, but linear is fine
-      activeIndex = transcriptData.findIndex(s => time >= s.start && time < (s.start + s.duration));
+      // Look forward
+      for (let i = Math.max(0, currentSubtitleIndex); i < transcriptData.length; i++) {
+        if (isInside(i, time)) {
+          index = i;
+          break;
+        }
+        if (transcriptData[i].start > time) break; // Gone past
+      }
+      // If not found forward, look from beginning (seek backward case)
+      if (index === -1) {
+        index = transcriptData.findIndex(s => isInsideSegment(s, time));
+      }
     }
-    
-    // Only update if index CHANGED
-    if (activeIndex !== currentSubtitleIndex) {
-      currentSubtitleIndex = activeIndex;
+
+    if (index !== currentSubtitleIndex) {
+      currentSubtitleIndex = index;
       updateDisplay();
     }
   }
@@ -225,42 +199,50 @@
     const s = transcriptData[index];
     return s && time >= s.start && time < (s.start + s.duration);
   }
+  
+  function isInsideSegment(s, time) {
+    return time >= s.start && time < (s.start + s.duration);
+  }
 
   function updateDisplay(force = false) {
     if (!subtitleContainer) return;
-    
+
     if (currentSubtitleIndex === -1) {
-      subtitleContainer.innerHTML = ''; // Clear
+      if (subtitleContainer.innerHTML !== '') subtitleContainer.innerHTML = '';
+      lastRenderedText = '';
       return;
     }
 
     const item = transcriptData[currentSubtitleIndex];
-    if (!item) return;
-
-    // Check if we need to re-render (prevent blinking)
-    // We only re-render if the text content actually changed
-    // or if we are forcing an update (settings change)
     
-    // Construct HTML string
+    // Construct HTML signature to check for changes
+    // Important: We do NOT show "Translating..." text. We show nothing or just English.
+    // This prevents the blinking/flashing of "Translating..."
+    
+    const zhText = item.textZh || translationCache.get(item.text) || '';
+    const uniqueKey = `${item.text}_${zhText}_${settings.showEnglish}_${settings.showChinese}`;
+    
+    if (!force && uniqueKey === lastRenderedText) return; // Anti-blink: Do nothing if same
+    
+    lastRenderedText = uniqueKey;
+    
     let html = `<div class="unishare-tracy-box">`;
-    if (settings.showEnglish) html += `<div class="unishare-tracy-en">${item.text}</div>`;
-    
-    // Only show Chinese if available. No placeholders.
-    if (settings.showChinese && item.textZh) {
-      html += `<div class="unishare-tracy-zh">${item.textZh}</div>`;
+    if (settings.showEnglish) {
+      html += `<div class="unishare-tracy-en">${item.text}</div>`;
+    }
+    if (settings.showChinese && zhText) {
+      html += `<div class="unishare-tracy-zh">${zhText}</div>`;
     }
     html += `</div>`;
-
-    // Simple diff
-    if (force || subtitleContainer.innerHTML !== html) {
-      subtitleContainer.innerHTML = html;
-    }
+    
+    subtitleContainer.innerHTML = html;
+    subtitleContainer.style.display = 'block';
   }
 
-  // --- Translation Queue (No "Translating..." state) ---
+  // --- Robust Translation Queue ---
 
   async function startBackgroundTranslation() {
-    // Process in batches
+    // Translate in chunks of 15
     const BATCH_SIZE = 15;
     
     for (let i = 0; i < transcriptData.length; i += BATCH_SIZE) {
@@ -270,17 +252,16 @@
       const toTranslate = batch.filter(x => !x.textZh && !translationCache.has(x.text));
       
       if (toTranslate.length === 0) {
-        // Hydrate from cache
-        batch.forEach(x => { if (!x.textZh) x.textZh = translationCache.get(x.text); });
-        
-        // If current subtitle is in this batch, update display immediately
-        if (currentSubtitleIndex >= i && currentSubtitleIndex < i + BATCH_SIZE) {
-          updateDisplay();
-        }
+        // Fill from cache
+        batch.forEach(x => { 
+          if (!x.textZh && translationCache.has(x.text)) {
+            x.textZh = translationCache.get(x.text);
+          }
+        });
         continue;
       }
 
-      // Prepare API payload
+      // Prepare text block
       const textBlock = toTranslate.map((x, idx) => `${idx}|${x.text}`).join('\n');
       
       try {
@@ -300,34 +281,40 @@
           })
         });
         
-        const data = await res.json();
-        const raw = data.choices?.[0]?.message?.content || '';
-        
-        raw.split('\n').forEach(line => {
-          const match = line.match(/^(\d+)\|(.*)$/);
-          if (match) {
-            const idx = parseInt(match[1]);
-            const trans = match[2].trim();
-            if (toTranslate[idx]) {
-              toTranslate[idx].textZh = trans;
-              translationCache.set(toTranslate[idx].text, trans);
+        if (res.ok) {
+          const data = await res.json();
+          const raw = data.choices?.[0]?.message?.content || '';
+          
+          raw.split('\n').forEach(line => {
+            const match = line.match(/^(\d+)\|(.*)$/);
+            if (match) {
+              const idx = parseInt(match[1]);
+              const trans = match[2].trim();
+              if (toTranslate[idx]) {
+                toTranslate[idx].textZh = trans;
+                translationCache.set(toTranslate[idx].text, trans);
+              }
             }
+          });
+          
+          // If the current subtitle is in this batch, update display immediately
+          if (currentSubtitleIndex >= i && currentSubtitleIndex < i + BATCH_SIZE) {
+            updateDisplay(true);
           }
-        });
-        
-        // Update display if needed
-        if (currentSubtitleIndex >= i && currentSubtitleIndex < i + BATCH_SIZE) {
-          updateDisplay();
         }
-
       } catch (e) {
         console.error('Translation failed', e);
       }
       
-      // Delay to respect API limits
+      // Small delay to be nice to API
       await new Promise(r => setTimeout(r, 200));
     }
   }
 
-})();
+  function decodeHTML(html) {
+    const txt = document.createElement('textarea');
+    txt.innerHTML = html;
+    return txt.value.replace(/\n/g, ' ');
+  }
 
+})();
