@@ -41,7 +41,7 @@ export function DocumentUpload({ courseId, folderId, onUploadComplete }: Documen
     const validFiles = files.filter(isValidDocumentType);
     
     if (validFiles.length === 0) {
-      alert("Please upload PDF, IPYNB, or PPT/PPTX files.");
+      alert("Please upload PDF, IPYNB, CSV, or PPT/PPTX files.");
       return;
     }
     
@@ -60,7 +60,7 @@ export function DocumentUpload({ courseId, folderId, onUploadComplete }: Documen
     const validFiles = files.filter(isValidDocumentType);
     
     if (validFiles.length === 0 && files.length > 0) {
-      alert("Please upload PDF, IPYNB, or PPT/PPTX files.");
+      alert("Please upload PDF, IPYNB, CSV, or PPT/PPTX files.");
       return;
     }
     
@@ -78,7 +78,7 @@ export function DocumentUpload({ courseId, folderId, onUploadComplete }: Documen
   };
 
   const isValidDocumentType = (file: File): boolean => {
-    const validExtensions = ['.pdf', '.ipynb', '.ppt', '.pptx'];
+    const validExtensions = ['.pdf', '.ipynb', '.ppt', '.pptx', '.csv'];
     const fileName = file.name.toLowerCase();
     return validExtensions.some(ext => fileName.endsWith(ext));
   };
@@ -181,7 +181,7 @@ export function DocumentUpload({ courseId, folderId, onUploadComplete }: Documen
         <input
           type="file"
           id="document-upload"
-          accept=".pdf,.ipynb,.ppt,.pptx"
+          accept=".pdf,.ipynb,.ppt,.pptx,.csv"
           onChange={handleFileSelect}
           className="hidden"
           multiple
@@ -192,7 +192,7 @@ export function DocumentUpload({ courseId, folderId, onUploadComplete }: Documen
             Drag & drop or click to upload
           </p>
           <p className="text-xs text-gray-400">
-            PDF, IPYNB, PPT, PPTX (multiple files supported)
+            PDF, IPYNB, PPT, PPTX, CSV (multiple files supported)
           </p>
         </label>
       </div>

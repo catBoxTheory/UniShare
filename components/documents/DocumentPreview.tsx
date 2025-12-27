@@ -1,8 +1,9 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { FileText, Download, ExternalLink } from "lucide-react";
+import { FileText, Download, ExternalLink, Table } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 import PDFViewer from "./PDFViewer";
 
 interface Document {
@@ -52,13 +53,17 @@ export function DocumentPreview({ document }: DocumentPreviewProps) {
   const directUrl = document ? document.url : "";
 
   const [notebookData, setNotebookData] = useState<NotebookData | null>(null);
+  const [csvData, setCsvData] = useState<string[][] | null>(null);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     if (document && document.title.toLowerCase().endsWith('.ipynb')) {
       loadNotebook(safeUrl);
+    } else if (document && document.title.toLowerCase().endsWith('.csv')) {
+      loadCSV(safeUrl);
     } else {
       setNotebookData(null);
+      setCsvData(null);
     }
   }, [document, safeUrl]);
 
@@ -77,6 +82,23 @@ export function DocumentPreview({ document }: DocumentPreviewProps) {
     }
   };
 
+  const loadCSV = async (url: string) => {
+    setLoading(true);
+    try {
+      const response = await fetch(url);
+      if (!response.ok) throw new Error("Failed to fetch CSV");
+      const text = await response.text();
+      // Simple CSV parsing (handles basic commas, not complex quoted values)
+      const rows = text.split('\n').filter(row => row.trim()).map(row => row.split(','));
+      setCsvData(rows.slice(0, 50)); // Only show first 50 rows for preview
+    } catch (error) {
+      console.error("Failed to load CSV:", error);
+      setCsvData(null);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   if (!document) {
     return (
       <div className="flex flex-col items-center justify-center h-full text-gray-400 p-8">
@@ -90,6 +112,7 @@ export function DocumentPreview({ document }: DocumentPreviewProps) {
   const isPDF = fileName.endsWith('.pdf');
   const isNotebook = fileName.endsWith('.ipynb');
   const isPPT = fileName.endsWith('.ppt') || fileName.endsWith('.pptx');
+  const isCSV = fileName.endsWith('.csv');
 
   // PDF Preview
   if (isPDF) {
@@ -199,6 +222,57 @@ export function DocumentPreview({ document }: DocumentPreviewProps) {
                 </a>
               </Button>
             </div>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  // CSV Preview
+  if (isCSV) {
+    return (
+      <div className="h-full flex flex-col">
+        <div className="flex items-center justify-between p-3 border-b bg-gray-50">
+          <h3 className="font-medium text-sm truncate flex-1 flex items-center gap-2">
+            <Table className="w-4 h-4 text-green-600" />
+            {document.title}
+          </h3>
+          <Button variant="outline" size="sm" asChild>
+            <a href={safeUrl} download>
+              <Download className="w-4 h-4 mr-1" />
+              Download
+            </a>
+          </Button>
+        </div>
+        <div className="flex-1 overflow-auto p-4 bg-white">
+          {loading ? (
+            <div className="text-center py-8 text-gray-500">Loading CSV...</div>
+          ) : csvData ? (
+            <div className="border rounded-lg overflow-hidden">
+              <table className="min-w-full divide-y divide-gray-200">
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {csvData.map((row, i) => (
+                    <tr key={i} className={i === 0 ? "bg-gray-50" : ""}>
+                      {row.map((cell, j) => (
+                        <td key={j} className={cn(
+                          "px-3 py-2 text-xs text-gray-600 whitespace-nowrap border-r last:border-r-0",
+                          i === 0 && "font-semibold text-gray-900"
+                        )}>
+                          {cell}
+                        </td>
+                      ))}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              {csvData.length === 50 && (
+                <div className="p-2 text-center text-xs text-gray-400 bg-gray-50 border-t">
+                  Showing first 50 rows only
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="text-center py-8 text-gray-500">Failed to load CSV</div>
           )}
         </div>
       </div>
