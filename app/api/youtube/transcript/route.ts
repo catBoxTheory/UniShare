@@ -59,8 +59,11 @@ export async function GET(req: NextRequest) {
         if (captionDataMatch) {
           const captionTracks = JSON.parse(captionDataMatch[1]);
           // Prioritize manually created English, then auto-generated English
-          const englishTrack = captionTracks.find((track: any) => track.languageCode === 'en' && !track.kind) || 
-                               captionTracks.find((track: any) => track.languageCode.startsWith('en'));
+          // Also try to match any track that has "English" in its name property
+          const englishTrack = 
+            captionTracks.find((track: any) => track.languageCode === 'en' && !track.kind) || 
+            captionTracks.find((track: any) => track.languageCode.startsWith('en')) ||
+            captionTracks.find((track: any) => track.name?.simpleText?.includes('English'));
           
           if (englishTrack && englishTrack.baseUrl) {
             // Fetch the XML transcript from the baseUrl
