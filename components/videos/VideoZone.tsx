@@ -432,11 +432,17 @@ export function VideoZone({ courseId, initialVideos = [] }: VideoZoneProps) {
     return url.includes("youtube.com") || url.includes("youtu.be");
   };
 
+  // Extract YouTube video ID from URL
+  const getYouTubeVideoId = (url: string) => {
+    const match = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/|youtube\.com\/shorts\/)([^&\n?#]+)/);
+    return match ? match[1] : "";
+  };
+
   // Get YouTube thumbnail from video URL
   const getYouTubeThumbnail = (url: string) => {
-    const match = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/|youtube\.com\/shorts\/)([^&\n?#]+)/);
-    if (match) {
-      return `https://img.youtube.com/vi/${match[1]}/mqdefault.jpg`;
+    const videoId = getYouTubeVideoId(url);
+    if (videoId) {
+      return `https://img.youtube.com/vi/${videoId}/mqdefault.jpg`;
     }
     return null;
   };
@@ -734,62 +740,63 @@ export function VideoZone({ courseId, initialVideos = [] }: VideoZoneProps) {
         {/* Video Container - Enforce 16:9 Aspect Ratio */}
         <div ref={playerContainerRef} className="relative aspect-video bg-black group flex-shrink-0">
           {currentVideo && mounted ? (
-            <>
-              <ReactPlayer
-                ref={playerRef}
-                url={isYouTubeUrl(currentVideo.url) ? currentVideo.url : getProxyUrl(currentVideo.url)}
-                width="100%"
-                height="100%"
-                playing={isPlaying}
-                muted={isMuted}
-                volume={volume}
-                playbackRate={playbackRate}
-                controls={isYouTubeUrl(currentVideo.url)}
-                onProgress={handleProgress}
-                onDuration={handleDuration}
-                onPlay={() => setIsPlaying(true)}
-                onPause={() => setIsPlaying(false)}
-                onReady={() => console.log("ReactPlayer ready")}
-                onEnded={() => {
-                  if (isAutoplayEnabled) {
-                    playNextVideo();
-                  } else {
-                    setIsPlaying(false);
-                  }
-                }}
-                config={{
-                  file: {
-                    attributes: {
-                      controlsList: 'nodownload',
-                      disablePictureInPicture: true,
-                      playsInline: true
-                    }
-                  },
-                  youtube: {
-                    playerVars: { 
-                      autoplay: 1,
-                      rel: 0,
-                      modestbranding: 1,
-                      origin: typeof window !== 'undefined' ? window.location.origin : ''
-                    }
-                  }
-                }}
+            isYouTubeUrl(currentVideo.url) ? (
+              // YouTube Video - Use native iframe for reliability
+              <iframe
+                key={currentVideo.id}
+                src={`https://www.youtube.com/embed/${getYouTubeVideoId(currentVideo.url)}?autoplay=1&rel=0&modestbranding=1`}
+                className="w-full h-full"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allowFullScreen
+                title={currentVideo.title}
               />
-              
-              {/* Center Play Button (Only when paused and hovered) - Hide for YouTube */}
-              {!isPlaying && !isYouTubeUrl(currentVideo.url) && (
-                <div 
-                  className="absolute inset-0 flex items-center justify-center cursor-pointer"
-                  onClick={togglePlay}
-                >
-                   <div className="bg-black/50 p-4 rounded-full backdrop-blur-sm">
-                      <Play className="w-12 h-12 text-white fill-white" />
-                   </div>
-                </div>
-              )}
+            ) : (
+              // Local/Uploaded Video - Use ReactPlayer
+              <>
+                <ReactPlayer
+                  ref={playerRef}
+                  url={getProxyUrl(currentVideo.url)}
+                  width="100%"
+                  height="100%"
+                  playing={isPlaying}
+                  muted={isMuted}
+                  volume={volume}
+                  playbackRate={playbackRate}
+                  onProgress={handleProgress}
+                  onDuration={handleDuration}
+                  onPlay={() => setIsPlaying(true)}
+                  onPause={() => setIsPlaying(false)}
+                  onEnded={() => {
+                    if (isAutoplayEnabled) {
+                      playNextVideo();
+                    } else {
+                      setIsPlaying(false);
+                    }
+                  }}
+                  config={{
+                    file: {
+                      attributes: {
+                        controlsList: 'nodownload',
+                        disablePictureInPicture: true,
+                        playsInline: true
+                      }
+                    }
+                  }}
+                />
+                
+                {/* Center Play Button (Only when paused) */}
+                {!isPlaying && (
+                  <div 
+                    className="absolute inset-0 flex items-center justify-center cursor-pointer"
+                    onClick={togglePlay}
+                  >
+                     <div className="bg-black/50 p-4 rounded-full backdrop-blur-sm">
+                        <Play className="w-12 h-12 text-white fill-white" />
+                     </div>
+                  </div>
+                )}
 
-              {/* Video Controls Overlay - Hide for YouTube */}
-              {!isYouTubeUrl(currentVideo.url) && (
+                {/* Video Controls Overlay */}
                 <VideoControls 
                   isPlaying={isPlaying}
                   isMuted={isMuted}
@@ -807,8 +814,8 @@ export function VideoZone({ courseId, initialVideos = [] }: VideoZoneProps) {
                   onSeekMouseDown={handleSeekMouseDown}
                   onSeekMouseUp={handleSeekMouseUp}
                 />
-              )}
-            </>
+              </>
+            )
           ) : (
             <div className="absolute inset-0 flex flex-col items-center justify-center text-gray-500">
               <PlayCircle className="w-20 h-20 mb-4 opacity-50" />
