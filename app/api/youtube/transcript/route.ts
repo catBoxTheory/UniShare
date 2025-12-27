@@ -39,11 +39,37 @@ export async function GET(req: NextRequest) {
   }
 
   try {
-    // 1. Fetch English transcript
-    const transcript = await YoutubeTranscript.fetchTranscript(videoId, { lang: "en" });
+    // 1. Fetch transcript list to find available languages
+    const transcriptList = await YoutubeTranscript.fetchTranscript(videoId, { lang: 'en' }).catch(() => null);
+    
+    let transcript = transcriptList;
+
+    // If default English fetch failed, try to list all available transcripts and pick one
+    if (!transcript) {
+      try {
+        const videoPageResponse = await fetch(`https://www.youtube.com/watch?v=${videoId}`);
+        const videoPageHtml = await videoPageResponse.text();
+        const captionDataMatch = videoPageHtml.match(/"captionTracks":(\[.*?\])/);
+        
+        if (captionDataMatch) {
+          const captionTracks = JSON.parse(captionDataMatch[1]);
+          // Find any English track (auto-generated or manual)
+          const englishTrack = captionTracks.find((track: any) => track.languageCode.startsWith('en'));
+          
+          if (englishTrack) {
+            transcript = await YoutubeTranscript.fetchTranscript(videoId, { lang: englishTrack.languageCode });
+          }
+        }
+      } catch (e) {
+        console.log("Fallback transcript search failed");
+      }
+    }
     
     if (!transcript || transcript.length === 0) {
-      return NextResponse.json({ error: "No transcript found" }, { status: 404 });
+      return NextResponse.json({ 
+        error: "No subtitles available (even auto-generated ones are missing).",
+        code: "NO_TRANSCRIPT" 
+      }, { status: 404 });
     }
 
     // 2. Process transcript to combine short segments
