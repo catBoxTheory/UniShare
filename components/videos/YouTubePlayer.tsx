@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, useCallback } from "react";
-import { Loader2, Languages, Subtitles } from "lucide-react";
+import { Loader2, Subtitles, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
@@ -10,6 +10,12 @@ interface BilingualSubtitle {
   duration: number;
   textEn: string;
   textZh: string;
+}
+
+interface SubtitleSegment {
+  text: string;
+  start: number;
+  duration: number;
 }
 
 interface YouTubePlayerProps {
@@ -26,6 +32,121 @@ declare global {
   }
 }
 
+// Piped API instances to try
+const PIPED_INSTANCES = [
+  "https://pipedapi.kavin.rocks",
+  "https://pipedapi.adminforge.de",
+  "https://api.piped.yt",
+  "https://pipedapi.r4fo.com",
+];
+
+// Helper to decode HTML entities
+function decodeHtmlEntities(text: string): string {
+  const textarea = document.createElement('textarea');
+  textarea.innerHTML = text;
+  return textarea.value;
+}
+
+// Client-side: Fetch transcript from Piped API
+async function fetchTranscriptFromPiped(videoId: string): Promise<SubtitleSegment[] | null> {
+  for (const instance of PIPED_INSTANCES) {
+    try {
+      console.log(`[Client] Trying Piped: ${instance}`);
+      
+      // Get video info which includes subtitles
+      const response = await fetch(`${instance}/streams/${videoId}`, {
+        signal: AbortSignal.timeout(8000)
+      });
+      
+      if (!response.ok) {
+        console.log(`[Client] ${instance} returned ${response.status}`);
+        continue;
+      }
+      
+      const data = await response.json();
+      
+      // Find English subtitles
+      const subtitles = data.subtitles || [];
+      const englishSub = subtitles.find((s: any) => 
+        s.code === 'en' || 
+        s.code?.startsWith('en') ||
+        s.name?.toLowerCase().includes('english')
+      );
+      
+      if (!englishSub?.url) {
+        console.log(`[Client] No English subtitles at ${instance}`);
+        continue;
+      }
+      
+      console.log(`[Client] Found subtitle URL: ${englishSub.url}`);
+      
+      // Fetch the subtitle content
+      const subResponse = await fetch(englishSub.url, {
+        signal: AbortSignal.timeout(8000)
+      });
+      
+      if (!subResponse.ok) continue;
+      
+      const subText = await subResponse.text();
+      console.log(`[Client] Got subtitle text, length: ${subText.length}`);
+      
+      // Parse VTT format
+      const segments: SubtitleSegment[] = [];
+      const cues = subText.split(/\n\n+/);
+      
+      for (const cue of cues) {
+        const timestampMatch = cue.match(/(\d{2}):(\d{2}):(\d{2})\.(\d{3})\s*-->\s*(\d{2}):(\d{2}):(\d{2})\.(\d{3})/);
+        if (timestampMatch) {
+          const startMs = (parseInt(timestampMatch[1]) * 3600 + parseInt(timestampMatch[2]) * 60 + parseInt(timestampMatch[3])) * 1000 + parseInt(timestampMatch[4]);
+          const endMs = (parseInt(timestampMatch[5]) * 3600 + parseInt(timestampMatch[6]) * 60 + parseInt(timestampMatch[7])) * 1000 + parseInt(timestampMatch[8]);
+          
+          const lines = cue.split('\n');
+          const textLines = lines.slice(lines.findIndex(l => l.includes('-->')) + 1);
+          const text = decodeHtmlEntities(textLines.join(' ').replace(/<[^>]*>/g, '').trim());
+          
+          if (text) {
+            segments.push({
+              text,
+              start: startMs,
+              duration: endMs - startMs
+            });
+          }
+        }
+      }
+      
+      if (segments.length > 0) {
+        console.log(`[Client] Parsed ${segments.length} segments from Piped`);
+        return segments;
+      }
+      
+    } catch (e: any) {
+      console.log(`[Client] Piped ${instance} failed:`, e.message);
+    }
+  }
+  
+  return null;
+}
+
+// Client-side: Try to fetch from YouTube directly via cors-anywhere or similar
+async function fetchTranscriptDirect(videoId: string): Promise<SubtitleSegment[] | null> {
+  try {
+    // Try fetching via our proxy API which will attempt server-side methods
+    const response = await fetch(`/api/youtube/transcript?videoId=${videoId}&clientFallback=true`);
+    
+    if (response.ok) {
+      const data = await response.json();
+      if (data.subtitles && data.subtitles.length > 0) {
+        // Already translated, return as-is
+        return null; // Signal to use the full bilingual data
+      }
+    }
+  } catch (e) {
+    console.log('[Client] Direct fetch failed:', e);
+  }
+  
+  return null;
+}
+
 export function YouTubePlayer({ videoId, title, autoPlay = false, onEnded }: YouTubePlayerProps) {
   const playerRef = useRef<any>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -33,12 +154,14 @@ export function YouTubePlayer({ videoId, title, autoPlay = false, onEnded }: You
   const [currentSubtitle, setCurrentSubtitle] = useState<BilingualSubtitle | null>(null);
   const [isLoadingSubtitles, setIsLoadingSubtitles] = useState(false);
   const [showSubtitles, setShowSubtitles] = useState(true);
-  const [currentTime, setCurrentTime] = useState(0);
   const [hasTranscriptError, setHasTranscriptError] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
+  const [retryCount, setRetryCount] = useState(0);
 
   // Load YouTube IFrame API
   useEffect(() => {
+    if (typeof window === 'undefined') return;
+    
     if (!window.YT) {
       const tag = document.createElement('script');
       tag.src = "https://www.youtube.com/iframe_api";
@@ -52,10 +175,12 @@ export function YouTubePlayer({ videoId, title, autoPlay = false, onEnded }: You
 
     return () => {
       if (playerRef.current) {
-        playerRef.current.destroy();
+        try {
+          playerRef.current.destroy();
+        } catch (e) {}
       }
     };
-  }, [videoId]); // Re-init when videoId changes
+  }, [videoId]);
 
   // Fetch subtitles when videoId changes
   useEffect(() => {
@@ -66,11 +191,38 @@ export function YouTubePlayer({ videoId, title, autoPlay = false, onEnded }: You
       setCurrentSubtitle(null);
 
       try {
+        // Step 1: Try to get transcript from Piped API (client-side)
+        console.log(`[Client] Fetching subtitles for ${videoId}`);
+        const segments = await fetchTranscriptFromPiped(videoId);
+        
+        if (segments && segments.length > 0) {
+          console.log(`[Client] Got ${segments.length} segments, sending for translation`);
+          
+          // Step 2: Send to server for translation only
+          const translateResponse = await fetch('/api/youtube/translate', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ 
+              segments: segments.slice(0, 100) // Limit to first 100 for performance
+            })
+          });
+          
+          if (!translateResponse.ok) {
+            throw new Error('Translation failed');
+          }
+          
+          const translated = await translateResponse.json();
+          setSubtitles(translated.subtitles);
+          console.log(`[Client] Got ${translated.subtitles.length} translated subtitles`);
+          return;
+        }
+        
+        // Step 3: Fallback to server-side methods
+        console.log(`[Client] Piped failed, trying server-side methods`);
         const response = await fetch(`/api/youtube/transcript?videoId=${videoId}`);
         
         if (!response.ok) {
           const errorData = await response.json();
-          // If it's a known "No Transcript" error, show a specific message
           if (response.status === 404 && errorData.code === "NO_TRANSCRIPT") {
             throw new Error("No subtitles available");
           }
@@ -81,6 +233,7 @@ export function YouTubePlayer({ videoId, title, autoPlay = false, onEnded }: You
         if (data.subtitles) {
           setSubtitles(data.subtitles);
         }
+        
       } catch (error: any) {
         console.error("Subtitle fetch error:", error);
         setHasTranscriptError(true);
@@ -93,7 +246,7 @@ export function YouTubePlayer({ videoId, title, autoPlay = false, onEnded }: You
     if (videoId) {
       fetchSubtitles();
     }
-  }, [videoId]);
+  }, [videoId, retryCount]);
 
   // Sync subtitles with video time
   useEffect(() => {
@@ -104,23 +257,14 @@ export function YouTubePlayer({ videoId, title, autoPlay = false, onEnded }: You
 
     const interval = setInterval(() => {
       if (playerRef.current && playerRef.current.getCurrentTime) {
-        const time = playerRef.current.getCurrentTime();
-        // Convert to milliseconds match transcript format if needed, 
-        // but our API returns seconds (youtube-transcript default) or ms?
-        // youtube-transcript returns 'offset' in milliseconds usually, let's check API.
-        // Wait, youtube-transcript usually returns seconds or ms?
-        // Actually youtube-transcript returns 'offset' in seconds (float).
-        // Let's assume seconds for now based on typical usage.
-        
-        // Find matching subtitle
-        // Using * 1000 if the API returns ms, or * 1 if seconds. 
-        // Standard youtube-transcript returns seconds.
-        const sub = subtitles.find(s => 
-          time >= (s.start / 1000) && 
-          time < ((s.start + s.duration) / 1000)
-        );
-        
-        setCurrentSubtitle(sub || null);
+        try {
+          const time = playerRef.current.getCurrentTime();
+          const sub = subtitles.find(s => 
+            time >= (s.start / 1000) && 
+            time < ((s.start + s.duration) / 1000)
+          );
+          setCurrentSubtitle(sub || null);
+        } catch (e) {}
       }
     }, 100);
 
@@ -128,27 +272,30 @@ export function YouTubePlayer({ videoId, title, autoPlay = false, onEnded }: You
   }, [subtitles, showSubtitles]);
 
   const initializePlayer = () => {
+    if (typeof window === 'undefined') return;
     if (!document.getElementById(`youtube-player-${videoId}`)) return;
 
-    playerRef.current = new window.YT.Player(`youtube-player-${videoId}`, {
-      height: '100%',
-      width: '100%',
-      videoId: videoId,
-      playerVars: {
-        autoplay: autoPlay ? 1 : 0,
-        modestbranding: 1,
-        rel: 0,
-        // Disable default cc to avoid overlap
-        cc_load_policy: 0 
-      },
-      events: {
-        'onStateChange': onPlayerStateChange
-      }
-    });
+    try {
+      playerRef.current = new window.YT.Player(`youtube-player-${videoId}`, {
+        height: '100%',
+        width: '100%',
+        videoId: videoId,
+        playerVars: {
+          autoplay: autoPlay ? 1 : 0,
+          modestbranding: 1,
+          rel: 0,
+          cc_load_policy: 0
+        },
+        events: {
+          'onStateChange': onPlayerStateChange
+        }
+      });
+    } catch (e) {
+      console.error('Failed to initialize YouTube player:', e);
+    }
   };
 
   const onPlayerStateChange = (event: any) => {
-    // YT.PlayerState.ENDED = 0
     if (event.data === 0 && onEnded) {
       onEnded();
     }
@@ -156,6 +303,10 @@ export function YouTubePlayer({ videoId, title, autoPlay = false, onEnded }: You
 
   const toggleSubtitles = () => {
     setShowSubtitles(!showSubtitles);
+  };
+
+  const retryFetch = () => {
+    setRetryCount(prev => prev + 1);
   };
 
   return (
@@ -184,21 +335,32 @@ export function YouTubePlayer({ videoId, title, autoPlay = false, onEnded }: You
           size="sm"
           className={cn(
             "bg-black/60 hover:bg-black/80 text-white border-0 backdrop-blur-md",
-            showSubtitles && "text-blue-400"
+            showSubtitles && !hasTranscriptError && "text-blue-400"
           )}
           onClick={toggleSubtitles}
-          disabled={hasTranscriptError || isLoadingSubtitles}
+          disabled={isLoadingSubtitles}
         >
           {isLoadingSubtitles ? (
             <Loader2 className="w-4 h-4 animate-spin" />
           ) : (
             <Subtitles className="w-4 h-4 mr-1.5" />
           )}
-          {isLoadingSubtitles ? "Loading AI Subs..." : (showSubtitles ? "AI Subs On" : "AI Subs Off")}
+          {isLoadingSubtitles ? "載入中..." : (showSubtitles ? "AI 字幕" : "AI 字幕關")}
         </Button>
+        
+        {hasTranscriptError && (
+          <Button
+            variant="secondary"
+            size="sm"
+            className="bg-black/60 hover:bg-black/80 text-white border-0 backdrop-blur-md"
+            onClick={retryFetch}
+          >
+            <RefreshCw className="w-4 h-4" />
+          </Button>
+        )}
       </div>
       
-      {/* Error Toast if fetch failed */}
+      {/* Error Toast */}
       {hasTranscriptError && showSubtitles && (
         <div className="absolute top-4 left-4 z-20 bg-black/60 text-white text-xs px-3 py-1.5 rounded backdrop-blur-md border border-white/10">
           {errorMessage === "No subtitles available" 
@@ -209,4 +371,3 @@ export function YouTubePlayer({ videoId, title, autoPlay = false, onEnded }: You
     </div>
   );
 }
-
