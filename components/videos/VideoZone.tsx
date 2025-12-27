@@ -55,6 +55,24 @@ interface VideoZoneProps {
   initialVideos?: Video[];
 }
 
+// Helper functions
+const isYouTubeUrl = (url: string) => {
+  return url.includes("youtube.com") || url.includes("youtu.be");
+};
+
+const getYouTubeVideoId = (url: string) => {
+  const match = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/|youtube\.com\/shorts\/)([^&\n?#]+)/);
+  return match ? match[1] : "";
+};
+
+const getYouTubeThumbnail = (url: string) => {
+  const videoId = getYouTubeVideoId(url);
+  if (videoId) {
+    return `https://img.youtube.com/vi/${videoId}/mqdefault.jpg`;
+  }
+  return null;
+};
+
 export function VideoZone({ courseId, initialVideos = [] }: VideoZoneProps) {
   const [videos, setVideos] = useState<Video[]>(initialVideos);
   const [folders, setFolders] = useState<VideoFolder[]>([]);
@@ -95,6 +113,65 @@ export function VideoZone({ courseId, initialVideos = [] }: VideoZoneProps) {
   const [dragOverFolderId, setDragOverFolderId] = useState<string | null>(null);
   
   const playerContainerRef = useRef<HTMLDivElement>(null);
+  const ytPlayerRef = useRef<any>(null);
+
+  // Load YouTube IFrame API
+  useEffect(() => {
+    // Only load if not already loaded
+    if (!(window as any).YT) {
+      const tag = document.createElement('script');
+      tag.src = 'https://www.youtube.com/iframe_api';
+      const firstScriptTag = document.getElementsByTagName('script')[0];
+      firstScriptTag.parentNode?.insertBefore(tag, firstScriptTag);
+    }
+  }, []);
+
+  // Create YouTube player when video changes
+  useEffect(() => {
+    if (!currentVideo || !mounted) return;
+
+    const videoId = getYouTubeVideoId(currentVideo.url);
+    if (!videoId) return;
+
+    const initPlayer = () => {
+      // Destroy previous player if exists
+      if (ytPlayerRef.current) {
+        ytPlayerRef.current.destroy();
+        ytPlayerRef.current = null;
+      }
+
+      ytPlayerRef.current = new (window as any).YT.Player('youtube-player', {
+        videoId: videoId,
+        playerVars: {
+          autoplay: 1,
+          rel: 0,
+          modestbranding: 1,
+        },
+        events: {
+          onStateChange: (event: any) => {
+            // 0 = ended
+            if (event.data === 0 && isAutoplayEnabled) {
+              playNextVideo();
+            }
+          },
+        },
+      });
+    };
+
+    // Wait for YT API to be ready
+    if ((window as any).YT && (window as any).YT.Player) {
+      initPlayer();
+    } else {
+      (window as any).onYouTubeIframeAPIReady = initPlayer;
+    }
+
+    return () => {
+      if (ytPlayerRef.current) {
+        ytPlayerRef.current.destroy();
+        ytPlayerRef.current = null;
+      }
+    };
+  }, [currentVideo, mounted, isAutoplayEnabled, playNextVideo]);
 
   useEffect(() => {
     setMounted(true);
@@ -104,31 +181,12 @@ export function VideoZone({ courseId, initialVideos = [] }: VideoZoneProps) {
       setIsFullscreen(!!document.fullscreenElement);
     };
 
-    // Listen for YouTube player state changes via postMessage
-    const handleMessage = (event: MessageEvent) => {
-      if (event.origin !== "https://www.youtube.com") return;
-      
-      try {
-        const data = typeof event.data === 'string' ? JSON.parse(event.data) : event.data;
-        // YouTube player state: 0 = ended
-        if (data.event === 'onStateChange' && data.info === 0) {
-          if (isAutoplayEnabled) {
-            playNextVideo();
-          }
-        }
-      } catch (e) {
-        // Ignore parsing errors
-      }
-    };
-
     document.addEventListener("fullscreenchange", handleFullscreenChange);
-    window.addEventListener("message", handleMessage);
     
     return () => {
       document.removeEventListener("fullscreenchange", handleFullscreenChange);
-      window.removeEventListener("message", handleMessage);
     };
-  }, [isAutoplayEnabled, playNextVideo]);
+  }, []);
 
   useEffect(() => {
     refreshContent();
@@ -221,26 +279,6 @@ export function VideoZone({ courseId, initialVideos = [] }: VideoZoneProps) {
       }
     }
   }, []);
-
-  // Check if URL is a YouTube URL
-  const isYouTubeUrl = (url: string) => {
-    return url.includes("youtube.com") || url.includes("youtu.be");
-  };
-
-  // Extract YouTube video ID from URL
-  const getYouTubeVideoId = (url: string) => {
-    const match = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/|youtube\.com\/shorts\/)([^&\n?#]+)/);
-    return match ? match[1] : "";
-  };
-
-  // Get YouTube thumbnail from video URL
-  const getYouTubeThumbnail = (url: string) => {
-    const videoId = getYouTubeVideoId(url);
-    if (videoId) {
-      return `https://img.youtube.com/vi/${videoId}/mqdefault.jpg`;
-    }
-    return null;
-  };
 
   // Fetch YouTube metadata when URL is pasted
   const handleYoutubeUrlChange = async (url: string) => {
@@ -535,15 +573,11 @@ export function VideoZone({ courseId, initialVideos = [] }: VideoZoneProps) {
         {/* Video Container - Enforce 16:9 Aspect Ratio */}
         <div ref={playerContainerRef} className="relative aspect-video bg-black group flex-shrink-0">
           {currentVideo && mounted ? (
-            // YouTube Video - Use iframe with enablejsapi for autoplay detection
-            <iframe
+            // YouTube Video - Container for YouTube IFrame API
+            <div 
               key={currentVideo.id}
               id="youtube-player"
-              src={`https://www.youtube.com/embed/${getYouTubeVideoId(currentVideo.url)}?autoplay=1&rel=0&modestbranding=1&enablejsapi=1`}
               className="w-full h-full"
-              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-              allowFullScreen
-              title={currentVideo.title}
             />
           ) : (
             <div className="absolute inset-0 flex flex-col items-center justify-center text-gray-500">
