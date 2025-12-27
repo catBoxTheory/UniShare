@@ -133,6 +133,7 @@ export function DocumentPreview({ document }: DocumentPreviewProps) {
   const isPPT = fileName.endsWith('.ppt') || fileName.endsWith('.pptx');
   const isCSV = fileName.endsWith('.csv');
   const isTXT = fileName.endsWith('.txt');
+  const isDOC = fileName.endsWith('.doc') || fileName.endsWith('.docx');
 
   // PDF Preview
   if (isPDF) {
@@ -239,6 +240,59 @@ export function DocumentPreview({ document }: DocumentPreviewProps) {
                 <a href={directUrl} download>
                   <Download className="w-4 h-4 mr-2" />
                   Download Presentation
+                </a>
+              </Button>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  // DOC/DOCX Preview (using Office Online Viewer)
+  if (isDOC) {
+    // Office Online Viewer requires a publicly accessible URL
+    const officeUrl = `https://view.officeapps.live.com/op/view.aspx?src=${encodeURIComponent(directUrl)}`;
+    
+    return (
+      <div className="h-full flex flex-col">
+        <div className="flex items-center justify-between p-3 border-b bg-gray-50">
+          <h3 className="font-medium text-sm truncate flex-1">{document.title}</h3>
+          <div className="flex gap-2">
+            <Button variant="outline" size="sm" asChild>
+              <a href={directUrl} target="_blank" rel="noopener noreferrer">
+                <ExternalLink className="w-4 h-4 mr-1" />
+                Open
+              </a>
+            </Button>
+            <Button variant="outline" size="sm" asChild>
+              <a href={directUrl} download>
+                <Download className="w-4 h-4 mr-1" />
+                Download
+              </a>
+            </Button>
+          </div>
+        </div>
+        <div className="flex-1">
+          {directUrl.includes('r2.dev') || directUrl.includes('cloudflarestorage.com') ? (
+            <iframe 
+              src={officeUrl} 
+              className="w-full h-full border-0" 
+              title="Word Document Preview"
+            />
+          ) : (
+            <div className="flex-1 flex flex-col items-center justify-center p-8 bg-gradient-to-br from-blue-50 to-indigo-50 h-full">
+              <div className="w-32 h-40 bg-white rounded-lg shadow-lg flex items-center justify-center mb-6 border">
+                <FileText className="w-16 h-16 text-blue-600" />
+              </div>
+              <h4 className="text-lg font-medium text-gray-800 mb-2">Word Document</h4>
+              <p className="text-sm text-gray-500 text-center mb-4 max-w-xs">
+                Download the file to view it in Microsoft Word or Google Docs
+              </p>
+              <Button asChild>
+                <a href={directUrl} download>
+                  <Download className="w-4 h-4 mr-2" />
+                  Download Document
                 </a>
               </Button>
             </div>

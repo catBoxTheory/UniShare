@@ -78,7 +78,7 @@ export function DocumentUpload({ courseId, folderId, onUploadComplete }: Documen
   };
 
   const isValidDocumentType = (file: File): boolean => {
-    const validExtensions = ['.pdf', '.ipynb', '.ppt', '.pptx', '.csv', '.txt'];
+    const validExtensions = ['.pdf', '.ipynb', '.ppt', '.pptx', '.csv', '.txt', '.doc', '.docx'];
     const fileName = file.name.toLowerCase();
     return validExtensions.some(ext => fileName.endsWith(ext));
   };
@@ -181,7 +181,7 @@ export function DocumentUpload({ courseId, folderId, onUploadComplete }: Documen
         <input
           type="file"
           id="document-upload"
-          accept=".pdf,.ipynb,.ppt,.pptx,.csv,.txt"
+          accept=".pdf,.ipynb,.ppt,.pptx,.csv,.txt,.doc,.docx"
           onChange={handleFileSelect}
           className="hidden"
           multiple
