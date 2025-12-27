@@ -54,6 +54,7 @@ export function DocumentPreview({ document }: DocumentPreviewProps) {
 
   const [notebookData, setNotebookData] = useState<NotebookData | null>(null);
   const [csvData, setCsvData] = useState<string[][] | null>(null);
+  const [textData, setTextData] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -61,9 +62,12 @@ export function DocumentPreview({ document }: DocumentPreviewProps) {
       loadNotebook(safeUrl);
     } else if (document && document.title.toLowerCase().endsWith('.csv')) {
       loadCSV(safeUrl);
+    } else if (document && document.title.toLowerCase().endsWith('.txt')) {
+      loadText(safeUrl);
     } else {
       setNotebookData(null);
       setCsvData(null);
+      setTextData(null);
     }
   }, [document, safeUrl]);
 
@@ -99,6 +103,21 @@ export function DocumentPreview({ document }: DocumentPreviewProps) {
     }
   };
 
+  const loadText = async (url: string) => {
+    setLoading(true);
+    try {
+      const response = await fetch(url);
+      if (!response.ok) throw new Error("Failed to fetch text");
+      const text = await response.text();
+      setTextData(text);
+    } catch (error) {
+      console.error("Failed to load text:", error);
+      setTextData(null);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   if (!document) {
     return (
       <div className="flex flex-col items-center justify-center h-full text-gray-400 p-8">
@@ -113,6 +132,7 @@ export function DocumentPreview({ document }: DocumentPreviewProps) {
   const isNotebook = fileName.endsWith('.ipynb');
   const isPPT = fileName.endsWith('.ppt') || fileName.endsWith('.pptx');
   const isCSV = fileName.endsWith('.csv');
+  const isTXT = fileName.endsWith('.txt');
 
   // PDF Preview
   if (isPDF) {
@@ -273,6 +293,37 @@ export function DocumentPreview({ document }: DocumentPreviewProps) {
             </div>
           ) : (
             <div className="text-center py-8 text-gray-500">Failed to load CSV</div>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  // TXT Preview
+  if (isTXT) {
+    return (
+      <div className="h-full flex flex-col">
+        <div className="flex items-center justify-between p-3 border-b bg-gray-50">
+          <h3 className="font-medium text-sm truncate flex-1 flex items-center gap-2">
+            <FileText className="w-4 h-4 text-blue-500" />
+            {document.title}
+          </h3>
+          <Button variant="outline" size="sm" asChild>
+            <a href={safeUrl} download>
+              <Download className="w-4 h-4 mr-1" />
+              Download
+            </a>
+          </Button>
+        </div>
+        <div className="flex-1 overflow-auto p-4 bg-white">
+          {loading ? (
+            <div className="text-center py-8 text-gray-500">Loading text...</div>
+          ) : textData !== null ? (
+            <pre className="whitespace-pre-wrap font-mono text-sm text-gray-700 bg-gray-50 p-4 rounded border">
+              {textData}
+            </pre>
+          ) : (
+            <div className="text-center py-8 text-gray-500">Failed to load text content</div>
           )}
         </div>
       </div>
