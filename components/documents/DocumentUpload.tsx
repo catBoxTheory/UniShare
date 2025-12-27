@@ -17,6 +17,7 @@ interface SelectedFile {
   file: File;
   status: "pending" | "uploading" | "done" | "error";
   error?: string;
+  progress?: number; // 0-100
 }
 
 export function DocumentUpload({ courseId, folderId, onUploadComplete }: DocumentUploadProps) {
@@ -84,6 +85,45 @@ export function DocumentUpload({ courseId, folderId, onUploadComplete }: Documen
     return validExtensions.some(ext => fileName.endsWith(ext));
   };
 
+  // Upload file with progress tracking using XMLHttpRequest
+  const uploadWithProgress = (
+    url: string, 
+    file: File, 
+    contentType: string,
+    onProgress: (percent: number) => void
+  ): Promise<void> => {
+    return new Promise((resolve, reject) => {
+      const xhr = new XMLHttpRequest();
+      
+      xhr.upload.addEventListener("progress", (event) => {
+        if (event.lengthComputable) {
+          const percent = Math.round((event.loaded / event.total) * 100);
+          onProgress(percent);
+        }
+      });
+      
+      xhr.addEventListener("load", () => {
+        if (xhr.status >= 200 && xhr.status < 300) {
+          resolve();
+        } else {
+          reject(new Error(`Upload failed: ${xhr.statusText || xhr.status}`));
+        }
+      });
+      
+      xhr.addEventListener("error", () => {
+        reject(new Error("Network error during upload"));
+      });
+      
+      xhr.addEventListener("abort", () => {
+        reject(new Error("Upload aborted"));
+      });
+      
+      xhr.open("PUT", url);
+      xhr.setRequestHeader("Content-Type", contentType);
+      xhr.send(file);
+    });
+  };
+
   const handleUpload = async () => {
     if (selectedFiles.length === 0) return;
 
@@ -94,9 +134,9 @@ export function DocumentUpload({ courseId, folderId, onUploadComplete }: Documen
       // Allow uploading pending or error files
       if (selectedFile.status !== "pending" && selectedFile.status !== "error") continue;
       
-      // Update status to uploading
+      // Update status to uploading with 0% progress
       setSelectedFiles(prev => prev.map((f, idx) => 
-        idx === i ? { ...f, status: "uploading" as const, error: undefined } : f
+        idx === i ? { ...f, status: "uploading" as const, error: undefined, progress: 0 } : f
       ));
       
       try {
@@ -122,22 +162,20 @@ export function DocumentUpload({ courseId, folderId, onUploadComplete }: Documen
         
         const { uploadUrl, publicUrl } = await presignedRes.json();
 
-        // 2. Upload directly to R2
-        const uploadRes = await fetch(uploadUrl, {
-          method: "PUT",
-          body: selectedFile.file,
-          headers: {
-            "Content-Type": selectedFile.file.type || "application/octet-stream",
-          },
-        });
-
-        if (!uploadRes.ok) {
-          // Check for CORS or other browser errors
-          if (uploadRes.status === 0) {
-            throw new Error("Network error or CORS policy blocked the upload. Please check bucket CORS settings.");
+        // 2. Upload directly to R2 with progress tracking
+        const contentType = selectedFile.file.type || "application/octet-stream";
+        const fileIndex = i; // Capture index for closure
+        
+        await uploadWithProgress(
+          uploadUrl, 
+          selectedFile.file, 
+          contentType,
+          (percent) => {
+            setSelectedFiles(prev => prev.map((f, idx) => 
+              idx === fileIndex ? { ...f, progress: percent } : f
+            ));
           }
-          throw new Error(`Cloud upload failed: ${uploadRes.statusText}`);
-        }
+        );
 
         // 3. Save to Database
         const dbRes = await saveMaterialToDb({
@@ -252,7 +290,17 @@ export function DocumentUpload({ courseId, folderId, onUploadComplete }: Documen
                   </p>
                 </div>
                 {item.status === "uploading" && (
-                  <Loader2 className="w-4 h-4 animate-spin text-blue-500" />
+                  <div className="flex items-center gap-1.5">
+                    <div className="w-12 h-1.5 bg-gray-200 rounded-full overflow-hidden">
+                      <div 
+                        className="h-full bg-blue-500 transition-all duration-200"
+                        style={{ width: `${item.progress || 0}%` }}
+                      />
+                    </div>
+                    <span className="text-xs text-blue-600 font-medium w-8">
+                      {item.progress || 0}%
+                    </span>
+                  </div>
                 )}
                 {item.status === "done" && (
                   <Check className="w-4 h-4 text-green-500" />
