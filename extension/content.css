@@ -1,79 +1,56 @@
-/* UniShare 雙語字幕樣式 */
+/* UniShare Tracy-like Styles */
 
-#unishare-bilingual-captions {
-  position: fixed;
-  bottom: 100px;
+/* Container injected into the player */
+#unishare-tracy-captions {
+  position: absolute; /* Relative to the player container */
+  bottom: 60px; /* Adjust based on player controls height */
   left: 50%;
   transform: translateX(-50%);
-  z-index: 2147483647;
-  pointer-events: none;
   text-align: center;
-  max-width: 85%;
-  opacity: 0;
-  transition: opacity 0.3s ease;
+  z-index: 50; /* Above video, below controls usually */
+  pointer-events: none; /* Let clicks pass through to video */
+  width: 80%;
+  transition: bottom 0.2s;
 }
 
-#unishare-bilingual-captions.visible {
-  opacity: 1;
+/* Adjust for fullscreen - YouTube player adds classes */
+.ytp-fullscreen #unishare-tracy-captions {
+  bottom: 100px;
+  font-size: 1.2em;
 }
 
-.unishare-caption-box {
+/* Adjust if progress bar is showing */
+.ytp-autohide #unishare-tracy-captions {
+  bottom: 40px; /* Lower when controls are hidden */
+}
+
+.unishare-tracy-box {
   display: inline-block;
-  background: rgba(0, 0, 0, 0.9);
-  padding: 10px 18px;
-  border-radius: 6px;
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.5);
-  max-width: 100%;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background-color: rgba(0, 0, 0, 0.75);
+  border-radius: 4px;
+  padding: 4px 8px;
+  backdrop-filter: blur(2px);
 }
 
-.unishare-caption-en {
-  color: #ffffff;
-  font-size: 17px;
+.unishare-tracy-en {
+  color: #fff;
+  font-family: "YouTube Noto", Roboto, Arial, Helvetica, sans-serif;
+  font-size: 18px;
   font-weight: 500;
-  line-height: 1.5;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
-  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8);
+  text-shadow: 0 0 4px rgba(0,0,0,0.8);
+  line-height: 1.3;
 }
 
-.unishare-caption-zh {
-  color: #ffd700;
-  font-size: 15px;
-  font-weight: 400;
-  line-height: 1.5;
-  margin-top: 4px;
-  font-family: -apple-system, BlinkMacSystemFont, 'Microsoft JhengHei', 'PingFang TC', sans-serif;
-  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8);
+.unishare-tracy-zh {
+  color: #ffcc00; /* Gold/Yellow for distinction */
+  font-family: "Microsoft JhengHei", "PingFang TC", sans-serif;
+  font-size: 16px;
+  font-weight: 500;
+  text-shadow: 0 0 4px rgba(0,0,0,0.8);
+  margin-top: 2px;
 }
 
-/* 只有英文時不需要 margin */
-.unishare-caption-box .unishare-caption-en:only-child {
-  margin-bottom: 0;
-}
-
-/* 全螢幕模式調整 */
-:fullscreen #unishare-bilingual-captions,
-:-webkit-full-screen #unishare-bilingual-captions,
-:-moz-full-screen #unishare-bilingual-captions {
-  bottom: 120px;
-}
-
-/* 小螢幕調整 */
-@media (max-width: 768px) {
-  #unishare-bilingual-captions {
-    bottom: 80px;
-    max-width: 95%;
-  }
-  
-  .unishare-caption-en {
-    font-size: 15px;
-  }
-  
-  .unishare-caption-zh {
-    font-size: 13px;
-  }
-  
-  .unishare-caption-box {
-    padding: 8px 14px;
-  }
+.unishare-tracy-zh.loading {
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 12px;
 }
