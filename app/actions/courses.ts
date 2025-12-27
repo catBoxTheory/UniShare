@@ -85,11 +85,10 @@ export async function getCourseById(courseId: string) {
             where: { id: courseId },
             include: { department: true }
         });
-        if (!course) throw new Error("Course not found");
-        return course;
+        return course; // Return null if not found, let the page handle it
     } catch (error) {
         console.error("Failed to get course:", error);
-        throw error;
+        return null;
     }
 }
 
