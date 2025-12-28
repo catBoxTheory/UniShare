@@ -164,6 +164,8 @@ model Material {
   type       MaterialType
   url        String
   
+  videoSubtitles Json?
+
   // Relations
   courseId   String
   course     Course       @relation(fields: [courseId], references: [id], onDelete: Cascade)
