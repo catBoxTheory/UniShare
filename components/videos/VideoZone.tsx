@@ -82,6 +82,15 @@ const getYouTubeThumbnail = (url: string) => {
   return null;
 };
 
+const getProxyUrl = (originalUrl: string) => {
+  if (!originalUrl) return "";
+  if (originalUrl.startsWith("http")) {
+    const encodedUrl = encodeURIComponent(originalUrl);
+    return `/api/proxy?url=${encodedUrl}`;
+  }
+  return originalUrl;
+};
+
 export function VideoZone({ courseId, initialVideos = [] }: VideoZoneProps) {
   const [videos, setVideos] = useState<Video[]>(initialVideos);
   const [folders, setFolders] = useState<VideoFolder[]>([]);
@@ -514,7 +523,6 @@ export function VideoZone({ courseId, initialVideos = [] }: VideoZoneProps) {
         {/* Video Container - Enforce 16:9 Aspect Ratio */}
         <div ref={playerContainerRef} className="relative aspect-video bg-black group flex-shrink-0">
           {currentVideo && mounted ? (
-            // YouTube Player with Bilingual Subtitles
             <YouTubePlayer 
               videoId={getYouTubeVideoId(currentVideo.url)}
               title={currentVideo.title}
