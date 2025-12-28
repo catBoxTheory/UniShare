@@ -3,13 +3,12 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { 
   Clock, PlayCircle, Trash2, Folder, FolderPlus, ChevronLeft, ChevronRight, Pencil,
-  Youtube, Link, Loader2, ArrowUpDown, SortAsc, SortDesc, Sparkles
+  Youtube, Link, Loader2, ArrowUpDown, SortAsc, SortDesc
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { saveYouTubeVideo } from "@/app/actions/materials";
-import { generateBilingualSubtitles } from "@/lib/actions/transcripts";
 import { YouTubePlayer } from "./YouTubePlayer";
 import {
   DropdownMenu,
@@ -126,7 +125,6 @@ export function VideoZone({ courseId, initialVideos = [] }: VideoZoneProps) {
   const [youtubeTitle, setYoutubeTitle] = useState("");
   const [isFetchingMetadata, setIsFetchingMetadata] = useState(false);
   const [isAddingYoutube, setIsAddingYoutube] = useState(false);
-  const [isGeneratingSubs, setIsGeneratingSubs] = useState(false);
 
   // Drag and drop
   const [draggedItemId, setDraggedItemId] = useState<string | null>(null);
@@ -259,12 +257,10 @@ export function VideoZone({ courseId, initialVideos = [] }: VideoZoneProps) {
   };
 
   // Add YouTube video
-  const handleAddYoutubeVideo = async (withSubs: boolean = false) => {
+  const handleAddYoutubeVideo = async () => {
     if (!youtubeUrl.trim() || !youtubeTitle.trim()) return;
 
     setIsAddingYoutube(true);
-    if (withSubs) setIsGeneratingSubs(true);
-
     try {
       const result = await saveYouTubeVideo({
         title: youtubeTitle,
@@ -280,30 +276,11 @@ export function VideoZone({ courseId, initialVideos = [] }: VideoZoneProps) {
       setYoutubeUrl("");
       setYoutubeTitle("");
       await refreshContent();
-
-      if (withSubs && result.material) {
-        try {
-          const subResult = await generateBilingualSubtitles(result.material.id);
-          if (subResult.success) {
-            alert("Video added and bilingual subtitles generated successfully!");
-          } else {
-            alert(`Video added, but subtitle generation failed: ${subResult.error}`);
-          }
-        } catch (subError: any) {
-           console.error("Subtitle generation error:", subError);
-           alert(`Video added, but subtitle generation error: ${subError.message}`);
-        }
-      } else if (!withSubs) {
-        // Only show alert if we are not generating subs, or maybe just silent success + refresh
-        // The original code didn't alert on success, just refreshed.
-      }
-
     } catch (error: any) {
       console.error("Failed to add YouTube video:", error);
       alert(`Failed to add video: ${error.message}`);
     } finally {
       setIsAddingYoutube(false);
-      setIsGeneratingSubs(false);
     }
   };
 
@@ -888,26 +865,15 @@ export function VideoZone({ courseId, initialVideos = [] }: VideoZoneProps) {
                 onChange={(e) => setYoutubeTitle(e.target.value)}
               />
             )}
-            <div className="grid grid-cols-2 gap-2">
-              <Button
-                className="w-full"
-                size="sm"
-                onClick={() => handleAddYoutubeVideo(false)}
-                disabled={isAddingYoutube || isGeneratingSubs || !youtubeUrl.trim() || !youtubeTitle.trim()}
-              >
-                <Link className="w-4 h-4 mr-2" />
-                {isAddingYoutube && !isGeneratingSubs ? "Adding..." : "Add Video"}
-              </Button>
-              <Button
-                className="w-full bg-purple-600 hover:bg-purple-700 text-white"
-                size="sm"
-                onClick={() => handleAddYoutubeVideo(true)}
-                disabled={isAddingYoutube || isGeneratingSubs || !youtubeUrl.trim() || !youtubeTitle.trim()}
-              >
-                <Sparkles className="w-4 h-4 mr-2" />
-                {isGeneratingSubs ? "Generating..." : "Add & AI Subs"}
-              </Button>
-            </div>
+            <Button
+              className="w-full"
+              size="sm"
+              onClick={handleAddYoutubeVideo}
+              disabled={isAddingYoutube || !youtubeUrl.trim() || !youtubeTitle.trim()}
+            >
+              <Link className="w-4 h-4 mr-2" />
+              {isAddingYoutube ? "Adding..." : "Add Video"}
+            </Button>
           </div>
         </div>
       </div>
