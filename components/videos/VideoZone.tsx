@@ -516,6 +516,14 @@ export function VideoZone({ courseId, initialVideos = [] }: VideoZoneProps) {
     setEditValue("");
   };
 
+  const handleVideoEnded = useCallback(() => {
+    const currentIndex = videos.findIndex(v => v.id === currentVideo?.id);
+    if (currentIndex !== -1 && currentIndex < videos.length - 1) {
+      const nextVideo = videos[currentIndex + 1];
+      setCurrentVideo(nextVideo);
+    }
+  }, [videos, currentVideo]);
+
   return (
     <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 h-auto items-start min-h-0">
       {/* Main Video Player */}
@@ -527,6 +535,7 @@ export function VideoZone({ courseId, initialVideos = [] }: VideoZoneProps) {
               videoId={getYouTubeVideoId(currentVideo.url)}
               title={currentVideo.title}
               autoPlay={true}
+              onEnded={handleVideoEnded}
             />
           ) : (
             <div className="absolute inset-0 flex flex-col items-center justify-center text-gray-500">
