@@ -69,12 +69,12 @@ export default function RegisterPage() {
     <ThemeProvider forcedTheme="light">
       <Navbar />
       <div className="flex min-h-screen items-center justify-center bg-slate-50 p-4">
-        <Card className="w-full max-w-lg shadow-xl border-slate-200 my-8">
+        <Card className="w-full max-w-lg shadow-xl border-slate-200 my-8 bg-white">
         <CardHeader className="space-y-1">
           <CardTitle className="text-center text-2xl font-bold text-slate-900">
             Create an Account
           </CardTitle>
-          <CardDescription className="text-center">
+          <CardDescription className="text-center text-slate-500">
             Enter your details and verify your email to get started
           </CardDescription>
         </CardHeader>
@@ -145,33 +145,33 @@ export default function RegisterPage() {
                 <div className="space-y-5 pt-4 px-1">
                     <div className="grid grid-cols-2 gap-4">
                         <div className="space-y-2">
-                            <Label htmlFor="firstName" className="font-medium">First Name</Label>
-                            <Input id="firstName" name="firstName" placeholder="John" className="bg-white" required />
+                            <Label htmlFor="firstName" className="font-medium text-slate-700">First Name</Label>
+                            <Input id="firstName" name="firstName" placeholder="John" className="bg-white border-slate-200 text-slate-900" required />
                         </div>
                         <div className="space-y-2">
-                            <Label htmlFor="lastName" className="font-medium">Last Name</Label>
-                            <Input id="lastName" name="lastName" placeholder="Tsang" className="bg-white" required />
+                            <Label htmlFor="lastName" className="font-medium text-slate-700">Last Name</Label>
+                            <Input id="lastName" name="lastName" placeholder="Tsang" className="bg-white border-slate-200 text-slate-900" required />
                         </div>
                     </div>
                     
                     <div className="space-y-2">
-                        <Label htmlFor="password">Password</Label>
-                        <Input id="password" name="password" type="password" placeholder="••••••••" className="bg-white" required />
+                        <Label htmlFor="password" className="text-slate-700">Password</Label>
+                        <Input id="password" name="password" type="password" placeholder="••••••••" className="bg-white border-slate-200 text-slate-900" required />
                     </div>
 
                     <div className="space-y-2">
-                        <Label htmlFor="school">School / University</Label>
-                        <Input id="school" name="school" placeholder="City University of Hong Kong" className="bg-white" required />
+                        <Label htmlFor="school" className="text-slate-700">School / University</Label>
+                        <Input id="school" name="school" placeholder="City University of Hong Kong" className="bg-white border-slate-200 text-slate-900" required />
                     </div>
 
                     <div className="grid grid-cols-2 gap-4">
                         <div className="space-y-2">
-                            <Label htmlFor="region">Region</Label>
-                            <Input id="region" name="region" placeholder="Hong Kong" className="bg-white" />
+                            <Label htmlFor="region" className="text-slate-700">Region</Label>
+                            <Input id="region" name="region" placeholder="Hong Kong" className="bg-white border-slate-200 text-slate-900" />
                         </div>
                         <div className="space-y-2">
-                            <Label htmlFor="startYear">Starting Year</Label>
-                            <Input id="startYear" name="startYear" type="number" min="1900" max="2100" placeholder="2025" className="bg-white" required />
+                            <Label htmlFor="startYear" className="text-slate-700">Starting Year</Label>
+                            <Input id="startYear" name="startYear" type="number" min="1900" max="2100" placeholder="2025" className="bg-white border-slate-200 text-slate-900" required />
                         </div>
                     </div>
 
@@ -201,7 +201,7 @@ export default function RegisterPage() {
           )}
           
           {state !== "User registered successfully." && (
-            <div className="mt-6 text-center text-sm text-slate-500 border-t pt-4">
+            <div className="mt-6 text-center text-sm text-slate-500 border-t border-slate-200 pt-4">
                 Already have an account?{" "}
                 <Link href="/signin" className="text-blue-600 hover:underline font-medium">
                 Sign in

@@ -40,19 +40,19 @@ export function EditableCourseHeader({
 
   return (
     <div className="flex flex-col gap-1">
-      <h1 className="text-3xl font-bold tracking-tight text-slate-900 flex items-center gap-2 flex-wrap">
+      <h1 className="text-3xl font-bold tracking-tight text-foreground flex items-center gap-2 flex-wrap">
         <EditableText
           value={code}
           onSave={handleSaveCode}
-          className="hover:bg-gray-100 rounded px-1 -mx-1"
-          inputClassName="text-3xl font-bold w-40"
+          className="hover:bg-muted/50 rounded px-1 -mx-1"
+          inputClassName="text-3xl font-bold w-40 bg-background text-foreground border-border"
         />
-        <span className="text-slate-400">-</span>
+        <span className="text-muted-foreground">-</span>
         <EditableText
           value={title}
           onSave={handleSaveTitle}
-          className="hover:bg-gray-100 rounded px-1 -mx-1"
-          inputClassName="text-3xl font-bold flex-1 min-w-[200px]"
+          className="hover:bg-muted/50 rounded px-1 -mx-1"
+          inputClassName="text-3xl font-bold flex-1 min-w-[200px] bg-background text-foreground border-border"
         />
       </h1>
       {description && (

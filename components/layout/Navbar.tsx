@@ -30,10 +30,10 @@ interface NavbarProps {
 
 export function Navbar({ user }: NavbarProps) {
   return (
-    <nav className="sticky top-0 z-50 w-full border-b bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/60">
+    <nav className="sticky top-0 z-50 w-full border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container mx-auto px-4 h-16 flex items-center justify-between">
         {/* Logo */}
-        <Link href="/" className="flex items-center gap-2 font-bold text-xl text-blue-700">
+        <Link href="/" className="flex items-center gap-2 font-bold text-xl text-primary">
           <GraduationCap className="h-6 w-6" />
           <span>UniShare</span>
         </Link>
@@ -47,7 +47,7 @@ export function Navbar({ user }: NavbarProps) {
                   {user.image ? (
                     <img src={user.image} alt={user.name || "User"} className="h-full w-full object-cover" />
                   ) : (
-                    <User className="h-5 w-5 text-slate-500" />
+                    <User className="h-5 w-5 text-muted-foreground" />
                   )}
                 </Button>
               </DropdownMenuTrigger>
@@ -55,7 +55,7 @@ export function Navbar({ user }: NavbarProps) {
                 <DropdownMenuLabel>
                   <div className="flex flex-col space-y-1">
                     <p className="text-sm font-medium leading-none">{user.name || "User"}</p>
-                    <p className="text-xs leading-none text-slate-500">{user.email}</p>
+                    <p className="text-xs leading-none text-muted-foreground">{user.email}</p>
                   </div>
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
@@ -67,7 +67,7 @@ export function Navbar({ user }: NavbarProps) {
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem 
-                  className="text-red-600 focus:text-red-600 cursor-pointer" 
+                  className="text-destructive focus:text-destructive cursor-pointer" 
                   onClick={() => signOutAction()}
                 >
                   <LogOut className="mr-2 h-4 w-4" />
@@ -93,7 +93,7 @@ export function Navbar({ user }: NavbarProps) {
             </SheetTrigger>
             <SheetContent side="right">
               <SheetHeader>
-                <SheetTitle className="flex items-center gap-2 text-blue-700">
+                <SheetTitle className="flex items-center gap-2 text-primary">
                   <GraduationCap className="h-5 w-5" />
                   UniShare
                 </SheetTitle>
@@ -106,12 +106,12 @@ export function Navbar({ user }: NavbarProps) {
                         {user.image ? (
                           <img src={user.image} alt={user.name || "User"} className="h-full w-full object-cover" />
                         ) : (
-                          <User className="h-5 w-5 text-slate-500" />
+                          <User className="h-5 w-5 text-muted-foreground" />
                         )}
                       </div>
                       <div>
                         <p className="text-sm font-medium">{user.name || "User"}</p>
-                        <p className="text-xs text-slate-500">{user.email}</p>
+                        <p className="text-xs text-muted-foreground">{user.email}</p>
                       </div>
                     </div>
                     <Link href="/settings">
@@ -122,7 +122,7 @@ export function Navbar({ user }: NavbarProps) {
                     </Link>
                     <Button 
                       variant="ghost" 
-                      className="w-full justify-start text-red-600 hover:text-red-600"
+                      className="w-full justify-start text-destructive hover:text-destructive"
                       onClick={() => signOutAction()}
                     >
                       <LogOut className="mr-2 h-4 w-4" />

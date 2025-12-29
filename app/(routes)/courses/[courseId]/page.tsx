@@ -31,8 +31,8 @@ const CoursePage = async ({ params, searchParams }: CoursePageProps) => {
   if (!course) {
     return (
       <div className="container mx-auto p-4 max-w-7xl">
-        <div className="bg-white rounded-xl shadow-sm border p-6">
-          <h1 className="text-2xl font-bold text-red-600">Course Not Found</h1>
+        <div className="bg-card rounded-xl shadow-sm border border-border p-6">
+          <h1 className="text-2xl font-bold text-destructive">Course Not Found</h1>
           <p className="mt-2 text-muted-foreground">This course ID does not exist or has been deleted.</p>
         </div>
       </div>

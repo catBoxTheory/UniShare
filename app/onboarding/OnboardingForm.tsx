@@ -37,28 +37,28 @@ export function OnboardingForm({ initialFirstName, initialLastName }: Onboarding
         <form action={formAction} className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                    <Label htmlFor="firstName">First Name</Label>
-                    <Input id="firstName" name="firstName" defaultValue={initialFirstName} required />
+                    <Label htmlFor="firstName" className="text-slate-700">First Name</Label>
+                    <Input id="firstName" name="firstName" defaultValue={initialFirstName} required className="bg-white border-slate-200" />
                 </div>
                 <div className="space-y-2">
-                    <Label htmlFor="lastName">Last Name</Label>
-                    <Input id="lastName" name="lastName" defaultValue={initialLastName} required />
+                    <Label htmlFor="lastName" className="text-slate-700">Last Name</Label>
+                    <Input id="lastName" name="lastName" defaultValue={initialLastName} required className="bg-white border-slate-200" />
                 </div>
             </div>
 
             <div className="space-y-2">
-                <Label htmlFor="school">School / University</Label>
-                <Input id="school" name="school" placeholder="City University of Hong Kong" required />
+                <Label htmlFor="school" className="text-slate-700">School / University</Label>
+                <Input id="school" name="school" placeholder="City University of Hong Kong" required className="bg-white border-slate-200" />
             </div>
 
             <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                    <Label htmlFor="region">Region</Label>
-                    <Input id="region" name="region" placeholder="Hong Kong" />
+                    <Label htmlFor="region" className="text-slate-700">Region</Label>
+                    <Input id="region" name="region" placeholder="Hong Kong" className="bg-white border-slate-200" />
                 </div>
                 <div className="space-y-2">
-                    <Label htmlFor="startYear">Starting Year</Label>
-                    <Input id="startYear" name="startYear" type="number" min="1900" max="2100" placeholder="2024" required />
+                    <Label htmlFor="startYear" className="text-slate-700">Starting Year</Label>
+                    <Input id="startYear" name="startYear" type="number" min="1900" max="2100" placeholder="2024" required className="bg-white border-slate-200" />
                 </div>
             </div>
 
