@@ -47,6 +47,26 @@ function extractVideoId(url: string): string | null {
 }
 
 /**
+ * Create YouTube agent with cookies for authentication
+ */
+function createYouTubeAgent() {
+  const cookiesJson = process.env.YOUTUBE_COOKIES_JSON;
+  if (!cookiesJson) {
+    console.warn("[Transcribe] No YouTube cookies configured, downloads may fail");
+    return undefined;
+  }
+  
+  try {
+    const cookies = JSON.parse(cookiesJson);
+    console.log(`[Transcribe] Creating YouTube agent with ${cookies.length} cookies`);
+    return ytdl.createAgent(cookies);
+  } catch (e) {
+    console.error("[Transcribe] Failed to parse YouTube cookies:", e);
+    return undefined;
+  }
+}
+
+/**
  * Convert stream to buffer
  */
 async function streamToBuffer(stream: Readable): Promise<Buffer> {
@@ -71,10 +91,21 @@ async function downloadYouTubeAudio(videoId: string): Promise<string> {
   
   console.log(`[Transcribe] Downloading audio for video: ${videoId}`);
   
-  // Get audio stream
+  // Create agent with cookies for authentication
+  const agent = createYouTubeAgent();
+  
+  // Get audio stream with authentication
   const audioStream = ytdl(url, {
     filter: "audioonly",
     quality: "lowestaudio", // Use lowest quality for faster download
+    agent: agent,
+    requestOptions: {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'Accept-Language': 'en-US,en;q=0.9',
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+      }
+    }
   });
   
   // Convert stream to buffer
