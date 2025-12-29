@@ -49,13 +49,15 @@ def download_audio(video_id):
     
     temp_dir = tempfile.mkdtemp()
     
+    # Use very low quality to keep file size under Groq's 25MB limit
+    # 24kbps * 60min = ~11MB, 24kbps * 120min = ~22MB
     ydl_opts = {
-        "format": "bestaudio/best",
+        "format": "worstaudio/worst",  # Get smallest audio format
         "outtmpl": os.path.join(temp_dir, "audio.%(ext)s"),
         "postprocessors": [{
             "key": "FFmpegExtractAudio",
             "preferredcodec": "mp3",
-            "preferredquality": "64",  # Lower quality for faster processing
+            "preferredquality": "24",  # Very low quality for speech (still clear enough)
         }],
         "quiet": True,
         "no_warnings": True,
@@ -77,7 +79,13 @@ def download_audio(video_id):
         raise Exception("Failed to download audio")
     
     file_size = os.path.getsize(audio_file)
-    logger.info(f"Downloaded: {title} ({duration}s, {file_size} bytes)")
+    file_size_mb = file_size / (1024 * 1024)
+    logger.info(f"Downloaded: {title} ({duration}s, {file_size_mb:.1f}MB)")
+    
+    # Check if file is still too large for Groq (25MB limit)
+    if file_size > 24 * 1024 * 1024:
+        logger.warning(f"Audio file still too large ({file_size_mb:.1f}MB > 24MB)")
+        raise Exception(f"Video too long ({duration}s). Maximum supported duration is about 120 minutes.")
     
     return audio_file, temp_dir, duration, title
 
