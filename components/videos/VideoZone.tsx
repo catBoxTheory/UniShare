@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { 
   Clock, PlayCircle, Trash2, Folder, FolderPlus, ChevronLeft, ChevronRight, Pencil,
-  Youtube, Link, Loader2, ArrowUpDown, SortAsc, SortDesc
+  Youtube, Link, Loader2, ArrowUpDown, SortAsc, SortDesc, Captions, Sparkles, Check, AlertCircle
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -125,6 +125,15 @@ export function VideoZone({ courseId, initialVideos = [] }: VideoZoneProps) {
   const [youtubeTitle, setYoutubeTitle] = useState("");
   const [isFetchingMetadata, setIsFetchingMetadata] = useState(false);
   const [isAddingYoutube, setIsAddingYoutube] = useState(false);
+
+  // AI Transcription
+  const [isTranscribing, setIsTranscribing] = useState(false);
+  const [transcriptionResult, setTranscriptionResult] = useState<{
+    success: boolean;
+    message: string;
+    segments?: number;
+  } | null>(null);
+  const [transcriptionDialogOpen, setTranscriptionDialogOpen] = useState(false);
 
   // Drag and drop
   const [draggedItemId, setDraggedItemId] = useState<string | null>(null);
@@ -524,6 +533,55 @@ export function VideoZone({ courseId, initialVideos = [] }: VideoZoneProps) {
     }
   }, [videos, currentVideo]);
 
+  // AI Transcription handler
+  const handleGenerateTranscription = async () => {
+    if (!currentVideo) return;
+    
+    const videoId = getYouTubeVideoId(currentVideo.url);
+    if (!videoId) {
+      setTranscriptionResult({
+        success: false,
+        message: "Invalid YouTube video URL",
+      });
+      return;
+    }
+
+    setIsTranscribing(true);
+    setTranscriptionResult(null);
+    setTranscriptionDialogOpen(true);
+
+    try {
+      const response = await fetch("/api/youtube/transcribe", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          videoId,
+          translateToChinese: true,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "Transcription failed");
+      }
+
+      setTranscriptionResult({
+        success: true,
+        message: "Subtitles generated successfully!",
+        segments: data.englishSubtitles?.length || 0,
+      });
+    } catch (error: any) {
+      console.error("Transcription error:", error);
+      setTranscriptionResult({
+        success: false,
+        message: error.message || "Failed to generate subtitles",
+      });
+    } finally {
+      setIsTranscribing(false);
+    }
+  };
+
   return (
     <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 h-auto items-start min-h-0">
       {/* Main Video Player */}
@@ -548,12 +606,36 @@ export function VideoZone({ courseId, initialVideos = [] }: VideoZoneProps) {
         {/* Video Title and Info (Outside player in normal mode) */}
         {currentVideo && !isFullscreen && (
           <div className="bg-card p-4 border-t border-border">
-            <h2 className="text-xl font-bold text-foreground">{currentVideo.title}</h2>
-            <div className="flex items-center gap-4 mt-2 text-sm text-muted-foreground">
-              <span className="flex items-center gap-1">
-                <Clock className="w-4 h-4" />
-                {new Date(currentVideo.createdAt).toLocaleDateString("en-US")}
-              </span>
+            <div className="flex items-start justify-between gap-4">
+              <div className="flex-1 min-w-0">
+                <h2 className="text-xl font-bold text-foreground">{currentVideo.title}</h2>
+                <div className="flex items-center gap-4 mt-2 text-sm text-muted-foreground">
+                  <span className="flex items-center gap-1">
+                    <Clock className="w-4 h-4" />
+                    {new Date(currentVideo.createdAt).toLocaleDateString("en-US")}
+                  </span>
+                </div>
+              </div>
+              {/* AI Transcription Button */}
+              {isYouTubeUrl(currentVideo.url) && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleGenerateTranscription}
+                  disabled={isTranscribing}
+                  className="flex items-center gap-2 shrink-0"
+                >
+                  {isTranscribing ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <Sparkles className="w-4 h-4" />
+                  )}
+                  <Captions className="w-4 h-4" />
+                  <span className="hidden sm:inline">
+                    {isTranscribing ? "Generating..." : "AI Subtitles"}
+                  </span>
+                </Button>
+              )}
             </div>
           </div>
         )}
@@ -969,6 +1051,105 @@ export function VideoZone({ courseId, initialVideos = [] }: VideoZoneProps) {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* AI Transcription Dialog */}
+      <Dialog open={transcriptionDialogOpen} onOpenChange={setTranscriptionDialogOpen}>
+        <DialogContent className="sm:max-w-[450px]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Sparkles className="w-5 h-5 text-primary" />
+              AI Subtitle Generation
+            </DialogTitle>
+            <DialogDescription>
+              {isTranscribing
+                ? "Transcribing audio and translating to Chinese. This may take 30-60 seconds..."
+                : "Generate subtitles using AI speech recognition."}
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="py-6">
+            {isTranscribing ? (
+              <div className="flex flex-col items-center justify-center space-y-4">
+                <div className="relative">
+                  <Loader2 className="w-12 h-12 animate-spin text-primary" />
+                  <Captions className="w-5 h-5 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-primary" />
+                </div>
+                <div className="text-center">
+                  <p className="text-sm font-medium text-foreground">Processing video audio...</p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Step 1: Downloading audio → Step 2: Transcribing → Step 3: Translating
+                  </p>
+                </div>
+                <div className="w-full bg-muted rounded-full h-2 overflow-hidden">
+                  <div className="bg-primary h-full animate-pulse" style={{ width: "100%" }} />
+                </div>
+              </div>
+            ) : transcriptionResult ? (
+              <div className="flex flex-col items-center justify-center space-y-4">
+                {transcriptionResult.success ? (
+                  <>
+                    <div className="w-12 h-12 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
+                      <Check className="w-6 h-6 text-green-600 dark:text-green-400" />
+                    </div>
+                    <div className="text-center">
+                      <p className="text-sm font-medium text-foreground">{transcriptionResult.message}</p>
+                      {transcriptionResult.segments && (
+                        <p className="text-xs text-muted-foreground mt-1">
+                          Generated {transcriptionResult.segments} subtitle segments (English + Chinese)
+                        </p>
+                      )}
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <div className="w-12 h-12 rounded-full bg-red-100 dark:bg-red-900/30 flex items-center justify-center">
+                      <AlertCircle className="w-6 h-6 text-red-600 dark:text-red-400" />
+                    </div>
+                    <div className="text-center">
+                      <p className="text-sm font-medium text-foreground">Generation Failed</p>
+                      <p className="text-xs text-muted-foreground mt-1">{transcriptionResult.message}</p>
+                    </div>
+                  </>
+                )}
+              </div>
+            ) : (
+              <div className="flex flex-col items-center justify-center space-y-4 text-center">
+                <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
+                  <Captions className="w-6 h-6 text-primary" />
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-foreground">No captions found for this video</p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Generate subtitles using AI? This takes approximately 30-60 seconds.
+                  </p>
+                </div>
+              </div>
+            )}
+          </div>
+
+          <DialogFooter>
+            {!isTranscribing && (
+              <>
+                <Button variant="outline" onClick={() => setTranscriptionDialogOpen(false)}>
+                  {transcriptionResult ? "Close" : "Cancel"}
+                </Button>
+                {!transcriptionResult && (
+                  <Button onClick={handleGenerateTranscription}>
+                    <Sparkles className="w-4 h-4 mr-2" />
+                    Generate Subtitles
+                  </Button>
+                )}
+                {transcriptionResult && !transcriptionResult.success && (
+                  <Button onClick={handleGenerateTranscription}>
+                    <Sparkles className="w-4 h-4 mr-2" />
+                    Try Again
+                  </Button>
+                )}
+              </>
+            )}
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
