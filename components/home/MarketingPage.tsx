@@ -136,7 +136,7 @@ export function MarketingPage() {
           </Button>
         </div>
       </section>
-      <Footer />
+      <Footer variant="solid" />
       </div>
     </ThemeProvider>
   )

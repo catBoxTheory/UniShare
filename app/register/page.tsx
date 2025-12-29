@@ -211,7 +211,7 @@ export default function RegisterPage() {
         </CardContent>
         </Card>
       </div>
-      <Footer />
+      <Footer variant="solid" />
     </ThemeProvider>
   )
 }

@@ -19,7 +19,7 @@ export default async function SignInPage() {
       <div className="flex min-h-screen items-center justify-center bg-slate-50 p-4">
         <SignInForm />
       </div>
-      <Footer />
+      <Footer variant="solid" />
     </ThemeProvider>
   )
 }
