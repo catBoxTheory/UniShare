@@ -33,7 +33,7 @@ export function Dashboard({ user, recentCourses, enrolledCourses, initialTab = "
   const [activeTab, setActiveTab] = useState(initialTab)
 
   return (
-    <div className="flex h-screen bg-slate-50">
+    <div className="flex h-screen bg-background">
       <Sidebar activeTab={activeTab} onTabChange={setActiveTab} />
       
       <div className="flex-1 flex flex-col overflow-hidden">
@@ -46,8 +46,8 @@ export function Dashboard({ user, recentCourses, enrolledCourses, initialTab = "
                 {/* Recent Views */}
                 <div>
                   <div className="flex items-center gap-2 mb-4">
-                    <Clock className="w-5 h-5 text-blue-600" />
-                    <h2 className="text-xl font-bold text-slate-900">Recently Viewed</h2>
+                    <Clock className="w-5 h-5 text-primary" />
+                    <h2 className="text-xl font-bold text-foreground">Recently Viewed</h2>
                   </div>
                   
                   {recentCourses.length > 0 ? (
@@ -57,8 +57,8 @@ export function Dashboard({ user, recentCourses, enrolledCourses, initialTab = "
                       ))}
                     </div>
                   ) : (
-                    <div className="bg-white rounded-xl border border-slate-200 p-8 text-center">
-                      <p className="text-slate-500">You haven't viewed any courses yet.</p>
+                    <div className="bg-card rounded-xl border border-border p-8 text-center">
+                      <p className="text-muted-foreground">You haven't viewed any courses yet.</p>
                       <Button variant="link" onClick={() => setActiveTab("library")}>
                         Go to Library
                       </Button>
@@ -73,8 +73,8 @@ export function Dashboard({ user, recentCourses, enrolledCourses, initialTab = "
               <div className="space-y-6">
                 <div className="flex items-center justify-between mb-4">
                   <div className="flex items-center gap-2">
-                    <Library className="w-5 h-5 text-blue-600" />
-                    <h2 className="text-xl font-bold text-slate-900">My Library</h2>
+                    <Library className="w-5 h-5 text-primary" />
+                    <h2 className="text-xl font-bold text-foreground">My Library</h2>
                   </div>
                   {enrolledCourses.length > 0 && <CreateCourseButton variant="outline" size="sm" />}
                 </div>
@@ -86,12 +86,12 @@ export function Dashboard({ user, recentCourses, enrolledCourses, initialTab = "
                     ))}
                   </div>
                 ) : (
-                  <div className="bg-white rounded-xl border border-dashed border-slate-300 p-12 text-center">
-                    <div className="w-16 h-16 bg-blue-50 rounded-full flex items-center justify-center mx-auto mb-4">
-                      <BookOpen className="w-8 h-8 text-blue-500" />
+                  <div className="bg-card rounded-xl border border-dashed border-border p-12 text-center">
+                    <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
+                      <BookOpen className="w-8 h-8 text-primary" />
                     </div>
-                    <h3 className="text-lg font-semibold text-slate-900 mb-2">Your library is empty</h3>
-                    <p className="text-slate-500 mb-6">Add courses to your library to access them quickly.</p>
+                    <h3 className="text-lg font-semibold text-foreground mb-2">Your library is empty</h3>
+                    <p className="text-muted-foreground mb-6">Add courses to your library to access them quickly.</p>
                     <div className="flex justify-center gap-4">
                       <Button asChild>
                         <Link href="/search">Browse Courses</Link>

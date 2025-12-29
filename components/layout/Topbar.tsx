@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { signOutAction } from "@/app/actions/auth"
 import { useRouter } from "next/navigation"
+import { ThemeToggle } from "@/components/theme-toggle"
 
 interface TopbarProps {
   user: {
@@ -36,14 +37,14 @@ export function Topbar({ user }: TopbarProps) {
   }
 
   return (
-    <header className="h-16 border-b border-slate-200 bg-white flex items-center justify-between px-6">
+    <header className="h-16 border-b border-border bg-background flex items-center justify-between px-6">
       {/* Search */}
       <div className="w-full max-w-xl">
         <form onSubmit={handleSearch} className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <Input 
             name="q"
-            className="pl-10 bg-slate-50 border-slate-200 focus:bg-white transition-colors" 
+            className="pl-10 bg-muted/50 border-input focus:bg-background transition-colors" 
             placeholder="Search for courses, documents..." 
           />
         </form>
@@ -51,13 +52,14 @@ export function Topbar({ user }: TopbarProps) {
 
       {/* User Profile */}
       <div className="flex items-center gap-4">
+        <ThemeToggle />
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" className="relative h-10 w-10 rounded-full p-0 overflow-hidden border">
                 {user.image ? (
                     <img src={user.image} alt={user.name || "User"} className="h-full w-full object-cover" />
                 ) : (
-                    <User className="h-6 w-6 text-slate-400" />
+                    <User className="h-6 w-6 text-muted-foreground" />
                 )}
             </Button>
           </DropdownMenuTrigger>

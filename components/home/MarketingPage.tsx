@@ -6,12 +6,14 @@ import { Button } from "@/components/ui/button"
 import { ArrowRight, BookOpen, GraduationCap, Users, Shield, Zap } from "lucide-react"
 import { Navbar } from "@/components/layout/Navbar"
 import { Footer } from "@/components/layout/Footer"
+import { ThemeProvider } from "@/components/theme-provider"
 
 export function MarketingPage() {
   return (
-    <div className="flex flex-col min-h-screen">
-      <Navbar />
-      {/* Hero Section */}
+    <ThemeProvider forcedTheme="light">
+      <div className="flex flex-col min-h-screen bg-white text-slate-900">
+        <Navbar />
+        {/* Hero Section */}
       <section className="relative overflow-hidden bg-gradient-to-br from-blue-600 via-indigo-700 to-purple-800 text-white pb-20 pt-32 lg:pt-40">
         <div className="container px-4 md:px-6 mx-auto relative z-10">
           <div className="grid lg:grid-cols-2 gap-12 items-center">
@@ -135,7 +137,8 @@ export function MarketingPage() {
         </div>
       </section>
       <Footer />
-    </div>
+      </div>
+    </ThemeProvider>
   )
 }
 
