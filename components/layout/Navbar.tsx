@@ -19,6 +19,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { signOutAction } from "@/app/actions/auth";
+import { cn } from "@/lib/utils";
 
 interface NavbarProps {
   user?: {
@@ -26,14 +27,23 @@ interface NavbarProps {
     email?: string | null;
     image?: string | null;
   } | null;
+  variant?: "solid" | "default";
 }
 
-export function Navbar({ user }: NavbarProps) {
+export function Navbar({ user, variant = "default" }: NavbarProps) {
   return (
-    <nav className="sticky top-0 z-50 w-full border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+    <nav className={cn(
+      "sticky top-0 z-50 w-full border-b",
+      variant === "solid" 
+        ? "bg-white border-slate-200" 
+        : "border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60"
+    )}>
       <div className="container mx-auto px-4 h-16 flex items-center justify-between">
         {/* Logo */}
-        <Link href="/" className="flex items-center gap-2 font-bold text-xl text-primary">
+        <Link href="/" className={cn(
+          "flex items-center gap-2 font-bold text-xl",
+          variant === "solid" ? "text-blue-700" : "text-primary"
+        )}>
           <GraduationCap className="h-6 w-6" />
           <span>UniShare</span>
         </Link>

@@ -67,7 +67,7 @@ export default function RegisterPage() {
 
   return (
     <ThemeProvider forcedTheme="light">
-      <Navbar />
+      <Navbar variant="solid" />
       <div className="flex min-h-screen items-center justify-center bg-slate-50 p-4">
         <Card className="w-full max-w-lg shadow-xl border-slate-200 my-8 bg-white">
         <CardHeader className="space-y-1">

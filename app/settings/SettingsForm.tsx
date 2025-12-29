@@ -49,10 +49,10 @@ export function SettingsForm({
     }, [state, router])
 
     return (
-        <Card className="shadow-lg border-slate-200">
+        <Card className="shadow-lg border-border bg-card">
             <CardHeader>
-                <CardTitle>Profile Settings</CardTitle>
-                <CardDescription>
+                <CardTitle className="text-foreground">Profile Settings</CardTitle>
+                <CardDescription className="text-muted-foreground">
                     Update your personal information and academic details.
                 </CardDescription>
             </CardHeader>
@@ -60,42 +60,42 @@ export function SettingsForm({
                 <form action={formAction} className="space-y-4">
                     <div className="grid grid-cols-2 gap-4">
                         <div className="space-y-2">
-                            <Label htmlFor="firstName">First Name</Label>
-                            <Input id="firstName" name="firstName" defaultValue={initialFirstName} required />
+                            <Label htmlFor="firstName" className="text-foreground">First Name</Label>
+                            <Input id="firstName" name="firstName" defaultValue={initialFirstName} required className="bg-input border-border" />
                         </div>
                         <div className="space-y-2">
-                            <Label htmlFor="lastName">Last Name</Label>
-                            <Input id="lastName" name="lastName" defaultValue={initialLastName} required />
+                            <Label htmlFor="lastName" className="text-foreground">Last Name</Label>
+                            <Input id="lastName" name="lastName" defaultValue={initialLastName} required className="bg-input border-border" />
                         </div>
                     </div>
 
                     <div className="space-y-2">
-                        <Label htmlFor="school">School / University</Label>
-                        <Input id="school" name="school" defaultValue={initialSchool} placeholder="e.g. City University of Hong Kong" required />
+                        <Label htmlFor="school" className="text-foreground">School / University</Label>
+                        <Input id="school" name="school" defaultValue={initialSchool} placeholder="e.g. City University of Hong Kong" required className="bg-input border-border" />
                     </div>
 
                     <div className="grid grid-cols-2 gap-4">
                         <div className="space-y-2">
-                            <Label htmlFor="region">Region</Label>
-                            <Input id="region" name="region" defaultValue={initialRegion} placeholder="Hong Kong" />
+                            <Label htmlFor="region" className="text-foreground">Region</Label>
+                            <Input id="region" name="region" defaultValue={initialRegion} placeholder="Hong Kong" className="bg-input border-border" />
                         </div>
                         <div className="space-y-2">
-                            <Label htmlFor="startYear">Starting Year</Label>
-                            <Input id="startYear" name="startYear" type="number" min="1900" max="2100" defaultValue={initialStartYear} required />
+                            <Label htmlFor="startYear" className="text-foreground">Starting Year</Label>
+                            <Input id="startYear" name="startYear" type="number" min="1900" max="2100" defaultValue={initialStartYear} required className="bg-input border-border" />
                         </div>
                     </div>
 
                     <SubmitButton />
                     
                     {showSuccess && (
-                        <div className="flex items-center justify-center gap-2 p-3 mt-4 text-sm text-green-700 bg-green-50 rounded-md animate-in fade-in slide-in-from-top-2">
+                        <div className="flex items-center justify-center gap-2 p-3 mt-4 text-sm text-green-700 bg-green-500/10 border border-green-500/20 rounded-md animate-in fade-in slide-in-from-top-2">
                             <CheckCircle2 className="w-4 h-4" />
                             Profile updated successfully!
                         </div>
                     )}
                     
                     {state && state !== "success" && (
-                        <p className="text-center text-sm text-red-500 mt-2">{state}</p>
+                        <p className="text-center text-sm text-destructive mt-2">{state}</p>
                     )}
                 </form>
             </CardContent>

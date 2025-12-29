@@ -44,11 +44,11 @@ export default async function SettingsPage() {
     return (
         <>
             <Navbar user={navbarUser} />
-            <div className="min-h-screen bg-slate-50 py-12 px-4 md:px-6">
+            <div className="min-h-screen bg-background py-12 px-4 md:px-6">
                 <div className="max-w-3xl mx-auto space-y-8">
                     <div>
-                        <h1 className="text-3xl font-bold text-slate-900">Account Settings</h1>
-                        <p className="text-slate-500 mt-2">Manage your profile and account preferences.</p>
+                        <h1 className="text-3xl font-bold text-foreground">Account Settings</h1>
+                        <p className="text-muted-foreground mt-2">Manage your profile and account preferences.</p>
                     </div>
 
                     <SettingsForm 

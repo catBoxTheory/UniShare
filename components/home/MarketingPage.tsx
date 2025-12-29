@@ -12,7 +12,7 @@ export function MarketingPage() {
   return (
     <ThemeProvider forcedTheme="light">
       <div className="flex flex-col min-h-screen bg-white text-slate-900">
-        <Navbar />
+        <Navbar variant="solid" />
         {/* Hero Section */}
       <section className="relative overflow-hidden bg-gradient-to-br from-blue-600 via-indigo-700 to-purple-800 text-white pb-20 pt-32 lg:pt-40">
         <div className="container px-4 md:px-6 mx-auto relative z-10">
