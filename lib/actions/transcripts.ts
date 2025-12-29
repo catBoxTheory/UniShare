@@ -1,16 +1,10 @@
 "use server";
 
-import Groq from "groq-sdk";
-import ytdl from "@distube/ytdl-core";
-import { Readable } from "stream";
-import { writeFile, unlink, mkdir } from "fs/promises";
-import { join } from "path";
-import { tmpdir } from "os";
-import { randomUUID } from "crypto";
+import { AssemblyAI, TranscriptUtterance } from "assemblyai";
 
-// Initialize Groq client
-const groq = new Groq({
-  apiKey: process.env.GROQ_API_KEY,
+// Initialize AssemblyAI client
+const assemblyai = new AssemblyAI({
+  apiKey: process.env.ASSEMBLYAI_API_KEY || "",
 });
 
 // DeepSeek API for translation
@@ -47,117 +41,101 @@ function extractVideoId(url: string): string | null {
 }
 
 /**
- * Create YouTube agent with cookies for authentication
+ * Convert YouTube video ID to full URL
  */
-function createYouTubeAgent() {
-  const cookiesJson = process.env.YOUTUBE_COOKIES_JSON;
-  if (!cookiesJson) {
-    console.warn("[Transcribe] No YouTube cookies configured, downloads may fail");
-    return undefined;
-  }
-  
-  try {
-    const cookies = JSON.parse(cookiesJson);
-    console.log(`[Transcribe] Creating YouTube agent with ${cookies.length} cookies`);
-    return ytdl.createAgent(cookies);
-  } catch (e) {
-    console.error("[Transcribe] Failed to parse YouTube cookies:", e);
-    return undefined;
-  }
+function getYouTubeUrl(videoId: string): string {
+  return `https://www.youtube.com/watch?v=${videoId}`;
 }
 
 /**
- * Convert stream to buffer
+ * Transcribe YouTube video using AssemblyAI
+ * AssemblyAI can directly accept YouTube URLs and handle the audio extraction
  */
-async function streamToBuffer(stream: Readable): Promise<Buffer> {
-  const chunks: Buffer[] = [];
-  for await (const chunk of stream) {
-    chunks.push(Buffer.from(chunk));
-  }
-  return Buffer.concat(chunks);
-}
-
-/**
- * Download audio from YouTube video
- */
-async function downloadYouTubeAudio(videoId: string): Promise<string> {
-  const url = `https://www.youtube.com/watch?v=${videoId}`;
+async function transcribeWithAssemblyAI(youtubeUrl: string): Promise<SubtitleSegment[]> {
+  console.log(`[Transcribe] Sending YouTube URL to AssemblyAI: ${youtubeUrl}`);
   
-  // Create temp directory if it doesn't exist
-  const tempDir = join(tmpdir(), "unistream-audio");
-  await mkdir(tempDir, { recursive: true });
-  
-  const tempFilePath = join(tempDir, `${randomUUID()}.mp3`);
-  
-  console.log(`[Transcribe] Downloading audio for video: ${videoId}`);
-  
-  // Create agent with cookies for authentication
-  const agent = createYouTubeAgent();
-  
-  // Get audio stream with authentication
-  const audioStream = ytdl(url, {
-    filter: "audioonly",
-    quality: "lowestaudio", // Use lowest quality for faster download
-    agent: agent,
-    requestOptions: {
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-        'Accept-Language': 'en-US,en;q=0.9',
-        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
-      }
-    }
+  // Create transcription with speaker labels for better segmentation
+  const transcript = await assemblyai.transcripts.transcribe({
+    audio_url: youtubeUrl,
+    language_code: "en", // Assuming English audio
   });
   
-  // Convert stream to buffer
-  const audioBuffer = await streamToBuffer(audioStream);
+  if (transcript.status === "error") {
+    throw new Error(transcript.error || "Transcription failed");
+  }
   
-  // Write to temp file
-  await writeFile(tempFilePath, audioBuffer);
+  console.log(`[Transcribe] AssemblyAI transcription complete`);
   
-  console.log(`[Transcribe] Audio downloaded to: ${tempFilePath}`);
-  
-  return tempFilePath;
-}
-
-/**
- * Transcribe audio file using Groq Whisper
- */
-async function transcribeWithGroq(audioFilePath: string): Promise<SubtitleSegment[]> {
-  console.log(`[Transcribe] Sending audio to Groq Whisper...`);
-  
-  const { createReadStream } = await import("fs");
-  const audioFile = createReadStream(audioFilePath);
-  
-  // Use Groq's Whisper API with verbose_json for timestamps
-  const transcription = await groq.audio.transcriptions.create({
-    file: audioFile,
-    model: "whisper-large-v3", // or "distil-whisper-large-v3-en" for English-only
-    response_format: "verbose_json",
-    language: "en", // Assuming English audio
-  });
-  
-  console.log(`[Transcribe] Transcription complete`);
-  
-  // Parse the response - verbose_json includes segments with timestamps
+  // Parse words into segments (group by sentences/pauses)
   const segments: SubtitleSegment[] = [];
   
-  if (transcription && typeof transcription === "object" && "segments" in transcription) {
-    const rawSegments = (transcription as any).segments || [];
-    for (const seg of rawSegments) {
-      segments.push({
-        start: seg.start || 0,
-        end: seg.end || 0,
-        text: (seg.text || "").trim(),
-      });
+  if (transcript.words && transcript.words.length > 0) {
+    // Group words into subtitle segments (roughly 5-10 seconds each)
+    let currentSegment: SubtitleSegment | null = null;
+    const MAX_SEGMENT_DURATION = 7000; // 7 seconds in ms
+    const MAX_WORDS_PER_SEGMENT = 15;
+    let wordCount = 0;
+    
+    for (const word of transcript.words) {
+      if (!currentSegment) {
+        currentSegment = {
+          start: word.start / 1000, // Convert ms to seconds
+          end: word.end / 1000,
+          text: word.text,
+        };
+        wordCount = 1;
+      } else {
+        const segmentDuration = word.end - (currentSegment.start * 1000);
+        
+        // Check if we should start a new segment
+        if (
+          segmentDuration > MAX_SEGMENT_DURATION ||
+          wordCount >= MAX_WORDS_PER_SEGMENT ||
+          word.text.match(/[.!?]$/) // End of sentence
+        ) {
+          // Add punctuation to current segment if word ends with it
+          if (word.text.match(/[.!?]$/)) {
+            currentSegment.text += " " + word.text;
+            currentSegment.end = word.end / 1000;
+          }
+          
+          segments.push(currentSegment);
+          
+          // Start new segment (skip if current word was end of sentence)
+          if (!word.text.match(/[.!?]$/)) {
+            currentSegment = {
+              start: word.start / 1000,
+              end: word.end / 1000,
+              text: word.text,
+            };
+            wordCount = 1;
+          } else {
+            currentSegment = null;
+            wordCount = 0;
+          }
+        } else {
+          // Add word to current segment
+          currentSegment.text += " " + word.text;
+          currentSegment.end = word.end / 1000;
+          wordCount++;
+        }
+      }
     }
-  } else if (transcription && typeof transcription === "object" && "text" in transcription) {
-    // Fallback if no segments - create single segment
+    
+    // Add remaining segment
+    if (currentSegment && currentSegment.text.trim()) {
+      segments.push(currentSegment);
+    }
+  } else if (transcript.text) {
+    // Fallback: single segment with full text
     segments.push({
       start: 0,
       end: 0,
-      text: (transcription as any).text || "",
+      text: transcript.text,
     });
   }
+  
+  console.log(`[Transcribe] Created ${segments.length} subtitle segments`);
   
   return segments;
 }
@@ -249,15 +227,22 @@ async function translateToChineseWithDeepSeek(
 
 /**
  * Main function: Transcribe YouTube video audio and optionally translate
+ * Uses AssemblyAI which can directly process YouTube URLs
  */
 export async function transcribeAudioFromYoutube(
   videoIdOrUrl: string,
   translateToChinese: boolean = true
 ): Promise<TranscriptionResult> {
-  let tempFilePath: string | null = null;
-  
   try {
-    // Extract video ID
+    // Check if AssemblyAI is configured
+    if (!process.env.ASSEMBLYAI_API_KEY) {
+      return {
+        success: false,
+        error: "AssemblyAI API key not configured",
+      };
+    }
+    
+    // Extract video ID and build URL
     const videoId = extractVideoId(videoIdOrUrl) || videoIdOrUrl;
     
     if (!videoId || videoId.length !== 11) {
@@ -267,13 +252,11 @@ export async function transcribeAudioFromYoutube(
       };
     }
     
+    const youtubeUrl = getYouTubeUrl(videoId);
     console.log(`[Transcribe] Starting transcription for video: ${videoId}`);
     
-    // Step 1: Download audio
-    tempFilePath = await downloadYouTubeAudio(videoId);
-    
-    // Step 2: Transcribe with Groq Whisper
-    const englishSubtitles = await transcribeWithGroq(tempFilePath);
+    // Step 1: Transcribe with AssemblyAI
+    const englishSubtitles = await transcribeWithAssemblyAI(youtubeUrl);
     
     if (englishSubtitles.length === 0) {
       return {
@@ -282,7 +265,7 @@ export async function transcribeAudioFromYoutube(
       };
     }
     
-    // Step 3: Translate to Chinese (optional)
+    // Step 2: Translate to Chinese (optional)
     let chineseSubtitles: SubtitleSegment[] = [];
     if (translateToChinese) {
       chineseSubtitles = await translateToChineseWithDeepSeek(englishSubtitles);
@@ -301,23 +284,12 @@ export async function transcribeAudioFromYoutube(
       success: false,
       error: error instanceof Error ? error.message : "Unknown error occurred",
     };
-  } finally {
-    // Clean up temp file
-    if (tempFilePath) {
-      try {
-        await unlink(tempFilePath);
-        console.log(`[Transcribe] Cleaned up temp file`);
-      } catch (e) {
-        // Ignore cleanup errors
-      }
-    }
   }
 }
 
 /**
- * Check if Groq API is configured
+ * Check if transcription service is available
  */
 export async function isTranscriptionAvailable(): Promise<boolean> {
-  return !!process.env.GROQ_API_KEY;
+  return !!process.env.ASSEMBLYAI_API_KEY;
 }
-

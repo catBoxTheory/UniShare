@@ -9,7 +9,7 @@ export async function POST(request: NextRequest) {
     const available = await isTranscriptionAvailable();
     if (!available) {
       return NextResponse.json(
-        { error: "Transcription service not configured. Please set GROQ_API_KEY." },
+        { error: "Transcription service not configured. Please set ASSEMBLYAI_API_KEY." },
         { status: 503 }
       );
     }
@@ -56,8 +56,8 @@ export async function GET() {
   return NextResponse.json({
     available,
     message: available
-      ? "Transcription service is available"
-      : "Transcription service not configured. Please set GROQ_API_KEY.",
+      ? "Transcription service is available (AssemblyAI)"
+      : "Transcription service not configured. Please set ASSEMBLYAI_API_KEY.",
   });
 }
 
