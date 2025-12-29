@@ -71,16 +71,16 @@ export function CourseCard({ course, initialEnrolled }: CourseCardProps) {
   return (
     <div className="group relative">
       <Link href={`/courses/${course.id}`}>
-        <Card className="h-full overflow-hidden transition-all hover:shadow-lg border-slate-200 hover:border-blue-300">
+        <Card className="h-full overflow-hidden transition-all hover:shadow-lg border-border hover:border-blue-300 bg-card">
           <div className="h-28 bg-blue-600 bg-gradient-to-br from-blue-500 to-indigo-600 group-hover:from-blue-600 group-hover:to-indigo-700 transition-all flex items-center justify-center relative">
             <span className="text-3xl font-bold text-white drop-shadow-sm">{displayCode}</span>
           </div>
           <CardContent className="p-5">
-            <h3 className="font-bold text-lg mb-2 group-hover:text-blue-600 transition-colors line-clamp-2">
+            <h3 className="font-bold text-lg mb-2 text-foreground group-hover:text-blue-600 transition-colors line-clamp-2">
               {displayTitle}
             </h3>
             {course.department && (
-              <p className="text-sm text-slate-500">{course.department.name}</p>
+              <p className="text-sm text-muted-foreground">{course.department.name}</p>
             )}
           </CardContent>
         </Card>
@@ -99,7 +99,7 @@ export function CourseCard({ course, initialEnrolled }: CourseCardProps) {
           variant="ghost"
           size="icon"
           onClick={handleOpenRename}
-          className="h-8 w-8 bg-white/90 hover:bg-white text-gray-600 hover:text-gray-800 shadow-sm"
+          className="h-8 w-8 bg-card/90 hover:bg-card text-muted-foreground hover:text-foreground shadow-sm"
         >
           <Pencil className="w-4 h-4" />
         </Button>

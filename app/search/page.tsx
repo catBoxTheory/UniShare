@@ -35,15 +35,15 @@ export default async function SearchPage({ searchParams }: { searchParams: { q?:
   return (
     <>
       <Navbar user={user} />
-      <div className="flex flex-col min-h-screen bg-slate-50">
+      <div className="flex flex-col min-h-screen bg-background">
         {/* Header Section */}
-        <div className="bg-white border-b border-slate-200 py-8">
+        <div className="bg-card border-b border-border py-8">
           <div className="container px-4 md:px-6 mx-auto max-w-7xl">
             <Link 
               href="/" 
-              className="inline-flex items-center text-sm font-medium text-slate-500 hover:text-blue-600 transition-colors mb-6 group"
+              className="inline-flex items-center text-sm font-medium text-muted-foreground hover:text-primary transition-colors mb-6 group"
             >
-              <div className="w-8 h-8 rounded-full bg-slate-50 flex items-center justify-center mr-2 group-hover:bg-blue-50 group-hover:text-blue-600 transition-all border border-slate-100 group-hover:border-blue-100">
+              <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center mr-2 group-hover:bg-primary/10 group-hover:text-primary transition-all border border-border group-hover:border-primary/20">
                 <ArrowLeft className="w-4 h-4" />
               </div>
               Back to Dashboard
@@ -51,7 +51,7 @@ export default async function SearchPage({ searchParams }: { searchParams: { q?:
             
             <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
               <div>
-                <h1 className="text-3xl font-bold tracking-tight text-slate-900 mb-2">
+                <h1 className="text-3xl font-bold tracking-tight text-foreground mb-2">
                   Search Results
                 </h1>
                 <p className="text-muted-foreground">
@@ -61,10 +61,10 @@ export default async function SearchPage({ searchParams }: { searchParams: { q?:
               
               <div className="w-full md:max-w-md">
                 <form className="relative flex items-center" action="/search">
-                  <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                  <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                   <Input 
                     name="q"
-                    className="pl-10 h-11 bg-slate-50 border-slate-200 focus:bg-white transition-colors" 
+                    className="pl-10 h-11 bg-background border-border focus:bg-background transition-colors" 
                     placeholder="Search courses..." 
                     type="search"
                     defaultValue={searchParams?.q}
@@ -78,10 +78,10 @@ export default async function SearchPage({ searchParams }: { searchParams: { q?:
         {/* Results Section */}
         <div className="container px-4 md:px-6 mx-auto py-8 max-w-7xl flex-1">
           {courses.length === 0 ? (
-            <div className="text-center py-16 bg-white rounded-xl border-2 border-dashed border-slate-200">
-              <Search className="w-16 h-16 mx-auto mb-4 text-slate-300" />
-              <h3 className="text-xl font-semibold text-slate-700 mb-2">No courses found</h3>
-              <p className="text-slate-500 mb-6">Try searching for a different keyword or course code.</p>
+            <div className="text-center py-16 bg-card rounded-xl border-2 border-dashed border-border">
+              <Search className="w-16 h-16 mx-auto mb-4 text-muted-foreground/50" />
+              <h3 className="text-xl font-semibold text-foreground mb-2">No courses found</h3>
+              <p className="text-muted-foreground mb-6">Try searching for a different keyword or course code.</p>
               <div className="flex flex-col sm:flex-row justify-center gap-3">
                   <Button variant="outline" asChild className="min-w-[140px]">
                       <Link href="/">
