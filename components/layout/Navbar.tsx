@@ -35,7 +35,7 @@ export function Navbar({ user, variant = "default" }: NavbarProps) {
     <nav className={cn(
       "sticky top-0 z-50 w-full border-b",
       variant === "solid" 
-        ? "bg-white border-slate-200" 
+        ? "bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/80 border-slate-200" 
         : "border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60"
     )}>
       <div className="container mx-auto px-4 h-16 flex items-center justify-between">
