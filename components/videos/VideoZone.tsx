@@ -551,6 +551,7 @@ export function VideoZone({ courseId, initialVideos = [] }: VideoZoneProps) {
     setTranscriptionDialogOpen(true);
 
     try {
+      // Step 1: Try to fetch native YouTube captions via Vercel API
       const response = await fetch("/api/youtube/transcribe", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -563,12 +564,10 @@ export function VideoZone({ courseId, initialVideos = [] }: VideoZoneProps) {
       const data = await response.json();
 
       if (!response.ok) {
-        // Handle "no subtitles" case specially
+        // If no native captions, try AI transcription directly via Railway
         if (data.noSubtitles) {
-          setTranscriptionResult({
-            success: false,
-            message: "This video does not have captions available. Try enabling YouTube's auto-generated captions.",
-          });
+          console.log("[Subtitles] No native captions, trying AI transcription...");
+          await handleAITranscription(videoId);
           return;
         }
         throw new Error(data.error || "Failed to fetch subtitles");
@@ -584,6 +583,56 @@ export function VideoZone({ courseId, initialVideos = [] }: VideoZoneProps) {
       setTranscriptionResult({
         success: false,
         message: error.message || "Failed to fetch subtitles",
+      });
+    } finally {
+      setIsTranscribing(false);
+    }
+  };
+
+  // AI transcription via Railway (bypasses Vercel timeout)
+  const handleAITranscription = async (videoId: string) => {
+    const railwayUrl = process.env.NEXT_PUBLIC_AUDIO_SERVICE_URL;
+    
+    if (!railwayUrl) {
+      setTranscriptionResult({
+        success: false,
+        message: "AI transcription service is not configured.",
+      });
+      setIsTranscribing(false);
+      return;
+    }
+
+    try {
+      setTranscriptionResult({
+        success: false,
+        message: "No native captions found. Generating AI subtitles... This may take 1-3 minutes for long videos.",
+      });
+
+      const response = await fetch(`${railwayUrl}/transcribe-public`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          videoId,
+          translateToChinese: true,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok || !data.success) {
+        throw new Error(data.error || "AI transcription failed");
+      }
+
+      setTranscriptionResult({
+        success: true,
+        message: `AI subtitles generated successfully! (${data.englishSubtitles?.length || 0} segments)`,
+        segments: data.englishSubtitles?.length || 0,
+      });
+    } catch (error: any) {
+      console.error("AI transcription error:", error);
+      setTranscriptionResult({
+        success: false,
+        message: error.message || "AI transcription failed",
       });
     } finally {
       setIsTranscribing(false);

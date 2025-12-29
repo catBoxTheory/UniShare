@@ -28,6 +28,14 @@ DEEPSEEK_API_KEY = os.environ.get("DEEPSEEK_API_KEY", "")
 GROQ_API_URL = "https://api.groq.com/openai/v1/audio/transcriptions"
 DEEPSEEK_API_URL = "https://api.deepseek.com/v1/chat/completions"
 
+# Allowed origins for public endpoint (without API key)
+ALLOWED_ORIGINS = [
+    "https://unishare.dpdns.org",
+    "https://unistream.vercel.app",
+    "http://localhost:3000",
+    "http://localhost:3001",
+]
+
 
 def verify_api_key():
     """Verify the API key from request headers."""
@@ -36,6 +44,26 @@ def verify_api_key():
         return False
     token = auth_header.split(" ")[1]
     return token == API_KEY
+
+
+def verify_origin():
+    """Verify the request origin for public endpoints."""
+    origin = request.headers.get("Origin", "")
+    referer = request.headers.get("Referer", "")
+    
+    # Check Origin header
+    if origin:
+        for allowed in ALLOWED_ORIGINS:
+            if origin.startswith(allowed.rstrip("/")):
+                return True
+    
+    # Check Referer header as fallback
+    if referer:
+        for allowed in ALLOWED_ORIGINS:
+            if referer.startswith(allowed.rstrip("/")):
+                return True
+    
+    return False
 
 
 def download_audio(video_id):
@@ -305,6 +333,94 @@ def transcribe_video():
     
     finally:
         # Cleanup temp directory
+        if temp_dir and os.path.exists(temp_dir):
+            import shutil
+            try:
+                shutil.rmtree(temp_dir)
+            except:
+                pass
+
+
+@app.route("/transcribe-public", methods=["POST", "OPTIONS"])
+def transcribe_video_public():
+    """
+    Public endpoint for browser-based transcription requests.
+    Uses Origin/Referer verification instead of API key.
+    """
+    # Handle CORS preflight
+    if request.method == "OPTIONS":
+        response = jsonify({"status": "ok"})
+        response.headers.add("Access-Control-Allow-Origin", request.headers.get("Origin", "*"))
+        response.headers.add("Access-Control-Allow-Headers", "Content-Type")
+        response.headers.add("Access-Control-Allow-Methods", "POST, OPTIONS")
+        return response
+    
+    # Verify origin
+    if not verify_origin():
+        logger.warning(f"Unauthorized origin: {request.headers.get('Origin', 'none')}")
+        return jsonify({"error": "Unauthorized origin"}), 403
+    
+    temp_dir = None
+    
+    try:
+        data = request.get_json()
+        video_id = data.get("videoId")
+        translate_to_chinese_flag = data.get("translateToChinese", True)
+        
+        if not video_id:
+            return jsonify({"error": "videoId is required"}), 400
+        
+        # Validate video ID format
+        if len(video_id) != 11:
+            return jsonify({"error": "Invalid video ID format"}), 400
+        
+        logger.info(f"[Public] Starting transcription for: {video_id}")
+        
+        # Step 1: Download audio
+        audio_file, temp_dir, duration, title = download_audio(video_id)
+        
+        # Step 2: Transcribe with Groq
+        english_subtitles = transcribe_with_groq(audio_file)
+        
+        if not english_subtitles:
+            return jsonify({
+                "success": False,
+                "error": "Transcription produced no results",
+            }), 500
+        
+        # Step 3: Translate to Chinese (optional)
+        chinese_subtitles = []
+        if translate_to_chinese_flag:
+            chinese_subtitles = translate_to_chinese(english_subtitles)
+        
+        logger.info(f"[Public] Pipeline complete: {len(english_subtitles)} segments")
+        
+        response = jsonify({
+            "success": True,
+            "englishSubtitles": english_subtitles,
+            "chineseSubtitles": chinese_subtitles,
+            "duration": duration,
+            "title": title,
+        })
+        response.headers.add("Access-Control-Allow-Origin", request.headers.get("Origin", "*"))
+        return response
+    
+    except yt_dlp.utils.DownloadError as e:
+        logger.error(f"[Public] Download error: {str(e)}")
+        return jsonify({
+            "success": False,
+            "error": "Failed to download video",
+            "details": str(e),
+        }), 400
+    
+    except Exception as e:
+        logger.error(f"[Public] Pipeline error: {str(e)}")
+        return jsonify({
+            "success": False,
+            "error": str(e),
+        }), 500
+    
+    finally:
         if temp_dir and os.path.exists(temp_dir):
             import shutil
             try:
