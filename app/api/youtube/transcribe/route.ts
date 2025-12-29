@@ -1,19 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
-import { transcribeAudioFromYoutube, isTranscriptionAvailable } from "@/lib/actions/transcripts";
+import { fetchAndTranslateSubtitles } from "@/lib/actions/transcripts";
 
-export const maxDuration = 120; // Allow up to 2 minutes for transcription
+export const maxDuration = 60; // Allow up to 1 minute for subtitle fetching and translation
 
 export async function POST(request: NextRequest) {
   try {
-    // Check if transcription is available
-    const available = await isTranscriptionAvailable();
-    if (!available) {
-      return NextResponse.json(
-        { error: "Transcription service not configured. Please set ASSEMBLYAI_API_KEY." },
-        { status: 503 }
-      );
-    }
-
     const body = await request.json();
     const { videoId, translateToChinese = true } = body;
 
@@ -24,13 +15,24 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    console.log(`[API] Transcription request for video: ${videoId}`);
+    console.log(`[API] Subtitle request for video: ${videoId}`);
 
-    const result = await transcribeAudioFromYoutube(videoId, translateToChinese);
+    const result = await fetchAndTranslateSubtitles(videoId, translateToChinese);
 
     if (!result.success) {
+      // Special handling for "no subtitles" case
+      if (result.noSubtitles) {
+        return NextResponse.json(
+          { 
+            error: result.error || "No captions available",
+            noSubtitles: true,
+          },
+          { status: 404 }
+        );
+      }
+      
       return NextResponse.json(
-        { error: result.error || "Transcription failed" },
+        { error: result.error || "Failed to fetch subtitles" },
         { status: 500 }
       );
     }
@@ -41,7 +43,7 @@ export async function POST(request: NextRequest) {
       chineseSubtitles: result.chineseSubtitles,
     });
   } catch (error) {
-    console.error("[API] Transcription error:", error);
+    console.error("[API] Subtitle error:", error);
     return NextResponse.json(
       { error: error instanceof Error ? error.message : "Internal server error" },
       { status: 500 }
@@ -50,14 +52,9 @@ export async function POST(request: NextRequest) {
 }
 
 export async function GET() {
-  // Check if transcription service is available
-  const available = await isTranscriptionAvailable();
-  
   return NextResponse.json({
-    available,
-    message: available
-      ? "Transcription service is available (AssemblyAI)"
-      : "Transcription service not configured. Please set ASSEMBLYAI_API_KEY.",
+    available: true,
+    message: "YouTube caption fetching service is available",
   });
 }
 

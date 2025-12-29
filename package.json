@@ -31,7 +31,6 @@
     "@types/fluent-ffmpeg": "^2.1.28",
     "@types/marked": "^5.0.2",
     "@types/react-syntax-highlighter": "^15.5.13",
-    "assemblyai": "^4.22.1",
     "bcryptjs": "^3.0.3",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
@@ -53,6 +52,7 @@
     "react-syntax-highlighter": "^16.1.0",
     "tailwind-merge": "^3.4.0",
     "tailwindcss-animate": "^1.0.7",
+    "youtube-transcript": "^1.2.1",
     "zod": "^4.2.1"
   },
   "devDependencies": {

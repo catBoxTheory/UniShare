@@ -1,11 +1,6 @@
 "use server";
 
-import { AssemblyAI, TranscriptUtterance } from "assemblyai";
-
-// Initialize AssemblyAI client
-const assemblyai = new AssemblyAI({
-  apiKey: process.env.ASSEMBLYAI_API_KEY || "",
-});
+import { YoutubeTranscript } from "youtube-transcript";
 
 // DeepSeek API for translation
 const DEEPSEEK_API_KEY = process.env.DEEPSEEK_API_KEY;
@@ -22,6 +17,7 @@ export interface TranscriptionResult {
   englishSubtitles?: SubtitleSegment[];
   chineseSubtitles?: SubtitleSegment[];
   error?: string;
+  noSubtitles?: boolean;
 }
 
 /**
@@ -41,103 +37,53 @@ function extractVideoId(url: string): string | null {
 }
 
 /**
- * Convert YouTube video ID to full URL
+ * Fetch YouTube captions using youtube-transcript library
  */
-function getYouTubeUrl(videoId: string): string {
-  return `https://www.youtube.com/watch?v=${videoId}`;
-}
-
-/**
- * Transcribe YouTube video using AssemblyAI
- * AssemblyAI can directly accept YouTube URLs and handle the audio extraction
- */
-async function transcribeWithAssemblyAI(youtubeUrl: string): Promise<SubtitleSegment[]> {
-  console.log(`[Transcribe] Sending YouTube URL to AssemblyAI: ${youtubeUrl}`);
+async function fetchYouTubeCaptions(videoId: string): Promise<SubtitleSegment[]> {
+  console.log(`[Subtitles] Fetching captions for video: ${videoId}`);
   
-  // Create transcription with speaker labels for better segmentation
-  const transcript = await assemblyai.transcripts.transcribe({
-    audio_url: youtubeUrl,
-    language_code: "en", // Assuming English audio
-  });
-  
-  if (transcript.status === "error") {
-    throw new Error(transcript.error || "Transcription failed");
-  }
-  
-  console.log(`[Transcribe] AssemblyAI transcription complete`);
-  
-  // Parse words into segments (group by sentences/pauses)
-  const segments: SubtitleSegment[] = [];
-  
-  if (transcript.words && transcript.words.length > 0) {
-    // Group words into subtitle segments (roughly 5-10 seconds each)
-    let currentSegment: SubtitleSegment | null = null;
-    const MAX_SEGMENT_DURATION = 7000; // 7 seconds in ms
-    const MAX_WORDS_PER_SEGMENT = 15;
-    let wordCount = 0;
-    
-    for (const word of transcript.words) {
-      if (!currentSegment) {
-        currentSegment = {
-          start: word.start / 1000, // Convert ms to seconds
-          end: word.end / 1000,
-          text: word.text,
-        };
-        wordCount = 1;
-      } else {
-        const segmentDuration = word.end - (currentSegment.start * 1000);
-        
-        // Check if we should start a new segment
-        if (
-          segmentDuration > MAX_SEGMENT_DURATION ||
-          wordCount >= MAX_WORDS_PER_SEGMENT ||
-          word.text.match(/[.!?]$/) // End of sentence
-        ) {
-          // Add punctuation to current segment if word ends with it
-          if (word.text.match(/[.!?]$/)) {
-            currentSegment.text += " " + word.text;
-            currentSegment.end = word.end / 1000;
-          }
-          
-          segments.push(currentSegment);
-          
-          // Start new segment (skip if current word was end of sentence)
-          if (!word.text.match(/[.!?]$/)) {
-            currentSegment = {
-              start: word.start / 1000,
-              end: word.end / 1000,
-              text: word.text,
-            };
-            wordCount = 1;
-          } else {
-            currentSegment = null;
-            wordCount = 0;
-          }
-        } else {
-          // Add word to current segment
-          currentSegment.text += " " + word.text;
-          currentSegment.end = word.end / 1000;
-          wordCount++;
-        }
-      }
-    }
-    
-    // Add remaining segment
-    if (currentSegment && currentSegment.text.trim()) {
-      segments.push(currentSegment);
-    }
-  } else if (transcript.text) {
-    // Fallback: single segment with full text
-    segments.push({
-      start: 0,
-      end: 0,
-      text: transcript.text,
+  try {
+    // Try to get English captions first, then any available
+    const transcript = await YoutubeTranscript.fetchTranscript(videoId, {
+      lang: "en",
     });
+    
+    if (!transcript || transcript.length === 0) {
+      console.log(`[Subtitles] No English captions, trying any language...`);
+      const anyTranscript = await YoutubeTranscript.fetchTranscript(videoId);
+      
+      if (!anyTranscript || anyTranscript.length === 0) {
+        return [];
+      }
+      
+      return anyTranscript.map((item) => ({
+        start: item.offset / 1000, // Convert ms to seconds
+        end: (item.offset + item.duration) / 1000,
+        text: item.text.replace(/\n/g, " ").trim(),
+      }));
+    }
+    
+    console.log(`[Subtitles] Found ${transcript.length} caption segments`);
+    
+    return transcript.map((item) => ({
+      start: item.offset / 1000,
+      end: (item.offset + item.duration) / 1000,
+      text: item.text.replace(/\n/g, " ").trim(),
+    }));
+  } catch (error: any) {
+    console.error(`[Subtitles] Error fetching captions:`, error.message);
+    
+    // Check if it's a "no captions" error
+    if (
+      error.message?.includes("Transcript is disabled") ||
+      error.message?.includes("No transcript") ||
+      error.message?.includes("Could not find")
+    ) {
+      return [];
+    }
+    
+    throw error;
   }
-  
-  console.log(`[Transcribe] Created ${segments.length} subtitle segments`);
-  
-  return segments;
 }
 
 /**
@@ -147,11 +93,11 @@ async function translateToChineseWithDeepSeek(
   englishSegments: SubtitleSegment[]
 ): Promise<SubtitleSegment[]> {
   if (!DEEPSEEK_API_KEY) {
-    console.warn("[Transcribe] DeepSeek API key not configured, skipping translation");
+    console.warn("[Subtitles] DeepSeek API key not configured, skipping translation");
     return [];
   }
   
-  console.log(`[Transcribe] Translating ${englishSegments.length} segments to Chinese...`);
+  console.log(`[Subtitles] Translating ${englishSegments.length} segments to Chinese...`);
   
   // Batch translate - combine segments for efficiency
   const batchSize = 20;
@@ -186,7 +132,7 @@ async function translateToChineseWithDeepSeek(
       });
       
       if (!response.ok) {
-        console.error(`[Transcribe] DeepSeek translation failed: ${response.status}`);
+        console.error(`[Subtitles] DeepSeek translation failed: ${response.status}`);
         continue;
       }
       
@@ -212,7 +158,7 @@ async function translateToChineseWithDeepSeek(
         });
       }
     } catch (error) {
-      console.error(`[Transcribe] Translation batch error:`, error);
+      console.error(`[Subtitles] Translation batch error:`, error);
       // Add original segments as fallback
       for (const seg of batch) {
         chineseSegments.push({ ...seg });
@@ -220,29 +166,20 @@ async function translateToChineseWithDeepSeek(
     }
   }
   
-  console.log(`[Transcribe] Translation complete`);
+  console.log(`[Subtitles] Translation complete`);
   
   return chineseSegments;
 }
 
 /**
- * Main function: Transcribe YouTube video audio and optionally translate
- * Uses AssemblyAI which can directly process YouTube URLs
+ * Main function: Fetch YouTube captions and optionally translate
  */
-export async function transcribeAudioFromYoutube(
+export async function fetchAndTranslateSubtitles(
   videoIdOrUrl: string,
   translateToChinese: boolean = true
 ): Promise<TranscriptionResult> {
   try {
-    // Check if AssemblyAI is configured
-    if (!process.env.ASSEMBLYAI_API_KEY) {
-      return {
-        success: false,
-        error: "AssemblyAI API key not configured",
-      };
-    }
-    
-    // Extract video ID and build URL
+    // Extract video ID
     const videoId = extractVideoId(videoIdOrUrl) || videoIdOrUrl;
     
     if (!videoId || videoId.length !== 11) {
@@ -252,16 +189,16 @@ export async function transcribeAudioFromYoutube(
       };
     }
     
-    const youtubeUrl = getYouTubeUrl(videoId);
-    console.log(`[Transcribe] Starting transcription for video: ${videoId}`);
+    console.log(`[Subtitles] Starting subtitle fetch for video: ${videoId}`);
     
-    // Step 1: Transcribe with AssemblyAI
-    const englishSubtitles = await transcribeWithAssemblyAI(youtubeUrl);
+    // Step 1: Fetch YouTube captions
+    const englishSubtitles = await fetchYouTubeCaptions(videoId);
     
     if (englishSubtitles.length === 0) {
       return {
         success: false,
-        error: "Transcription produced no results",
+        noSubtitles: true,
+        error: "This video does not have captions available",
       };
     }
     
@@ -271,7 +208,7 @@ export async function transcribeAudioFromYoutube(
       chineseSubtitles = await translateToChineseWithDeepSeek(englishSubtitles);
     }
     
-    console.log(`[Transcribe] Successfully transcribed ${englishSubtitles.length} segments`);
+    console.log(`[Subtitles] Successfully processed ${englishSubtitles.length} segments`);
     
     return {
       success: true,
@@ -279,7 +216,7 @@ export async function transcribeAudioFromYoutube(
       chineseSubtitles,
     };
   } catch (error) {
-    console.error(`[Transcribe] Error:`, error);
+    console.error(`[Subtitles] Error:`, error);
     return {
       success: false,
       error: error instanceof Error ? error.message : "Unknown error occurred",
@@ -287,9 +224,18 @@ export async function transcribeAudioFromYoutube(
   }
 }
 
+// Keep backward compatibility with old function name
+export async function transcribeAudioFromYoutube(
+  videoIdOrUrl: string,
+  translateToChinese: boolean = true
+): Promise<TranscriptionResult> {
+  return fetchAndTranslateSubtitles(videoIdOrUrl, translateToChinese);
+}
+
 /**
- * Check if transcription service is available
+ * Check if subtitle service is available
+ * Always returns true since we're using public YouTube captions
  */
 export async function isTranscriptionAvailable(): Promise<boolean> {
-  return !!process.env.ASSEMBLYAI_API_KEY;
+  return true; // YouTube captions are always available to fetch
 }

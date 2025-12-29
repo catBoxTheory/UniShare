@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { 
   Clock, PlayCircle, Trash2, Folder, FolderPlus, ChevronLeft, ChevronRight, Pencil,
-  Youtube, Link, Loader2, ArrowUpDown, SortAsc, SortDesc, Captions, Sparkles, Check, AlertCircle
+  Youtube, Link, Loader2, ArrowUpDown, SortAsc, SortDesc, Captions, Check, AlertCircle
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -533,7 +533,7 @@ export function VideoZone({ courseId, initialVideos = [] }: VideoZoneProps) {
     }
   }, [videos, currentVideo]);
 
-  // AI Transcription handler
+  // Subtitle fetching handler
   const handleGenerateTranscription = async () => {
     if (!currentVideo) return;
     
@@ -563,19 +563,27 @@ export function VideoZone({ courseId, initialVideos = [] }: VideoZoneProps) {
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.error || "Transcription failed");
+        // Handle "no subtitles" case specially
+        if (data.noSubtitles) {
+          setTranscriptionResult({
+            success: false,
+            message: "This video does not have captions available. Try enabling YouTube's auto-generated captions.",
+          });
+          return;
+        }
+        throw new Error(data.error || "Failed to fetch subtitles");
       }
 
       setTranscriptionResult({
         success: true,
-        message: "Subtitles generated successfully!",
+        message: "Subtitles fetched and translated successfully!",
         segments: data.englishSubtitles?.length || 0,
       });
     } catch (error: any) {
-      console.error("Transcription error:", error);
+      console.error("Subtitle error:", error);
       setTranscriptionResult({
         success: false,
-        message: error.message || "Failed to generate subtitles",
+        message: error.message || "Failed to fetch subtitles",
       });
     } finally {
       setIsTranscribing(false);
@@ -628,11 +636,10 @@ export function VideoZone({ courseId, initialVideos = [] }: VideoZoneProps) {
                   {isTranscribing ? (
                     <Loader2 className="w-4 h-4 animate-spin" />
                   ) : (
-                    <Sparkles className="w-4 h-4" />
+                    <Captions className="w-4 h-4" />
                   )}
-                  <Captions className="w-4 h-4" />
                   <span className="hidden sm:inline">
-                    {isTranscribing ? "Generating..." : "AI Subtitles"}
+                    {isTranscribing ? "Loading..." : "Get Subtitles"}
                   </span>
                 </Button>
               )}
@@ -1052,18 +1059,18 @@ export function VideoZone({ courseId, initialVideos = [] }: VideoZoneProps) {
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* AI Transcription Dialog */}
+      {/* Subtitle Dialog */}
       <Dialog open={transcriptionDialogOpen} onOpenChange={setTranscriptionDialogOpen}>
         <DialogContent className="sm:max-w-[450px]">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <Sparkles className="w-5 h-5 text-primary" />
-              AI Subtitle Generation
+              <Captions className="w-5 h-5 text-primary" />
+              Bilingual Subtitles
             </DialogTitle>
             <DialogDescription>
               {isTranscribing
-                ? "Transcribing audio and translating to Chinese. This may take 30-60 seconds..."
-                : "Generate subtitles using AI speech recognition."}
+                ? "Fetching captions and translating to Chinese..."
+                : "Get YouTube captions and translate to Traditional Chinese."}
             </DialogDescription>
           </DialogHeader>
           
@@ -1075,9 +1082,9 @@ export function VideoZone({ courseId, initialVideos = [] }: VideoZoneProps) {
                   <Captions className="w-5 h-5 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-primary" />
                 </div>
                 <div className="text-center">
-                  <p className="text-sm font-medium text-foreground">Processing video audio...</p>
+                  <p className="text-sm font-medium text-foreground">Processing subtitles...</p>
                   <p className="text-xs text-muted-foreground mt-1">
-                    Step 1: Downloading audio → Step 2: Transcribing → Step 3: Translating
+                    Fetching YouTube captions → Translating to Chinese
                   </p>
                 </div>
                 <div className="w-full bg-muted rounded-full h-2 overflow-hidden">
@@ -1095,18 +1102,18 @@ export function VideoZone({ courseId, initialVideos = [] }: VideoZoneProps) {
                       <p className="text-sm font-medium text-foreground">{transcriptionResult.message}</p>
                       {transcriptionResult.segments && (
                         <p className="text-xs text-muted-foreground mt-1">
-                          Generated {transcriptionResult.segments} subtitle segments (English + Chinese)
+                          {transcriptionResult.segments} subtitle segments (English + Chinese)
                         </p>
                       )}
                     </div>
                   </>
                 ) : (
                   <>
-                    <div className="w-12 h-12 rounded-full bg-red-100 dark:bg-red-900/30 flex items-center justify-center">
-                      <AlertCircle className="w-6 h-6 text-red-600 dark:text-red-400" />
+                    <div className="w-12 h-12 rounded-full bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center">
+                      <AlertCircle className="w-6 h-6 text-amber-600 dark:text-amber-400" />
                     </div>
                     <div className="text-center">
-                      <p className="text-sm font-medium text-foreground">Generation Failed</p>
+                      <p className="text-sm font-medium text-foreground">No Captions Available</p>
                       <p className="text-xs text-muted-foreground mt-1">{transcriptionResult.message}</p>
                     </div>
                   </>
@@ -1118,9 +1125,9 @@ export function VideoZone({ courseId, initialVideos = [] }: VideoZoneProps) {
                   <Captions className="w-6 h-6 text-primary" />
                 </div>
                 <div>
-                  <p className="text-sm font-medium text-foreground">No captions found for this video</p>
+                  <p className="text-sm font-medium text-foreground">Get Bilingual Subtitles</p>
                   <p className="text-xs text-muted-foreground mt-1">
-                    Generate subtitles using AI? This takes approximately 30-60 seconds.
+                    Fetch YouTube captions and translate to Traditional Chinese
                   </p>
                 </div>
               </div>
@@ -1135,13 +1142,13 @@ export function VideoZone({ courseId, initialVideos = [] }: VideoZoneProps) {
                 </Button>
                 {!transcriptionResult && (
                   <Button onClick={handleGenerateTranscription}>
-                    <Sparkles className="w-4 h-4 mr-2" />
-                    Generate Subtitles
+                    <Captions className="w-4 h-4 mr-2" />
+                    Get Subtitles
                   </Button>
                 )}
                 {transcriptionResult && !transcriptionResult.success && (
                   <Button onClick={handleGenerateTranscription}>
-                    <Sparkles className="w-4 h-4 mr-2" />
+                    <Captions className="w-4 h-4 mr-2" />
                     Try Again
                   </Button>
                 )}
