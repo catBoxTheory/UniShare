@@ -120,7 +120,7 @@ export function DocumentPreview({ document }: DocumentPreviewProps) {
 
   if (!document) {
     return (
-      <div className="flex flex-col items-center justify-center h-full text-gray-400 p-8">
+      <div className="flex flex-col items-center justify-center h-full text-muted-foreground p-8">
         <FileText className="w-16 h-16 mb-4 opacity-50" />
         <p className="text-center">Select a document to preview</p>
       </div>
@@ -140,8 +140,8 @@ export function DocumentPreview({ document }: DocumentPreviewProps) {
   if (isPDF) {
     return (
       <div className="h-full flex flex-col">
-        <div className="flex items-center justify-between p-3 border-b bg-gray-50">
-          <h3 className="font-medium text-sm truncate flex-1">{document.title}</h3>
+        <div className="flex items-center justify-between p-3 border-b border-border bg-muted">
+          <h3 className="font-medium text-sm truncate flex-1 text-foreground">{document.title}</h3>
           <div className="flex gap-2">
             <Button variant="outline" size="sm" asChild>
               <a href={safeUrl} target="_blank" rel="noopener noreferrer">
@@ -168,8 +168,8 @@ export function DocumentPreview({ document }: DocumentPreviewProps) {
   if (isNotebook) {
     return (
       <div className="h-full flex flex-col">
-        <div className="flex items-center justify-between p-3 border-b bg-gray-50">
-          <h3 className="font-medium text-sm truncate flex-1 flex items-center gap-2">
+        <div className="flex items-center justify-between p-3 border-b border-border bg-muted">
+          <h3 className="font-medium text-sm truncate flex-1 flex items-center gap-2 text-foreground">
             <span className="text-orange-500">📓</span>
             {document.title}
           </h3>
@@ -180,9 +180,9 @@ export function DocumentPreview({ document }: DocumentPreviewProps) {
             </a>
           </Button>
         </div>
-        <div className="flex-1 overflow-auto p-4 bg-white">
+        <div className="flex-1 overflow-auto p-4 bg-card">
           {loading ? (
-            <div className="text-center py-8 text-gray-500">Loading notebook...</div>
+            <div className="text-center py-8 text-muted-foreground">Loading notebook...</div>
           ) : notebookData ? (
             <div className="space-y-4">
               {notebookData.cells.map((cell, index) => (
@@ -190,7 +190,7 @@ export function DocumentPreview({ document }: DocumentPreviewProps) {
               ))}
             </div>
           ) : (
-            <div className="text-center py-8 text-gray-500">Failed to load notebook</div>
+            <div className="text-center py-8 text-muted-foreground">Failed to load notebook</div>
           )}
         </div>
       </div>
@@ -204,8 +204,8 @@ export function DocumentPreview({ document }: DocumentPreviewProps) {
     
     return (
       <div className="h-full flex flex-col">
-        <div className="flex items-center justify-between p-3 border-b bg-gray-50">
-          <h3 className="font-medium text-sm truncate flex-1">{document.title}</h3>
+        <div className="flex items-center justify-between p-3 border-b border-border bg-muted">
+          <h3 className="font-medium text-sm truncate flex-1 text-foreground">{document.title}</h3>
           <div className="flex gap-2">
             <Button variant="outline" size="sm" asChild>
               <a href={directUrl} target="_blank" rel="noopener noreferrer">
@@ -229,12 +229,12 @@ export function DocumentPreview({ document }: DocumentPreviewProps) {
               title="PPT Preview"
             />
           ) : (
-            <div className="flex-1 flex flex-col items-center justify-center p-8 bg-gradient-to-br from-orange-50 to-red-50 h-full">
-              <div className="w-32 h-40 bg-white rounded-lg shadow-lg flex items-center justify-center mb-6 border">
+            <div className="flex-1 flex flex-col items-center justify-center p-8 bg-gradient-to-br from-orange-50 to-red-50 dark:from-orange-950/20 dark:to-red-950/20 h-full">
+              <div className="w-32 h-40 bg-card rounded-lg shadow-lg flex items-center justify-center mb-6 border border-border">
                 <FileText className="w-16 h-16 text-orange-500" />
               </div>
-              <h4 className="text-lg font-medium text-gray-800 mb-2">PowerPoint Presentation</h4>
-              <p className="text-sm text-gray-500 text-center mb-4 max-w-xs">
+              <h4 className="text-lg font-medium text-foreground mb-2">PowerPoint Presentation</h4>
+              <p className="text-sm text-muted-foreground text-center mb-4 max-w-xs">
                 Download the file to view it in Microsoft PowerPoint or Google Slides
               </p>
               <Button asChild>
@@ -257,8 +257,8 @@ export function DocumentPreview({ document }: DocumentPreviewProps) {
     
     return (
       <div className="h-full flex flex-col">
-        <div className="flex items-center justify-between p-3 border-b bg-gray-50">
-          <h3 className="font-medium text-sm truncate flex-1">{document.title}</h3>
+        <div className="flex items-center justify-between p-3 border-b border-border bg-muted">
+          <h3 className="font-medium text-sm truncate flex-1 text-foreground">{document.title}</h3>
           <div className="flex gap-2">
             <Button variant="outline" size="sm" asChild>
               <a href={directUrl} target="_blank" rel="noopener noreferrer">
@@ -282,12 +282,12 @@ export function DocumentPreview({ document }: DocumentPreviewProps) {
               title="Word Document Preview"
             />
           ) : (
-            <div className="flex-1 flex flex-col items-center justify-center p-8 bg-gradient-to-br from-blue-50 to-indigo-50 h-full">
-              <div className="w-32 h-40 bg-white rounded-lg shadow-lg flex items-center justify-center mb-6 border">
+            <div className="flex-1 flex flex-col items-center justify-center p-8 bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-950/20 dark:to-indigo-950/20 h-full">
+              <div className="w-32 h-40 bg-card rounded-lg shadow-lg flex items-center justify-center mb-6 border border-border">
                 <FileText className="w-16 h-16 text-blue-600" />
               </div>
-              <h4 className="text-lg font-medium text-gray-800 mb-2">Word Document</h4>
-              <p className="text-sm text-gray-500 text-center mb-4 max-w-xs">
+              <h4 className="text-lg font-medium text-foreground mb-2">Word Document</h4>
+              <p className="text-sm text-muted-foreground text-center mb-4 max-w-xs">
                 Download the file to view it in Microsoft Word or Google Docs
               </p>
               <Button asChild>
@@ -307,8 +307,8 @@ export function DocumentPreview({ document }: DocumentPreviewProps) {
   if (isCSV) {
     return (
       <div className="h-full flex flex-col">
-        <div className="flex items-center justify-between p-3 border-b bg-gray-50">
-          <h3 className="font-medium text-sm truncate flex-1 flex items-center gap-2">
+        <div className="flex items-center justify-between p-3 border-b border-border bg-muted">
+          <h3 className="font-medium text-sm truncate flex-1 flex items-center gap-2 text-foreground">
             <Table className="w-4 h-4 text-green-600" />
             {document.title}
           </h3>
@@ -319,19 +319,19 @@ export function DocumentPreview({ document }: DocumentPreviewProps) {
             </a>
           </Button>
         </div>
-        <div className="flex-1 overflow-auto p-4 bg-white">
+        <div className="flex-1 overflow-auto p-4 bg-card">
           {loading ? (
-            <div className="text-center py-8 text-gray-500">Loading CSV...</div>
+            <div className="text-center py-8 text-muted-foreground">Loading CSV...</div>
           ) : csvData ? (
-            <div className="border rounded-lg overflow-hidden">
-              <table className="min-w-full divide-y divide-gray-200">
-                <tbody className="bg-white divide-y divide-gray-200">
+            <div className="border border-border rounded-lg overflow-hidden">
+              <table className="min-w-full divide-y divide-border">
+                <tbody className="bg-card divide-y divide-border">
                   {csvData.map((row, i) => (
-                    <tr key={i} className={i === 0 ? "bg-gray-50" : ""}>
+                    <tr key={i} className={i === 0 ? "bg-muted" : ""}>
                       {row.map((cell, j) => (
                         <td key={j} className={cn(
-                          "px-3 py-2 text-xs text-gray-600 whitespace-nowrap border-r last:border-r-0",
-                          i === 0 && "font-semibold text-gray-900"
+                          "px-3 py-2 text-xs text-muted-foreground whitespace-nowrap border-r border-border last:border-r-0",
+                          i === 0 && "font-semibold text-foreground"
                         )}>
                           {cell}
                         </td>
@@ -341,13 +341,13 @@ export function DocumentPreview({ document }: DocumentPreviewProps) {
                 </tbody>
               </table>
               {csvData.length === 50 && (
-                <div className="p-2 text-center text-xs text-gray-400 bg-gray-50 border-t">
+                <div className="p-2 text-center text-xs text-muted-foreground bg-muted border-t border-border">
                   Showing first 50 rows only
                 </div>
               )}
             </div>
           ) : (
-            <div className="text-center py-8 text-gray-500">Failed to load CSV</div>
+            <div className="text-center py-8 text-muted-foreground">Failed to load CSV</div>
           )}
         </div>
       </div>
@@ -358,8 +358,8 @@ export function DocumentPreview({ document }: DocumentPreviewProps) {
   if (isPY) {
     return (
       <div className="h-full flex flex-col">
-        <div className="flex items-center justify-between p-3 border-b bg-gray-50">
-          <h3 className="font-medium text-sm truncate flex-1 flex items-center gap-2">
+        <div className="flex items-center justify-between p-3 border-b border-border bg-muted">
+          <h3 className="font-medium text-sm truncate flex-1 flex items-center gap-2 text-foreground">
             <span className="text-blue-500 font-bold">Py</span>
             {document.title}
           </h3>
@@ -389,8 +389,8 @@ export function DocumentPreview({ document }: DocumentPreviewProps) {
   if (isTXT) {
     return (
       <div className="h-full flex flex-col">
-        <div className="flex items-center justify-between p-3 border-b bg-gray-50">
-          <h3 className="font-medium text-sm truncate flex-1 flex items-center gap-2">
+        <div className="flex items-center justify-between p-3 border-b border-border bg-muted">
+          <h3 className="font-medium text-sm truncate flex-1 flex items-center gap-2 text-foreground">
             <FileText className="w-4 h-4 text-blue-500" />
             {document.title}
           </h3>
@@ -401,15 +401,15 @@ export function DocumentPreview({ document }: DocumentPreviewProps) {
             </a>
           </Button>
         </div>
-        <div className="flex-1 overflow-auto p-4 bg-white">
+        <div className="flex-1 overflow-auto p-4 bg-card">
           {loading ? (
-            <div className="text-center py-8 text-gray-500">Loading text...</div>
+            <div className="text-center py-8 text-muted-foreground">Loading text...</div>
           ) : textData !== null ? (
-            <pre className="whitespace-pre-wrap font-mono text-sm text-gray-700 bg-gray-50 p-4 rounded border">
+            <pre className="whitespace-pre-wrap font-mono text-sm text-foreground bg-muted p-4 rounded border border-border">
               {textData}
             </pre>
           ) : (
-            <div className="text-center py-8 text-gray-500">Failed to load text content</div>
+            <div className="text-center py-8 text-muted-foreground">Failed to load text content</div>
           )}
         </div>
       </div>
@@ -419,8 +419,8 @@ export function DocumentPreview({ document }: DocumentPreviewProps) {
   // Fallback for other file types
   return (
     <div className="h-full flex flex-col items-center justify-center p-8">
-      <FileText className="w-16 h-16 text-gray-400 mb-4" />
-      <h4 className="text-lg font-medium text-gray-800 mb-2">{document.title}</h4>
+      <FileText className="w-16 h-16 text-muted-foreground mb-4" />
+      <h4 className="text-lg font-medium text-foreground mb-2">{document.title}</h4>
       <Button variant="outline" asChild>
         <a href={safeUrl} download>
           <Download className="w-4 h-4 mr-2" />
@@ -437,7 +437,7 @@ function NotebookCellPreview({ cell, index }: { cell: NotebookCell; index: numbe
 
   if (cell.cell_type === 'markdown') {
     return (
-      <div className="prose prose-sm max-w-none p-4 bg-white rounded border">
+      <div className="prose prose-sm dark:prose-invert max-w-none p-4 bg-card rounded border border-border">
         <div dangerouslySetInnerHTML={{ __html: parseMarkdown(source) }} />
       </div>
     );
@@ -445,15 +445,15 @@ function NotebookCellPreview({ cell, index }: { cell: NotebookCell; index: numbe
 
   if (cell.cell_type === 'code') {
     return (
-      <div className="rounded border overflow-hidden">
-        <div className="flex items-center gap-2 px-3 py-1.5 bg-gray-100 border-b text-xs text-gray-500">
+      <div className="rounded border border-border overflow-hidden">
+        <div className="flex items-center gap-2 px-3 py-1.5 bg-muted border-b border-border text-xs text-muted-foreground">
           <span className="font-mono">[{index + 1}]</span>
         </div>
         <pre className="p-3 bg-gray-900 text-gray-100 text-sm overflow-x-auto">
           <code>{source}</code>
         </pre>
         {cell.outputs && cell.outputs.length > 0 && (
-          <div className="p-3 bg-white border-t text-sm">
+          <div className="p-3 bg-card border-t border-border text-sm">
             {cell.outputs.map((output, i) => (
               <NotebookOutput key={i} output={output} />
             ))}
@@ -464,7 +464,7 @@ function NotebookCellPreview({ cell, index }: { cell: NotebookCell; index: numbe
   }
 
   return (
-    <pre className="p-3 bg-gray-50 rounded border text-sm overflow-x-auto">
+    <pre className="p-3 bg-muted rounded border border-border text-sm overflow-x-auto text-foreground">
       {source}
     </pre>
   );
@@ -472,12 +472,12 @@ function NotebookCellPreview({ cell, index }: { cell: NotebookCell; index: numbe
 
 function NotebookOutput({ output }: { output: any }) {
   if (output.output_type === 'stream') {
-    return <pre className="text-sm text-gray-700">{output.text?.join?.('') || output.text}</pre>;
+    return <pre className="text-sm text-foreground">{output.text?.join?.('') || output.text}</pre>;
   }
   if (output.output_type === 'execute_result' || output.output_type === 'display_data') {
     const data = output.data;
     if (data?.['text/plain']) {
-      return <pre className="text-sm text-gray-700">{data['text/plain'].join?.('') || data['text/plain']}</pre>;
+      return <pre className="text-sm text-foreground">{data['text/plain'].join?.('') || data['text/plain']}</pre>;
     }
     if (data?.['image/png']) {
       return <img src={`data:image/png;base64,${data['image/png']}`} alt="Output" className="max-w-full" />;
@@ -485,7 +485,7 @@ function NotebookOutput({ output }: { output: any }) {
   }
   if (output.output_type === 'error') {
     return (
-      <pre className="text-sm text-red-600">
+      <pre className="text-sm text-destructive">
         {output.ename}: {output.evalue}
       </pre>
     );
