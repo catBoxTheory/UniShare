@@ -61,27 +61,27 @@ export function SettingsForm({
                     <div className="grid grid-cols-2 gap-4">
                         <div className="space-y-2">
                             <Label htmlFor="firstName" className="text-foreground">First Name</Label>
-                            <Input id="firstName" name="firstName" defaultValue={initialFirstName} required className="bg-input border-border" />
+                            <Input id="firstName" name="firstName" defaultValue={initialFirstName} required className="bg-background border-border" />
                         </div>
                         <div className="space-y-2">
                             <Label htmlFor="lastName" className="text-foreground">Last Name</Label>
-                            <Input id="lastName" name="lastName" defaultValue={initialLastName} required className="bg-input border-border" />
+                            <Input id="lastName" name="lastName" defaultValue={initialLastName} required className="bg-background border-border" />
                         </div>
                     </div>
 
                     <div className="space-y-2">
                         <Label htmlFor="school" className="text-foreground">School / University</Label>
-                        <Input id="school" name="school" defaultValue={initialSchool} placeholder="e.g. City University of Hong Kong" required className="bg-input border-border" />
+                        <Input id="school" name="school" defaultValue={initialSchool} placeholder="e.g. City University of Hong Kong" required className="bg-background border-border" />
                     </div>
 
                     <div className="grid grid-cols-2 gap-4">
                         <div className="space-y-2">
                             <Label htmlFor="region" className="text-foreground">Region</Label>
-                            <Input id="region" name="region" defaultValue={initialRegion} placeholder="Hong Kong" className="bg-input border-border" />
+                            <Input id="region" name="region" defaultValue={initialRegion} placeholder="Hong Kong" className="bg-background border-border" />
                         </div>
                         <div className="space-y-2">
                             <Label htmlFor="startYear" className="text-foreground">Starting Year</Label>
-                            <Input id="startYear" name="startYear" type="number" min="1900" max="2100" defaultValue={initialStartYear} required className="bg-input border-border" />
+                            <Input id="startYear" name="startYear" type="number" min="1900" max="2100" defaultValue={initialStartYear} required className="bg-background border-border" />
                         </div>
                     </div>
 
