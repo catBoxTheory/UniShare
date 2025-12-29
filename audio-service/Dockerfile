@@ -21,6 +21,7 @@ COPY . .
 # Expose port (Railway will set PORT env var)
 EXPOSE 5000
 
-# Run the application with extended timeout for large downloads
-CMD ["sh", "-c", "gunicorn app:app --bind 0.0.0.0:${PORT:-5000} --timeout 180 --workers 2"]
+# Run the application with extended timeout for transcription pipeline
+# timeout 600 = 10 minutes for full download + transcribe + translate
+CMD ["sh", "-c", "gunicorn app:app --bind 0.0.0.0:${PORT:-5000} --timeout 600 --workers 2 --graceful-timeout 300"]
 

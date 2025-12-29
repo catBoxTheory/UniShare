@@ -1,17 +1,12 @@
 "use server";
 
 import { YoutubeTranscript } from "youtube-transcript";
-import Groq from "groq-sdk";
 
 // API Keys
 const DEEPSEEK_API_KEY = process.env.DEEPSEEK_API_KEY;
 const DEEPSEEK_API_URL = "https://api.deepseek.com/v1/chat/completions";
-const GROQ_API_KEY = process.env.GROQ_API_KEY;
-const AUDIO_SERVICE_URL = process.env.AUDIO_SERVICE_URL; // Python microservice URL
+const AUDIO_SERVICE_URL = process.env.AUDIO_SERVICE_URL; // Python microservice URL (Railway)
 const AUDIO_SERVICE_API_KEY = process.env.AUDIO_SERVICE_API_KEY;
-
-// Initialize Groq client
-const groq = GROQ_API_KEY ? new Groq({ apiKey: GROQ_API_KEY }) : null;
 
 // Invidious instances for fallback
 const INVIDIOUS_INSTANCES = [
@@ -207,25 +202,24 @@ async function fetchYouTubeCaptions(videoId: string): Promise<SubtitleSegment[]>
 }
 
 /**
- * Download audio from YouTube using Python microservice and transcribe with Groq
+ * Full pipeline: Download audio, transcribe, and translate using Python microservice
+ * This runs entirely on Railway to avoid Vercel timeout limits
  */
-async function transcribeWithAudioService(videoId: string): Promise<SubtitleSegment[]> {
+async function transcribeWithAudioService(videoId: string): Promise<{
+  englishSubtitles: SubtitleSegment[];
+  chineseSubtitles: SubtitleSegment[];
+} | null> {
   if (!AUDIO_SERVICE_URL || !AUDIO_SERVICE_API_KEY) {
     console.log("[Subtitles] Audio service not configured, skipping AI transcription");
-    return [];
+    return null;
   }
   
-  if (!groq) {
-    console.log("[Subtitles] Groq API not configured, skipping AI transcription");
-    return [];
-  }
-  
-  console.log(`[Subtitles] Using AI transcription for video: ${videoId}`);
+  console.log(`[Subtitles] Using AI transcription service for video: ${videoId}`);
   
   try {
-    // Step 1: Download audio from Python microservice
-    console.log("[Subtitles] Requesting audio download from microservice...");
-    const downloadResponse = await fetch(`${AUDIO_SERVICE_URL}/download`, {
+    // Call the /transcribe endpoint which handles everything on Railway
+    console.log("[Subtitles] Calling transcription service...");
+    const response = await fetch(`${AUDIO_SERVICE_URL}/transcribe`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -233,73 +227,30 @@ async function transcribeWithAudioService(videoId: string): Promise<SubtitleSegm
       },
       body: JSON.stringify({
         videoId,
-        format: "base64",
+        translateToChinese: true,
       }),
     });
     
-    if (!downloadResponse.ok) {
-      const errorData = await downloadResponse.json().catch(() => ({}));
-      throw new Error(errorData.error || `Download failed: ${downloadResponse.status}`);
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.error || `Transcription failed: ${response.status}`);
     }
     
-    const downloadData = await downloadResponse.json();
+    const data = await response.json();
     
-    if (!downloadData.success || !downloadData.audio) {
-      throw new Error("No audio data received from download service");
+    if (!data.success) {
+      throw new Error(data.error || "Transcription failed");
     }
     
-    console.log(`[Subtitles] Audio downloaded: ${downloadData.duration}s, ${downloadData.size} bytes`);
+    console.log(`[Subtitles] AI transcription complete: ${data.englishSubtitles?.length || 0} segments`);
     
-    // Step 2: Convert base64 to File for Groq
-    const audioBuffer = Buffer.from(downloadData.audio, "base64");
-    const audioBlob = new Blob([audioBuffer], { type: "audio/mp3" });
-    const audioFile = new File([audioBlob], "audio.mp3", { type: "audio/mp3" });
-    
-    // Step 3: Transcribe with Groq Whisper
-    console.log("[Subtitles] Transcribing audio with Groq Whisper...");
-    const transcription = await groq.audio.transcriptions.create({
-      file: audioFile,
-      model: "whisper-large-v3",
-      response_format: "verbose_json",
-      language: "en",
-    });
-    
-    console.log("[Subtitles] Transcription complete");
-    
-    // Step 4: Parse segments
-    const segments: SubtitleSegment[] = [];
-    
-    if (transcription && typeof transcription === "object" && "segments" in transcription) {
-      const rawSegments = (transcription as any).segments || [];
-      for (const seg of rawSegments) {
-        segments.push({
-          start: seg.start || 0,
-          end: seg.end || 0,
-          text: (seg.text || "").trim(),
-        });
-      }
-    } else if (transcription && typeof transcription === "object" && "text" in transcription) {
-      // Fallback: split text into approximate segments
-      const text = (transcription as any).text || "";
-      const sentences = text.match(/[^.!?]+[.!?]+/g) || [text];
-      const duration = downloadData.duration || 60;
-      const segmentDuration = duration / sentences.length;
-      
-      sentences.forEach((sentence: string, idx: number) => {
-        segments.push({
-          start: idx * segmentDuration,
-          end: (idx + 1) * segmentDuration,
-          text: sentence.trim(),
-        });
-      });
-    }
-    
-    console.log(`[Subtitles] Created ${segments.length} segments from AI transcription`);
-    
-    return segments;
+    return {
+      englishSubtitles: data.englishSubtitles || [],
+      chineseSubtitles: data.chineseSubtitles || [],
+    };
   } catch (error: any) {
     console.error("[Subtitles] AI transcription error:", error.message);
-    return [];
+    return null;
   }
 }
 
@@ -412,11 +363,18 @@ export async function fetchAndTranslateSubtitles(
     
     // Step 1: Try to fetch existing YouTube captions
     let englishSubtitles = await fetchYouTubeCaptions(videoId);
+    let chineseSubtitles: SubtitleSegment[] = [];
     
     // Step 2: If no captions found and AI fallback is enabled, try AI transcription
     if (englishSubtitles.length === 0 && useAIFallback) {
       console.log(`[Subtitles] No captions found, trying AI transcription...`);
-      englishSubtitles = await transcribeWithAudioService(videoId);
+      const aiResult = await transcribeWithAudioService(videoId);
+      
+      if (aiResult) {
+        // AI service returns both English and Chinese subtitles
+        englishSubtitles = aiResult.englishSubtitles;
+        chineseSubtitles = aiResult.chineseSubtitles;
+      }
     }
     
     // If still no subtitles, return error
@@ -432,8 +390,8 @@ export async function fetchAndTranslateSubtitles(
     }
     
     // Step 3: Translate to Chinese (optional)
-    let chineseSubtitles: SubtitleSegment[] = [];
-    if (translateToChinese) {
+    // Skip if we already have Chinese subtitles from AI service
+    if (translateToChinese && chineseSubtitles.length === 0) {
       chineseSubtitles = await translateToChineseWithDeepSeek(englishSubtitles);
     }
     
@@ -463,9 +421,10 @@ export async function transcribeAudioFromYoutube(
 
 /**
  * Check if AI transcription service is available (for videos without captions)
+ * Now only checks for the audio service since Groq runs on Railway
  */
 export async function isAITranscriptionAvailable(): Promise<boolean> {
-  return !!(AUDIO_SERVICE_URL && AUDIO_SERVICE_API_KEY && GROQ_API_KEY);
+  return !!(AUDIO_SERVICE_URL && AUDIO_SERVICE_API_KEY);
 }
 
 /**
