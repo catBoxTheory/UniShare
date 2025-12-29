@@ -15,8 +15,8 @@ export default async function SignInPage() {
 
   return (
     <ThemeProvider forcedTheme="light">
-      <Navbar variant="solid" />
-      <div className="flex min-h-screen items-center justify-center bg-slate-50 p-4">
+      <Navbar variant="solid" hideAuthButton />
+      <div className="flex min-h-screen items-center justify-center bg-white p-4">
         <SignInForm />
       </div>
       <Footer variant="solid" />

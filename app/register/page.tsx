@@ -67,8 +67,8 @@ export default function RegisterPage() {
 
   return (
     <ThemeProvider forcedTheme="light">
-      <Navbar variant="solid" />
-      <div className="flex min-h-screen items-center justify-center bg-slate-50 p-4">
+      <Navbar variant="solid" hideAuthButton />
+      <div className="flex min-h-screen items-center justify-center bg-white p-4">
         <Card className="w-full max-w-lg shadow-xl border-slate-200 my-8 bg-white">
         <CardHeader className="space-y-1">
           <CardTitle className="text-center text-2xl font-bold text-slate-900">

@@ -28,9 +28,10 @@ interface NavbarProps {
     image?: string | null;
   } | null;
   variant?: "solid" | "default";
+  hideAuthButton?: boolean;
 }
 
-export function Navbar({ user, variant = "default" }: NavbarProps) {
+export function Navbar({ user, variant = "default", hideAuthButton = false }: NavbarProps) {
   return (
     <nav className={cn(
       "sticky top-0 z-50 w-full border-b",
@@ -85,72 +86,74 @@ export function Navbar({ user, variant = "default" }: NavbarProps) {
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
-          ) : (
+          ) : !hideAuthButton ? (
             <Button variant="ghost" asChild>
               <Link href="/signin">Sign In</Link>
             </Button>
-          )}
+          ) : null}
         </div>
 
         {/* Mobile Navigation */}
-        <div className="md:hidden">
-          <Sheet>
-            <SheetTrigger asChild>
-              <Button variant="ghost" size="icon">
-                <Menu className="h-5 w-5" />
-                <span className="sr-only">Toggle menu</span>
-              </Button>
-            </SheetTrigger>
-            <SheetContent side="right">
-              <SheetHeader>
-                <SheetTitle className="flex items-center gap-2 text-primary">
-                  <GraduationCap className="h-5 w-5" />
-                  UniShare
-                </SheetTitle>
-              </SheetHeader>
-              <div className="flex flex-col gap-4 mt-8">
-                {user ? (
-                  <>
-                    <div className="flex items-center gap-3 px-2 py-3 border-b">
-                      <div className="h-10 w-10 rounded-full border flex items-center justify-center overflow-hidden">
-                        {user.image ? (
-                          <img src={user.image} alt={user.name || "User"} className="h-full w-full object-cover" />
-                        ) : (
-                          <User className="h-5 w-5 text-muted-foreground" />
-                        )}
+        {!hideAuthButton && (
+          <div className="md:hidden">
+            <Sheet>
+              <SheetTrigger asChild>
+                <Button variant="ghost" size="icon">
+                  <Menu className="h-5 w-5" />
+                  <span className="sr-only">Toggle menu</span>
+                </Button>
+              </SheetTrigger>
+              <SheetContent side="right">
+                <SheetHeader>
+                  <SheetTitle className="flex items-center gap-2 text-primary">
+                    <GraduationCap className="h-5 w-5" />
+                    UniShare
+                  </SheetTitle>
+                </SheetHeader>
+                <div className="flex flex-col gap-4 mt-8">
+                  {user ? (
+                    <>
+                      <div className="flex items-center gap-3 px-2 py-3 border-b">
+                        <div className="h-10 w-10 rounded-full border flex items-center justify-center overflow-hidden">
+                          {user.image ? (
+                            <img src={user.image} alt={user.name || "User"} className="h-full w-full object-cover" />
+                          ) : (
+                            <User className="h-5 w-5 text-muted-foreground" />
+                          )}
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium">{user.name || "User"}</p>
+                          <p className="text-xs text-muted-foreground">{user.email}</p>
+                        </div>
                       </div>
-                      <div>
-                        <p className="text-sm font-medium">{user.name || "User"}</p>
-                        <p className="text-xs text-muted-foreground">{user.email}</p>
-                      </div>
-                    </div>
-                    <Link href="/settings">
+                      <Link href="/settings">
+                        <Button variant="ghost" className="w-full justify-start">
+                          <Settings className="mr-2 h-4 w-4" />
+                          Settings
+                        </Button>
+                      </Link>
+                      <Button 
+                        variant="ghost" 
+                        className="w-full justify-start text-destructive hover:text-destructive"
+                        onClick={() => signOutAction()}
+                      >
+                        <LogOut className="mr-2 h-4 w-4" />
+                        Log out
+                      </Button>
+                    </>
+                  ) : (
+                    <Link href="/signin" className="w-full">
                       <Button variant="ghost" className="w-full justify-start">
-                        <Settings className="mr-2 h-4 w-4" />
-                        Settings
+                        <User className="mr-2 h-4 w-4" />
+                        Sign In
                       </Button>
                     </Link>
-                    <Button 
-                      variant="ghost" 
-                      className="w-full justify-start text-destructive hover:text-destructive"
-                      onClick={() => signOutAction()}
-                    >
-                      <LogOut className="mr-2 h-4 w-4" />
-                      Log out
-                    </Button>
-                  </>
-                ) : (
-                  <Link href="/signin" className="w-full">
-                    <Button variant="ghost" className="w-full justify-start">
-                      <User className="mr-2 h-4 w-4" />
-                      Sign In
-                    </Button>
-                  </Link>
-                )}
-              </div>
-            </SheetContent>
-          </Sheet>
-        </div>
+                  )}
+                </div>
+              </SheetContent>
+            </Sheet>
+          </div>
+        )}
       </div>
     </nav>
   );
