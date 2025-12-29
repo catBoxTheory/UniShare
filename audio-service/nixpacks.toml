@@ -1,12 +1,11 @@
 # Nixpacks configuration for Railway
-# This ensures ffmpeg is installed for audio conversion
+# Ensures Python 3.11 and ffmpeg are properly installed
 
 [phases.setup]
-nixPkgs = ["python311", "ffmpeg"]
+nixPkgs = ["python311", "python311Packages.pip", "ffmpeg"]
 
 [phases.install]
-cmds = ["pip install -r requirements.txt"]
+cmds = ["python3.11 -m pip install --upgrade pip", "python3.11 -m pip install -r requirements.txt"]
 
 [start]
-cmd = "gunicorn app:app --bind 0.0.0.0:$PORT"
-
+cmd = "python3.11 -m gunicorn app:app --bind 0.0.0.0:$PORT"
