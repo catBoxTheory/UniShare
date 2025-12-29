@@ -423,8 +423,8 @@ export function DocumentZone({ courseId, initialDocuments = [] }: DocumentZonePr
       {/* Left Column: Folders, Documents, Upload */}
       <div className="lg:col-span-4 flex flex-col gap-4 h-full overflow-hidden">
         {/* Upload Zone */}
-        <div className="bg-white rounded-xl border p-4 shadow-sm shrink-0">
-          <h3 className="font-semibold mb-3 text-gray-800">Upload Document</h3>
+        <div className="bg-card rounded-xl border border-border p-4 shadow-sm shrink-0">
+          <h3 className="font-semibold mb-3 text-foreground">Upload Document</h3>
           <DocumentUpload 
             courseId={courseId} 
             folderId={currentFolderId}
@@ -433,9 +433,9 @@ export function DocumentZone({ courseId, initialDocuments = [] }: DocumentZonePr
         </div>
 
         {/* Folder Navigation & Document List */}
-        <div className="bg-white rounded-xl border shadow-sm flex-1 overflow-hidden flex flex-col min-h-0">
+        <div className="bg-card rounded-xl border border-border shadow-sm flex-1 overflow-hidden flex flex-col min-h-0">
           {/* Header with Breadcrumbs */}
-          <div className="p-3 border-b bg-gray-50">
+          <div className="p-3 border-b border-border bg-muted/30">
             <div className="flex items-center justify-between mb-2">
               {currentFolderId ? (
                 <Button variant="ghost" size="sm" onClick={handleGoBack} className="h-8 px-2">
@@ -443,12 +443,12 @@ export function DocumentZone({ courseId, initialDocuments = [] }: DocumentZonePr
                   Back
                 </Button>
               ) : (
-                <h3 className="font-semibold text-gray-800">Documents</h3>
+                <h3 className="font-semibold text-foreground">Documents</h3>
               )}
               <div className="flex items-center gap-1">
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="sm" className="h-8 px-2 text-gray-500">
+                    <Button variant="ghost" size="sm" className="h-8 px-2 text-muted-foreground">
                       <ArrowUpDown className="w-4 h-4 mr-1" />
                       Sort
                     </Button>
@@ -456,20 +456,20 @@ export function DocumentZone({ courseId, initialDocuments = [] }: DocumentZonePr
                   <DropdownMenuContent align="end" className="w-40">
                     <DropdownMenuLabel className="text-xs">Sort by</DropdownMenuLabel>
                     <DropdownMenuSeparator />
-                    <DropdownMenuItem onClick={() => setSort("name_asc")} className={cn(sort === "name_asc" && "bg-blue-50 text-blue-600 font-medium")}>
+                    <DropdownMenuItem onClick={() => setSort("name_asc")} className={cn(sort === "name_asc" && "bg-primary/10 text-primary font-medium")}>
                       <SortAsc className="w-4 h-4 mr-2" />
                       Name (A-Z)
                     </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => setSort("name_desc")} className={cn(sort === "name_desc" && "bg-blue-50 text-blue-600 font-medium")}>
+                    <DropdownMenuItem onClick={() => setSort("name_desc")} className={cn(sort === "name_desc" && "bg-primary/10 text-primary font-medium")}>
                       <SortDesc className="w-4 h-4 mr-2" />
                       Name (Z-A)
                     </DropdownMenuItem>
                     <DropdownMenuSeparator />
-                    <DropdownMenuItem onClick={() => setSort("newest")} className={cn(sort === "newest" && "bg-blue-50 text-blue-600 font-medium")}>
+                    <DropdownMenuItem onClick={() => setSort("newest")} className={cn(sort === "newest" && "bg-primary/10 text-primary font-medium")}>
                       <Clock className="w-4 h-4 mr-2" />
                       Newest
                     </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => setSort("oldest")} className={cn(sort === "oldest" && "bg-blue-50 text-blue-600 font-medium")}>
+                    <DropdownMenuItem onClick={() => setSort("oldest")} className={cn(sort === "oldest" && "bg-primary/10 text-primary font-medium")}>
                       <Clock className="w-4 h-4 mr-2" />
                       Oldest
                     </DropdownMenuItem>
@@ -483,10 +483,10 @@ export function DocumentZone({ courseId, initialDocuments = [] }: DocumentZonePr
             
             {/* Breadcrumb path */}
             {folderPath.length > 0 && (
-              <div className="flex items-center text-xs text-gray-500 overflow-x-auto">
+              <div className="flex items-center text-xs text-muted-foreground overflow-x-auto">
                 <button 
                   onClick={() => setCurrentFolderId(null)} 
-                  className="hover:text-blue-600 whitespace-nowrap"
+                  className="hover:text-primary whitespace-nowrap"
                 >
                   Home
                 </button>
@@ -496,8 +496,8 @@ export function DocumentZone({ courseId, initialDocuments = [] }: DocumentZonePr
                     <button
                       onClick={() => setCurrentFolderId(folder.id)}
                       className={cn(
-                        "hover:text-blue-600 whitespace-nowrap",
-                        index === folderPath.length - 1 && "font-medium text-gray-700"
+                        "hover:text-primary whitespace-nowrap",
+                        index === folderPath.length - 1 && "font-medium text-foreground"
                       )}
                     >
                       {folder.name}
@@ -511,7 +511,7 @@ export function DocumentZone({ courseId, initialDocuments = [] }: DocumentZonePr
           {/* Folders and Documents List */}
           <div className="flex-1 overflow-y-auto p-2 min-h-0">
             {folders.length === 0 && documents.length === 0 ? (
-              <div className="flex flex-col items-center justify-center h-full text-gray-400">
+              <div className="flex flex-col items-center justify-center h-full text-muted-foreground/50">
                 <FileText className="w-12 h-12 mb-3 opacity-50" />
                 <p className="text-sm text-center">
                   {currentFolderId ? "This folder is empty" : "No documents uploaded yet"}
@@ -533,12 +533,12 @@ export function DocumentZone({ courseId, initialDocuments = [] }: DocumentZonePr
                         onDragLeave={handleDragLeave}
                         onDrop={(e) => handleDrop(e, folder.id)}
                         className={cn(
-                          "flex items-center gap-3 p-2 rounded-lg cursor-pointer hover:bg-gray-100 group transition-all",
-                          dragOverFolderId === folder.id && "bg-blue-100 border-2 border-dashed border-blue-400 scale-[1.02]"
+                          "flex items-center gap-3 p-2 rounded-lg cursor-pointer hover:bg-muted/50 group transition-all",
+                          dragOverFolderId === folder.id && "bg-primary/10 border-2 border-dashed border-primary/50 scale-[1.02]"
                         )}
                       >
-                        <div className="w-10 h-10 bg-blue-100 rounded flex items-center justify-center flex-shrink-0">
-                          <Folder className="w-5 h-5 text-blue-600" />
+                        <div className="w-10 h-10 bg-primary/10 rounded flex items-center justify-center flex-shrink-0">
+                          <Folder className="w-5 h-5 text-primary" />
                         </div>
                         <div className="flex-1 min-w-0">
                           {editingFolderId === folder.id ? (
@@ -556,8 +556,8 @@ export function DocumentZone({ courseId, initialDocuments = [] }: DocumentZonePr
                             />
                           ) : (
                             <>
-                              <p className="text-sm font-medium text-gray-900 truncate">{folder.name}</p>
-                              <p className="text-xs text-gray-500">Folder</p>
+                              <p className="text-sm font-medium text-foreground truncate">{folder.name}</p>
+                              <p className="text-xs text-muted-foreground">Folder</p>
                             </>
                           )}
                         </div>
@@ -569,7 +569,7 @@ export function DocumentZone({ courseId, initialDocuments = [] }: DocumentZonePr
                               e.stopPropagation();
                               handleRenameFolder(folder);
                             }}
-                            className="h-7 w-7 text-gray-500 hover:text-gray-700 hover:bg-gray-200"
+                            className="h-7 w-7 text-muted-foreground hover:text-foreground hover:bg-muted"
                           >
                             <Pencil className="w-3 h-3" />
                           </Button>
@@ -577,11 +577,11 @@ export function DocumentZone({ courseId, initialDocuments = [] }: DocumentZonePr
                             variant="ghost"
                             size="icon"
                             onClick={(e) => handleDeleteFolderClick(e, folder)}
-                            className="h-7 w-7 text-red-500 hover:text-red-700 hover:bg-red-50"
+                            className="h-7 w-7 text-destructive hover:text-destructive hover:bg-destructive/10"
                           >
                             <Trash2 className="w-3 h-3" />
                           </Button>
-                          <ChevronRight className="w-4 h-4 text-gray-400" />
+                          <ChevronRight className="w-4 h-4 text-muted-foreground/50" />
                         </div>
                       </div>
                     </ContextMenuTrigger>
@@ -597,7 +597,7 @@ export function DocumentZone({ courseId, initialDocuments = [] }: DocumentZonePr
                           setDocumentToDelete(null);
                           setDeleteDialogOpen(true);
                         }}
-                        className="text-red-600"
+                        className="text-destructive focus:text-destructive"
                       >
                         <Trash2 className="w-4 h-4 mr-2" />
                         Delete
@@ -622,8 +622,8 @@ export function DocumentZone({ courseId, initialDocuments = [] }: DocumentZonePr
                         className={cn(
                           "flex items-center gap-3 p-2 rounded-lg cursor-pointer transition-all group",
                           selectedDocument?.id === doc.id
-                            ? "bg-blue-100 border border-blue-300"
-                            : "hover:bg-gray-100 border border-transparent",
+                            ? "bg-primary/10 border border-primary/20"
+                            : "hover:bg-muted/50 border border-transparent",
                           draggedItemId === doc.id && "opacity-50 scale-95"
                         )}
                       >
@@ -644,10 +644,10 @@ export function DocumentZone({ courseId, initialDocuments = [] }: DocumentZonePr
                             />
                           ) : (
                             <>
-                              <p className="text-sm font-medium text-gray-900 truncate">
+                              <p className="text-sm font-medium text-foreground truncate">
                                 {doc.title}
                               </p>
-                              <p className="text-xs text-gray-500">
+                              <p className="text-xs text-muted-foreground">
                                 {getFileType(doc.title)} • {new Date(doc.createdAt).toLocaleDateString("en-US")}
                               </p>
                             </>
@@ -661,7 +661,7 @@ export function DocumentZone({ courseId, initialDocuments = [] }: DocumentZonePr
                               e.stopPropagation();
                               handleRenameDocument(doc);
                             }}
-                            className="h-7 w-7 text-gray-500 hover:text-gray-700 hover:bg-gray-200"
+                            className="h-7 w-7 text-muted-foreground hover:text-foreground hover:bg-muted"
                           >
                             <Pencil className="w-3 h-3" />
                           </Button>
@@ -669,7 +669,7 @@ export function DocumentZone({ courseId, initialDocuments = [] }: DocumentZonePr
                             variant="ghost"
                             size="icon"
                             onClick={(e) => handleDeleteDocumentClick(e, doc)}
-                            className="h-7 w-7 text-red-500 hover:text-red-700 hover:bg-red-50"
+                            className="h-7 w-7 text-destructive hover:text-destructive hover:bg-destructive/10"
                           >
                             <Trash2 className="w-3 h-3" />
                           </Button>
@@ -688,7 +688,7 @@ export function DocumentZone({ courseId, initialDocuments = [] }: DocumentZonePr
                           setFolderToDelete(null);
                           setDeleteDialogOpen(true);
                         }}
-                        className="text-red-600"
+                        className="text-destructive focus:text-destructive"
                       >
                         <Trash2 className="w-4 h-4 mr-2" />
                         Delete
@@ -703,7 +703,7 @@ export function DocumentZone({ courseId, initialDocuments = [] }: DocumentZonePr
       </div>
 
       {/* Right Column: Preview */}
-      <div className="lg:col-span-8 bg-white rounded-xl border shadow-sm overflow-hidden">
+      <div className="lg:col-span-8 bg-card rounded-xl border border-border shadow-sm overflow-hidden">
         <DocumentPreview document={selectedDocument} />
       </div>
 

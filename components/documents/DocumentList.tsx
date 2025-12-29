@@ -98,38 +98,38 @@ export function DocumentList({ documents, selectedId, onSelect, onDelete }: Docu
   return (
     <>
       <div className="space-y-1">
-        {documents.map((doc) => (
-          <div
-            key={doc.id}
-            onClick={() => onSelect(doc)}
-            className={cn(
-              "flex items-center gap-3 p-3 rounded-lg cursor-pointer transition-colors group",
-              selectedId === doc.id
-                ? "bg-blue-100 border border-blue-300"
-                : "hover:bg-gray-100 border border-transparent"
-            )}
-          >
-            {getFileIcon(doc.title)}
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-gray-900 truncate">
-                {doc.title}
-              </p>
-              <p className="text-xs text-gray-500">
-                {getFileType(doc.title)} • {new Date(doc.createdAt).toLocaleDateString("en-US")}
-              </p>
-            </div>
-            {/* Delete button - visible on hover */}
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={(e) => handleDeleteClick(e, doc)}
-              className="h-8 w-8 text-red-500 hover:text-red-700 hover:bg-red-50 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0"
-            >
-              <Trash2 className="w-4 h-4" />
-            </Button>
+      {documents.map((doc) => (
+        <div
+          key={doc.id}
+          onClick={() => onSelect(doc)}
+          className={cn(
+            "flex items-center gap-3 p-3 rounded-lg cursor-pointer transition-colors group",
+            selectedId === doc.id
+              ? "bg-primary/10 border border-primary/20"
+              : "hover:bg-muted/50 border border-transparent"
+          )}
+        >
+          {getFileIcon(doc.title)}
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-medium text-foreground truncate">
+              {doc.title}
+            </p>
+            <p className="text-xs text-muted-foreground">
+              {getFileType(doc.title)} • {new Date(doc.createdAt).toLocaleDateString("en-US")}
+            </p>
           </div>
-        ))}
-      </div>
+          {/* Delete button - visible on hover */}
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={(e) => handleDeleteClick(e, doc)}
+            className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0"
+          >
+            <Trash2 className="w-4 h-4" />
+          </Button>
+        </div>
+      ))}
+    </div>
 
       {/* Delete Confirmation Dialog */}
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>

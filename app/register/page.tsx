@@ -14,6 +14,7 @@ import { Navbar } from "@/components/layout/Navbar"
 import { Footer } from "@/components/layout/Footer"
 import { Loader2, Mail, CheckCircle2, ArrowRight, ShieldCheck } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { ThemeProvider } from "@/components/theme-provider"
 
 function SubmitButton() {
   const { pending } = useFormStatus()
@@ -65,7 +66,7 @@ export default function RegisterPage() {
   }
 
   return (
-    <>
+    <ThemeProvider forcedTheme="light">
       <Navbar />
       <div className="flex min-h-screen items-center justify-center bg-slate-50 p-4">
         <Card className="w-full max-w-lg shadow-xl border-slate-200 my-8">
@@ -211,6 +212,6 @@ export default function RegisterPage() {
         </Card>
       </div>
       <Footer />
-    </>
+    </ThemeProvider>
   )
 }

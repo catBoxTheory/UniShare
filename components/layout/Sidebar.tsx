@@ -35,9 +35,9 @@ export function Sidebar({ onTabChange, activeTab = "home" }: SidebarProps) {
   ]
 
   return (
-    <div className="w-64 border-r border-slate-200 bg-white h-full hidden lg:flex flex-col">
+    <div className="w-64 border-r border-border bg-background h-full hidden lg:flex flex-col">
       <div className="p-6">
-        <Link href="/" className="flex items-center gap-2 font-bold text-xl text-blue-600">
+        <Link href="/" className="flex items-center gap-2 font-bold text-xl text-primary">
           <BookOpen className="w-6 h-6" />
           <span>UniShare</span>
         </Link>
@@ -51,8 +51,8 @@ export function Sidebar({ onTabChange, activeTab = "home" }: SidebarProps) {
             className={cn(
               "w-full flex items-center gap-3 px-4 py-3 text-sm font-medium rounded-lg transition-colors",
               activeTab === item.value
-                ? "bg-blue-50 text-blue-700"
-                : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
+                ? "bg-primary/10 text-primary"
+                : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
             )}
           >
             <item.icon className="w-5 h-5" />

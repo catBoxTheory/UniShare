@@ -527,7 +527,7 @@ export function VideoZone({ courseId, initialVideos = [] }: VideoZoneProps) {
   return (
     <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 h-auto items-start min-h-0">
       {/* Main Video Player */}
-      <div className="lg:col-span-3 flex flex-col bg-white rounded-xl overflow-hidden shadow-lg h-fit">
+      <div className="lg:col-span-3 flex flex-col bg-card rounded-xl overflow-hidden shadow-lg h-fit border border-border">
         {/* Video Container - Enforce 16:9 Aspect Ratio */}
         <div ref={playerContainerRef} className="relative aspect-video bg-black group flex-shrink-0">
           {currentVideo && mounted ? (
@@ -538,7 +538,7 @@ export function VideoZone({ courseId, initialVideos = [] }: VideoZoneProps) {
               onEnded={handleVideoEnded}
             />
           ) : (
-            <div className="absolute inset-0 flex flex-col items-center justify-center text-gray-500">
+            <div className="absolute inset-0 flex flex-col items-center justify-center text-muted-foreground">
               <PlayCircle className="w-20 h-20 mb-4 opacity-50" />
               <p>Select a video from the playlist</p>
             </div>
@@ -547,9 +547,9 @@ export function VideoZone({ courseId, initialVideos = [] }: VideoZoneProps) {
 
         {/* Video Title and Info (Outside player in normal mode) */}
         {currentVideo && !isFullscreen && (
-          <div className="bg-white p-4 border-t">
-            <h2 className="text-xl font-bold text-gray-900">{currentVideo.title}</h2>
-            <div className="flex items-center gap-4 mt-2 text-sm text-gray-500">
+          <div className="bg-card p-4 border-t border-border">
+            <h2 className="text-xl font-bold text-foreground">{currentVideo.title}</h2>
+            <div className="flex items-center gap-4 mt-2 text-sm text-muted-foreground">
               <span className="flex items-center gap-1">
                 <Clock className="w-4 h-4" />
                 {new Date(currentVideo.createdAt).toLocaleDateString("en-US")}
@@ -560,9 +560,9 @@ export function VideoZone({ courseId, initialVideos = [] }: VideoZoneProps) {
       </div>
 
       {/* Playlist Sidebar with Folders */}
-      <div className="lg:col-span-1 bg-white rounded-xl border shadow-sm flex flex-col overflow-hidden h-[500px] lg:h-[600px] max-h-[80vh] min-h-0">
+      <div className="lg:col-span-1 bg-card rounded-xl border border-border shadow-sm flex flex-col overflow-hidden h-[500px] lg:h-[600px] max-h-[80vh] min-h-0">
         {/* Playlist Header with Breadcrumbs */}
-        <div className="p-3 border-b bg-gray-50">
+        <div className="p-3 border-b border-border bg-muted/30">
           <div className="flex items-center justify-between mb-2">
             {currentFolderId ? (
               <Button variant="ghost" size="sm" onClick={handleGoBack} className="h-8 px-2">
@@ -570,12 +570,12 @@ export function VideoZone({ courseId, initialVideos = [] }: VideoZoneProps) {
                 Back
               </Button>
             ) : (
-              <h3 className="font-semibold text-gray-800">Playlist</h3>
+              <h3 className="font-semibold text-foreground">Playlist</h3>
             )}
             <div className="flex items-center gap-1">
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="sm" className="h-8 px-2 text-gray-500">
+                  <Button variant="ghost" size="sm" className="h-8 px-2 text-muted-foreground">
                     <ArrowUpDown className="w-4 h-4 mr-1" />
                     Sort
                   </Button>
@@ -583,20 +583,20 @@ export function VideoZone({ courseId, initialVideos = [] }: VideoZoneProps) {
                 <DropdownMenuContent align="end" className="w-40">
                   <DropdownMenuLabel className="text-xs">Sort by</DropdownMenuLabel>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={() => setSort("name_asc")} className={cn(sort === "name_asc" && "bg-blue-50 text-blue-600 font-medium")}>
+                  <DropdownMenuItem onClick={() => setSort("name_asc")} className={cn(sort === "name_asc" && "bg-primary/10 text-primary font-medium")}>
                     <SortAsc className="w-4 h-4 mr-2" />
                     Name (A-Z)
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => setSort("name_desc")} className={cn(sort === "name_desc" && "bg-blue-50 text-blue-600 font-medium")}>
+                  <DropdownMenuItem onClick={() => setSort("name_desc")} className={cn(sort === "name_desc" && "bg-primary/10 text-primary font-medium")}>
                     <SortDesc className="w-4 h-4 mr-2" />
                     Name (Z-A)
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={() => setSort("newest")} className={cn(sort === "newest" && "bg-blue-50 text-blue-600 font-medium")}>
+                  <DropdownMenuItem onClick={() => setSort("newest")} className={cn(sort === "newest" && "bg-primary/10 text-primary font-medium")}>
                     <Clock className="w-4 h-4 mr-2" />
                     Newest
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => setSort("oldest")} className={cn(sort === "oldest" && "bg-blue-50 text-blue-600 font-medium")}>
+                  <DropdownMenuItem onClick={() => setSort("oldest")} className={cn(sort === "oldest" && "bg-primary/10 text-primary font-medium")}>
                     <Clock className="w-4 h-4 mr-2" />
                     Oldest
                   </DropdownMenuItem>
@@ -610,10 +610,10 @@ export function VideoZone({ courseId, initialVideos = [] }: VideoZoneProps) {
           
           {/* Breadcrumb path */}
           {folderPath.length > 0 && (
-            <div className="flex items-center text-xs text-gray-500 overflow-x-auto">
+            <div className="flex items-center text-xs text-muted-foreground overflow-x-auto">
               <button 
                 onClick={() => setCurrentFolderId(null)} 
-                className="hover:text-blue-600 whitespace-nowrap"
+                className="hover:text-primary whitespace-nowrap"
               >
                 Home
               </button>
@@ -623,8 +623,8 @@ export function VideoZone({ courseId, initialVideos = [] }: VideoZoneProps) {
                   <button
                     onClick={() => setCurrentFolderId(folder.id)}
                     className={cn(
-                      "hover:text-blue-600 whitespace-nowrap",
-                      index === folderPath.length - 1 && "font-medium text-gray-700"
+                      "hover:text-primary whitespace-nowrap",
+                      index === folderPath.length - 1 && "font-medium text-foreground"
                     )}
                   >
                     {folder.name}
@@ -638,7 +638,7 @@ export function VideoZone({ courseId, initialVideos = [] }: VideoZoneProps) {
         {/* Folders and Videos List */}
         <div className="flex-1 overflow-y-auto min-h-0">
           {folders.length === 0 && videos.length === 0 ? (
-            <div className="flex flex-col items-center justify-center h-full p-6 text-gray-400">
+            <div className="flex flex-col items-center justify-center h-full p-6 text-muted-foreground/50">
               <PlayCircle className="w-12 h-12 mb-3 opacity-50" />
               <p className="text-sm text-center">
                 {currentFolderId ? "This folder is empty" : "No videos uploaded yet"}
@@ -660,12 +660,12 @@ export function VideoZone({ courseId, initialVideos = [] }: VideoZoneProps) {
                       onDragLeave={handleDragLeave}
                       onDrop={(e) => handleDrop(e, folder.id)}
                       className={cn(
-                        "flex items-center gap-3 p-2 rounded-lg cursor-pointer hover:bg-gray-100 group transition-all",
-                        dragOverFolderId === folder.id && "bg-blue-100 border-2 border-dashed border-blue-400 scale-[1.02]"
+                        "flex items-center gap-3 p-2 rounded-lg cursor-pointer hover:bg-muted/50 group transition-all",
+                        dragOverFolderId === folder.id && "bg-primary/10 border-2 border-dashed border-primary/50 scale-[1.02]"
                       )}
                     >
-                      <div className="w-10 h-10 bg-blue-100 rounded flex items-center justify-center flex-shrink-0">
-                        <Folder className="w-5 h-5 text-blue-600" />
+                      <div className="w-10 h-10 bg-primary/10 rounded flex items-center justify-center flex-shrink-0">
+                        <Folder className="w-5 h-5 text-primary" />
                       </div>
                       <div className="flex-1 min-w-0">
                         {editingFolderId === folder.id ? (
@@ -683,8 +683,8 @@ export function VideoZone({ courseId, initialVideos = [] }: VideoZoneProps) {
                           />
                         ) : (
                           <>
-                            <p className="text-sm font-medium text-gray-900 truncate">{folder.name}</p>
-                            <p className="text-xs text-gray-500">Folder</p>
+                            <p className="text-sm font-medium text-foreground truncate">{folder.name}</p>
+                            <p className="text-xs text-muted-foreground">Folder</p>
                           </>
                         )}
                       </div>
@@ -696,7 +696,7 @@ export function VideoZone({ courseId, initialVideos = [] }: VideoZoneProps) {
                             e.stopPropagation();
                             handleRenameFolder(folder);
                           }}
-                          className="h-7 w-7 text-gray-500 hover:text-gray-700 hover:bg-gray-200"
+                          className="h-7 w-7 text-muted-foreground hover:text-foreground hover:bg-muted"
                         >
                           <Pencil className="w-3 h-3" />
                         </Button>
@@ -704,11 +704,11 @@ export function VideoZone({ courseId, initialVideos = [] }: VideoZoneProps) {
                           variant="ghost"
                           size="icon"
                           onClick={(e) => handleDeleteFolderClick(e, folder)}
-                          className="h-7 w-7 text-red-500 hover:text-red-700 hover:bg-red-50"
+                          className="h-7 w-7 text-destructive hover:text-destructive hover:bg-destructive/10"
                         >
                           <Trash2 className="w-3 h-3" />
                         </Button>
-                        <ChevronRight className="w-4 h-4 text-gray-400" />
+                        <ChevronRight className="w-4 h-4 text-muted-foreground/50" />
                       </div>
                     </div>
                   </ContextMenuTrigger>
@@ -724,7 +724,7 @@ export function VideoZone({ courseId, initialVideos = [] }: VideoZoneProps) {
                         setVideoToDelete(null);
                         setDeleteDialogOpen(true);
                       }}
-                      className="text-red-600"
+                      className="text-destructive focus:text-destructive"
                     >
                       <Trash2 className="w-4 h-4 mr-2" />
                       Delete
@@ -749,12 +749,12 @@ export function VideoZone({ courseId, initialVideos = [] }: VideoZoneProps) {
                       className={cn(
                         "flex gap-3 p-2 rounded-lg cursor-pointer transition-all group",
                         currentVideo?.id === video.id
-                          ? "bg-blue-100 border border-blue-300"
-                          : "hover:bg-gray-100",
+                          ? "bg-primary/10 border border-primary/20"
+                          : "hover:bg-muted/50",
                         draggedItemId === video.id && "opacity-50 scale-95"
                       )}
                     >
-                      <div className="relative w-16 h-10 bg-gray-200 rounded flex-shrink-0 flex items-center justify-center overflow-hidden">
+                      <div className="relative w-16 h-10 bg-muted rounded flex-shrink-0 flex items-center justify-center overflow-hidden">
                         {isYouTubeUrl(video.url) ? (
                           <>
                             <img 
@@ -775,7 +775,7 @@ export function VideoZone({ courseId, initialVideos = [] }: VideoZoneProps) {
                         )}
                         <div className="absolute inset-0 bg-black/10 flex items-center justify-center">
                            {currentVideo?.id === video.id ? (
-                             <div className="w-full h-full bg-blue-500/20 animate-pulse"></div>
+                             <div className="w-full h-full bg-primary/20 animate-pulse"></div>
                            ) : null}
                         </div>
                         <span className="absolute bottom-0.5 right-0.5 text-[10px] bg-black/70 text-white px-1 rounded">
@@ -797,7 +797,7 @@ export function VideoZone({ courseId, initialVideos = [] }: VideoZoneProps) {
                             className="h-7 text-sm"
                           />
                         ) : (
-                          <p className="text-xs font-medium text-gray-900 line-clamp-2 leading-tight">
+                          <p className="text-xs font-medium text-foreground line-clamp-2 leading-tight">
                             {video.title}
                           </p>
                         )}
@@ -810,7 +810,7 @@ export function VideoZone({ courseId, initialVideos = [] }: VideoZoneProps) {
                             e.stopPropagation();
                             handleRenameVideo(video);
                           }}
-                          className="h-7 w-7 text-gray-500 hover:text-gray-700 hover:bg-gray-200"
+                          className="h-7 w-7 text-muted-foreground hover:text-foreground hover:bg-muted"
                         >
                           <Pencil className="w-3 h-3" />
                         </Button>
@@ -818,7 +818,7 @@ export function VideoZone({ courseId, initialVideos = [] }: VideoZoneProps) {
                           variant="ghost"
                           size="icon"
                           onClick={(e) => handleDeleteVideoClick(e, video)}
-                          className="h-7 w-7 text-red-500 hover:text-red-700 hover:bg-red-50"
+                          className="h-7 w-7 text-destructive hover:text-destructive hover:bg-destructive/10"
                         >
                           <Trash2 className="w-3 h-3" />
                         </Button>
@@ -837,7 +837,7 @@ export function VideoZone({ courseId, initialVideos = [] }: VideoZoneProps) {
                         setFolderToDelete(null);
                         setDeleteDialogOpen(true);
                       }}
-                      className="text-red-600"
+                      className="text-destructive focus:text-destructive"
                     >
                       <Trash2 className="w-4 h-4 mr-2" />
                       Delete
@@ -850,8 +850,8 @@ export function VideoZone({ courseId, initialVideos = [] }: VideoZoneProps) {
         </div>
 
         {/* YouTube URL Input */}
-        <div className="p-3 border-t bg-gray-50 space-y-3">
-          <div className="flex items-center gap-2 text-sm font-medium text-gray-700">
+        <div className="p-3 border-t border-border bg-muted/30 space-y-3">
+          <div className="flex items-center gap-2 text-sm font-medium text-foreground">
             <Youtube className="w-4 h-4 text-red-500" />
             Add YouTube Video
           </div>
@@ -864,7 +864,7 @@ export function VideoZone({ courseId, initialVideos = [] }: VideoZoneProps) {
                 className="pr-8"
               />
               {isFetchingMetadata && (
-                <Loader2 className="w-4 h-4 absolute right-2 top-1/2 -translate-y-1/2 animate-spin text-gray-400" />
+                <Loader2 className="w-4 h-4 absolute right-2 top-1/2 -translate-y-1/2 animate-spin text-muted-foreground" />
               )}
             </div>
             {youtubeUrl && (

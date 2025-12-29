@@ -254,8 +254,8 @@ export function DocumentUpload({ courseId, folderId, onUploadComplete }: Documen
         className={cn(
           "border-2 border-dashed rounded-lg p-6 text-center transition-colors cursor-pointer",
           isDragging 
-            ? "border-blue-500 bg-blue-50" 
-            : "border-gray-300 hover:border-gray-400 bg-gray-50/50"
+            ? "border-primary bg-primary/5" 
+            : "border-border hover:border-primary/50 bg-muted/30"
         )}
       >
         <input
@@ -267,11 +267,11 @@ export function DocumentUpload({ courseId, folderId, onUploadComplete }: Documen
           multiple
         />
         <label htmlFor="document-upload" className="cursor-pointer">
-          <Upload className="w-10 h-10 mx-auto mb-3 text-gray-400" />
-          <p className="text-sm text-gray-600 mb-1">
+          <Upload className="w-10 h-10 mx-auto mb-3 text-muted-foreground" />
+          <p className="text-sm text-muted-foreground mb-1">
             Drag & drop or click to upload
           </p>
-          <p className="text-xs text-gray-400">
+          <p className="text-xs text-muted-foreground/70">
             Multiple files supported
           </p>
         </label>
