@@ -164,6 +164,12 @@ model Material {
   type       MaterialType
   url        String
   
+  // Subtitle fields
+  englishSubtitleUrl   String?
+  chineseSubtitleUrl   String?
+  bilingualSubtitleUrl String?
+  subtitleData         Json? // Store segments for quick access/search
+  
   // Relations
   courseId   String
   course     Course       @relation(fields: [courseId], references: [id], onDelete: Cascade)

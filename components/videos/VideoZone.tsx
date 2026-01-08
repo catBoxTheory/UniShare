@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
-import { 
+import {
   Clock, PlayCircle, Trash2, Folder, FolderPlus, ChevronLeft, ChevronRight, Pencil,
   Youtube, Link, Loader2, ArrowUpDown, SortAsc, SortDesc, Captions, Check, AlertCircle
 } from "lucide-react";
@@ -43,6 +43,7 @@ import {
   ContextMenuSeparator,
   ContextMenuTrigger,
 } from "@/components/ui/context-menu";
+import { SubtitleOverlay, SubtitleSegment } from "./SubtitleOverlay";
 
 interface Video {
   id: string;
@@ -138,7 +139,14 @@ export function VideoZone({ courseId, initialVideos = [] }: VideoZoneProps) {
   // Drag and drop
   const [draggedItemId, setDraggedItemId] = useState<string | null>(null);
   const [dragOverFolderId, setDragOverFolderId] = useState<string | null>(null);
-  
+
+  // Subtitle state
+  const [currentTime, setCurrentTime] = useState(0);
+  const [enSubtitles, setEnSubtitles] = useState<SubtitleSegment[]>([]);
+  const [zhSubtitles, setZhSubtitles] = useState<SubtitleSegment[]>([]);
+  const [bilingualSubtitles, setBilingualSubtitles] = useState<SubtitleSegment[]>([]);
+  const [subtitleMode, setSubtitleMode] = useState<"none" | "en" | "zh" | "bilingual">("none");
+
   const playerContainerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -150,7 +158,7 @@ export function VideoZone({ courseId, initialVideos = [] }: VideoZoneProps) {
     };
 
     document.addEventListener("fullscreenchange", handleFullscreenChange);
-    
+
     return () => {
       document.removeEventListener("fullscreenchange", handleFullscreenChange);
     };
@@ -170,7 +178,7 @@ export function VideoZone({ courseId, initialVideos = [] }: VideoZoneProps) {
         setVideos(data.videos || []);
         setFolders(data.folders || []);
         setCurrentFolder(data.currentFolder || null);
-        
+
         // Build folder path for breadcrumbs
         if (data.currentFolder) {
           await buildFolderPath(data.currentFolder);
@@ -186,7 +194,7 @@ export function VideoZone({ courseId, initialVideos = [] }: VideoZoneProps) {
   const buildFolderPath = async (folder: VideoFolder) => {
     const path: VideoFolder[] = [folder];
     let currentParentId = folder.parentId;
-    
+
     while (currentParentId) {
       try {
         const response = await fetch(`/api/videos?courseId=${courseId}&folderId=${currentParentId}`);
@@ -205,7 +213,7 @@ export function VideoZone({ courseId, initialVideos = [] }: VideoZoneProps) {
         break;
       }
     }
-    
+
     setFolderPath(path);
   };
 
@@ -321,7 +329,7 @@ export function VideoZone({ courseId, initialVideos = [] }: VideoZoneProps) {
   const handleDrop = async (e: React.DragEvent, targetFolderId: string) => {
     e.preventDefault();
     const fileId = e.dataTransfer.getData("text/plain");
-    
+
     if (!fileId || fileId === targetFolderId) {
       setDraggedItemId(null);
       setDragOverFolderId(null);
@@ -536,7 +544,7 @@ export function VideoZone({ courseId, initialVideos = [] }: VideoZoneProps) {
   // Subtitle fetching handler
   const handleGenerateTranscription = async () => {
     if (!currentVideo) return;
-    
+
     const videoId = getYouTubeVideoId(currentVideo.url);
     if (!videoId) {
       setTranscriptionResult({
@@ -564,7 +572,7 @@ export function VideoZone({ courseId, initialVideos = [] }: VideoZoneProps) {
       const data = await response.json();
 
       if (!response.ok) {
-        // If no native captions, try AI transcription directly via Railway
+        // ... native captions check ...
         if (data.noSubtitles) {
           console.log("[Subtitles] No native captions, trying AI transcription...");
           await handleAITranscription(videoId);
@@ -572,6 +580,17 @@ export function VideoZone({ courseId, initialVideos = [] }: VideoZoneProps) {
         }
         throw new Error(data.error || "Failed to fetch subtitles");
       }
+
+      setEnSubtitles(data.englishSubtitles || []);
+      setZhSubtitles(data.chineseSubtitles || []);
+
+      // Generate bilingual segments (simplified logic)
+      const bilingual = (data.englishSubtitles || []).map((seg: any, idx: number) => ({
+        ...seg,
+        text: `${seg.text}\n${data.chineseSubtitles?.[idx]?.text || ""}`
+      }));
+      setBilingualSubtitles(bilingual);
+      setSubtitleMode("bilingual");
 
       setTranscriptionResult({
         success: true,
@@ -592,7 +611,7 @@ export function VideoZone({ courseId, initialVideos = [] }: VideoZoneProps) {
   // AI transcription via Railway (bypasses Vercel timeout)
   const handleAITranscription = async (videoId: string) => {
     const railwayUrl = process.env.NEXT_PUBLIC_AUDIO_SERVICE_URL;
-    
+
     if (!railwayUrl) {
       setTranscriptionResult({
         success: false,
@@ -623,6 +642,16 @@ export function VideoZone({ courseId, initialVideos = [] }: VideoZoneProps) {
         throw new Error(data.error || "AI transcription failed");
       }
 
+      setEnSubtitles(data.englishSubtitles || []);
+      setZhSubtitles(data.chineseSubtitles || []);
+
+      const bilingual = (data.englishSubtitles || []).map((seg: any, idx: number) => ({
+        ...seg,
+        text: `${seg.text}\n${data.chineseSubtitles?.[idx]?.text || ""}`
+      }));
+      setBilingualSubtitles(bilingual);
+      setSubtitleMode("bilingual");
+
       setTranscriptionResult({
         success: true,
         message: `AI subtitles generated successfully! (${data.englishSubtitles?.length || 0} segments)`,
@@ -646,12 +675,24 @@ export function VideoZone({ courseId, initialVideos = [] }: VideoZoneProps) {
         {/* Video Container - Enforce 16:9 Aspect Ratio */}
         <div ref={playerContainerRef} className="relative aspect-video bg-black group flex-shrink-0">
           {currentVideo && mounted ? (
-            <YouTubePlayer 
-              videoId={getYouTubeVideoId(currentVideo.url)}
-              title={currentVideo.title}
-              autoPlay={true}
-              onEnded={handleVideoEnded}
-            />
+            <>
+              <YouTubePlayer
+                videoId={getYouTubeVideoId(currentVideo.url)}
+                title={currentVideo.title}
+                autoPlay={true}
+                onEnded={handleVideoEnded}
+                onProgress={(time) => setCurrentTime(time)}
+              />
+              <SubtitleOverlay
+                segments={
+                  subtitleMode === "en" ? enSubtitles :
+                    subtitleMode === "zh" ? zhSubtitles :
+                      subtitleMode === "bilingual" ? bilingualSubtitles : []
+                }
+                currentTime={currentTime}
+                isVisible={subtitleMode !== "none"}
+              />
+            </>
           ) : (
             <div className="absolute inset-0 flex flex-col items-center justify-center text-muted-foreground">
               <PlayCircle className="w-20 h-20 mb-4 opacity-50" />
@@ -675,22 +716,61 @@ export function VideoZone({ courseId, initialVideos = [] }: VideoZoneProps) {
               </div>
               {/* AI Transcription Button */}
               {isYouTubeUrl(currentVideo.url) && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handleGenerateTranscription}
-                  disabled={isTranscribing}
-                  className="flex items-center gap-2 shrink-0"
-                >
-                  {isTranscribing ? (
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                  ) : (
-                    <Captions className="w-4 h-4" />
+                <div className="flex flex-col gap-2 shrink-0">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleGenerateTranscription}
+                    disabled={isTranscribing}
+                    className="flex items-center gap-2"
+                  >
+                    {isTranscribing ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <Captions className="w-4 h-4" />
+                    )}
+                    <span className="hidden sm:inline">
+                      {isTranscribing ? "Loading..." : (enSubtitles.length > 0 ? "Refresh Subtitles" : "Get Subtitles")}
+                    </span>
+                  </Button>
+
+                  {enSubtitles.length > 0 && (
+                    <div className="flex bg-muted rounded-md p-1 gap-1">
+                      <Button
+                        variant={subtitleMode === "bilingual" ? "secondary" : "ghost"}
+                        size="sm"
+                        className="h-7 text-[10px] px-2"
+                        onClick={() => setSubtitleMode("bilingual")}
+                      >
+                        Bilingual
+                      </Button>
+                      <Button
+                        variant={subtitleMode === "en" ? "secondary" : "ghost"}
+                        size="sm"
+                        className="h-7 text-[10px] px-2"
+                        onClick={() => setSubtitleMode("en")}
+                      >
+                        EN
+                      </Button>
+                      <Button
+                        variant={subtitleMode === "zh" ? "secondary" : "ghost"}
+                        size="sm"
+                        className="h-7 text-[10px] px-2"
+                        onClick={() => setSubtitleMode("zh")}
+                      >
+                        ZH
+                      </Button>
+                      <Button
+                        variant={subtitleMode === "none" ? "secondary" : "ghost"}
+                        size="sm"
+                        className="h-7 text-[10px] px-2"
+                        onClick={() => setSubtitleMode("none")}
+                      >
+                        Off
+                      </Button>
+                    </div>
                   )}
-                  <span className="hidden sm:inline">
-                    {isTranscribing ? "Loading..." : "Get Subtitles"}
-                  </span>
-                </Button>
+                </div>
               )}
             </div>
           </div>
@@ -745,12 +825,12 @@ export function VideoZone({ courseId, initialVideos = [] }: VideoZoneProps) {
               </Button>
             </div>
           </div>
-          
+
           {/* Breadcrumb path */}
           {folderPath.length > 0 && (
             <div className="flex items-center text-xs text-muted-foreground overflow-x-auto">
-              <button 
-                onClick={() => setCurrentFolderId(null)} 
+              <button
+                onClick={() => setCurrentFolderId(null)}
                 className="hover:text-primary whitespace-nowrap"
               >
                 Home
@@ -856,7 +936,7 @@ export function VideoZone({ courseId, initialVideos = [] }: VideoZoneProps) {
                       Rename
                     </ContextMenuItem>
                     <ContextMenuSeparator />
-                    <ContextMenuItem 
+                    <ContextMenuItem
                       onClick={() => {
                         setFolderToDelete(folder);
                         setVideoToDelete(null);
@@ -895,8 +975,8 @@ export function VideoZone({ courseId, initialVideos = [] }: VideoZoneProps) {
                       <div className="relative w-16 h-10 bg-muted rounded flex-shrink-0 flex items-center justify-center overflow-hidden">
                         {isYouTubeUrl(video.url) ? (
                           <>
-                            <img 
-                              src={getYouTubeThumbnail(video.url) || ""} 
+                            <img
+                              src={getYouTubeThumbnail(video.url) || ""}
                               alt={video.title}
                               className="w-full h-full object-cover"
                             />
@@ -905,16 +985,16 @@ export function VideoZone({ courseId, initialVideos = [] }: VideoZoneProps) {
                             </div>
                           </>
                         ) : (
-                          <video 
-                            src={getProxyUrl(video.url) + "#t=1.0"} 
-                            className="w-full h-full object-cover" 
+                          <video
+                            src={getProxyUrl(video.url) + "#t=1.0"}
+                            className="w-full h-full object-cover"
                             preload="metadata"
                           />
                         )}
                         <div className="absolute inset-0 bg-black/10 flex items-center justify-center">
-                           {currentVideo?.id === video.id ? (
-                             <div className="w-full h-full bg-primary/20 animate-pulse"></div>
-                           ) : null}
+                          {currentVideo?.id === video.id ? (
+                            <div className="w-full h-full bg-primary/20 animate-pulse"></div>
+                          ) : null}
                         </div>
                         <span className="absolute bottom-0.5 right-0.5 text-[10px] bg-black/70 text-white px-1 rounded">
                           {index + 1}
@@ -969,7 +1049,7 @@ export function VideoZone({ courseId, initialVideos = [] }: VideoZoneProps) {
                       Rename
                     </ContextMenuItem>
                     <ContextMenuSeparator />
-                    <ContextMenuItem 
+                    <ContextMenuItem
                       onClick={() => {
                         setVideoToDelete(video);
                         setFolderToDelete(null);
@@ -1122,7 +1202,7 @@ export function VideoZone({ courseId, initialVideos = [] }: VideoZoneProps) {
                 : "Get YouTube captions and translate to Traditional Chinese."}
             </DialogDescription>
           </DialogHeader>
-          
+
           <div className="py-6">
             {isTranscribing ? (
               <div className="flex flex-col items-center justify-center space-y-4">
