@@ -20,7 +20,7 @@ function SubmitButton() {
 function GoogleButton() {
     return (
         <form action={googleSignIn}>
-            <Button variant="outline" className="w-full flex items-center justify-center gap-2 bg-white border-slate-200 text-slate-700 hover:bg-slate-50" type="submit">
+            <Button variant="outline" className="w-full flex items-center justify-center gap-2" type="submit">
                 <svg className="w-5 h-5" viewBox="0 0 24 24">
                     <path
                         d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
@@ -49,41 +49,41 @@ export function SignInForm() {
   const [state, formAction] = useFormState(authenticate, undefined)
 
   return (
-    <Card className="w-full max-w-md shadow-xl border-slate-200 bg-white">
+    <Card className="w-full max-w-md shadow-xl border-border bg-card">
       <CardHeader className="space-y-1">
-        <CardTitle className="text-center text-2xl font-bold text-slate-900">Welcome back</CardTitle>
-        <CardDescription className="text-center text-slate-500">
+        <CardTitle className="text-center text-2xl font-bold text-card-foreground">Welcome back</CardTitle>
+        <CardDescription className="text-center text-muted-foreground">
           Sign in to your account to continue
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
         <GoogleButton />
-        
+
         <div className="relative">
           <div className="absolute inset-0 flex items-center">
-            <span className="w-full border-t border-slate-200" />
+            <span className="w-full border-t border-border" />
           </div>
           <div className="relative flex justify-center text-xs uppercase">
-            <span className="bg-white px-2 text-slate-500">Or continue with</span>
+            <span className="bg-card px-2 text-muted-foreground">Or continue with</span>
           </div>
         </div>
 
         <form action={formAction} className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="email" className="text-slate-700">Email</Label>
-            <Input id="email" name="email" type="email" placeholder="john@example.com" required className="bg-white border-slate-200 text-slate-900" />
+            <Label htmlFor="email" className="text-foreground">Email</Label>
+            <Input id="email" name="email" type="email" placeholder="john@example.com" required className="bg-background border-border text-foreground" />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="password" className="text-slate-700">Password</Label>
-            <Input id="password" name="password" type="password" required className="bg-white border-slate-200 text-slate-900" />
+            <Label htmlFor="password" className="text-foreground">Password</Label>
+            <Input id="password" name="password" type="password" required className="bg-background border-border text-foreground" />
           </div>
           <SubmitButton />
           {state && <p className="text-center text-sm text-red-500">{state}</p>}
         </form>
-        
-        <div className="mt-4 text-center text-sm text-slate-500">
+
+        <div className="mt-4 text-center text-sm text-muted-foreground">
           Don't have an account?{" "}
-          <Link href="/register" className="text-blue-600 hover:underline font-medium">
+          <Link href="/register" className="text-primary hover:underline font-medium">
             Register
           </Link>
         </div>

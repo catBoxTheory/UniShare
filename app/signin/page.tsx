@@ -3,7 +3,6 @@ import { redirect } from "next/navigation"
 import { SignInForm } from "./SignInForm"
 import { Navbar } from "@/components/layout/Navbar"
 import { Footer } from "@/components/layout/Footer"
-import { ThemeProvider } from "@/components/theme-provider"
 
 export default async function SignInPage() {
   const session = await auth()
@@ -14,12 +13,12 @@ export default async function SignInPage() {
   }
 
   return (
-    <ThemeProvider forcedTheme="light">
-      <Navbar variant="solid" hideAuthButton />
-      <div className="flex min-h-screen items-center justify-center bg-white p-4">
+    <>
+      <Navbar hideAuthButton />
+      <div className="flex min-h-screen items-center justify-center bg-background p-4">
         <SignInForm />
       </div>
-      <Footer variant="solid" />
-    </ThemeProvider>
+      <Footer />
+    </>
   )
 }

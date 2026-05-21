@@ -7,7 +7,6 @@ interface YouTubePlayerProps {
   title: string;
   autoPlay?: boolean;
   onEnded?: () => void;
-  onProgress?: (time: number) => void;
 }
 
 declare global {
@@ -23,7 +22,7 @@ export function YouTubePlayer({ videoId, autoPlay = false, onEnded }: YouTubePla
   // Load YouTube IFrame API
   useEffect(() => {
     if (typeof window === 'undefined') return;
-
+    
     if (!window.YT) {
       const tag = document.createElement('script');
       tag.src = "https://www.youtube.com/iframe_api";
@@ -39,7 +38,7 @@ export function YouTubePlayer({ videoId, autoPlay = false, onEnded }: YouTubePla
       if (playerRef.current) {
         try {
           playerRef.current.destroy();
-        } catch (e) { }
+        } catch (e) {}
       }
     };
   }, [videoId]);
@@ -60,14 +59,6 @@ export function YouTubePlayer({ videoId, autoPlay = false, onEnded }: YouTubePla
         },
         events: {
           'onStateChange': onPlayerStateChange,
-          'onReady': (event: any) => {
-            // Track progress every 200ms
-            setInterval(() => {
-              if (playerRef.current && playerRef.current.getCurrentTime && onProgress) {
-                onProgress(playerRef.current.getCurrentTime());
-              }
-            }, 200);
-          }
         }
       });
     } catch (e) {
