@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { cn } from "@/lib/utils";
 
 interface FooterProps {
@@ -18,18 +19,18 @@ export function Footer({ variant = "default" }: FooterProps) {
       )}>
         <p>© 2025 UniShare. All rights reserved.</p>
         <div className="flex gap-4">
-          <a href="#" className={cn(
+          <Link href="/privacy" className={cn(
             "transition-colors",
             variant === "solid" ? "hover:text-slate-900" : "hover:text-foreground"
-          )}>Privacy Policy</a>
-          <a href="#" className={cn(
+          )}>Privacy Policy</Link>
+          <Link href="/terms" className={cn(
             "transition-colors",
             variant === "solid" ? "hover:text-slate-900" : "hover:text-foreground"
-          )}>Terms of Service</a>
-          <a href="#" className={cn(
+          )}>Terms of Service</Link>
+          <Link href="/contact" className={cn(
             "transition-colors",
             variant === "solid" ? "hover:text-slate-900" : "hover:text-foreground"
-          )}>Contact</a>
+          )}>Contact</Link>
         </div>
       </div>
     </footer>
