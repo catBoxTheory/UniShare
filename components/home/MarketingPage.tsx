@@ -3,9 +3,10 @@
 import Link from "next/link"
 import { motion } from "framer-motion"
 import { Button } from "@/components/ui/button"
-import { ArrowRight, BookOpen, Users, Share2, Search, Upload, Heart } from "lucide-react"
+import { ArrowRight, BookOpen, Users, Share2, Search, Upload, Heart, FileText, Video, MessageCircle } from "lucide-react"
 import { Navbar } from "@/components/layout/Navbar"
 import { Footer } from "@/components/layout/Footer"
+import { ParallaxTiltCard } from "./ParallaxTiltCard"
 
 const steps = [
   {
@@ -13,18 +14,45 @@ const steps = [
     icon: Search,
     title: "Find your course",
     desc: "Search for your university and course. Everything is organized by department and course code.",
+    image: "https://picsum.photos/seed/library-books/800/600",
   },
   {
     number: "02",
     icon: BookOpen,
     title: "Access materials",
     desc: "Browse lecture notes, videos, and study resources shared by students who took the course before you.",
+    image: "https://picsum.photos/seed/study-notes/800/600",
   },
   {
     number: "03",
     icon: Upload,
     title: "Contribute back",
     desc: "Upload your own notes and help the next cohort. The more we share, the better it gets for everyone.",
+    image: "https://picsum.photos/seed/share-knowledge/800/600",
+  },
+]
+
+const bentoCards = [
+  {
+    icon: FileText,
+    title: "Lecture notes",
+    desc: "Thousands of student-contributed notes across every department.",
+    image: "https://picsum.photos/seed/lecture-hall/900/700",
+    span: "md:row-span-2 md:col-span-2",
+  },
+  {
+    icon: Video,
+    title: "Course videos",
+    desc: "Watch recorded lectures with bilingual subtitles.",
+    image: "https://picsum.photos/seed/video-lecture/600/400",
+    span: "",
+  },
+  {
+    icon: MessageCircle,
+    title: "Community driven",
+    desc: "No paywalls, no credit systems. Just students helping students.",
+    image: "https://picsum.photos/seed/study-group/600/400",
+    span: "",
   },
 ]
 
@@ -38,10 +66,7 @@ const staggerContainer = {
   hidden: { opacity: 0 },
   visible: {
     opacity: 1,
-    transition: {
-      staggerChildren: 0.15,
-      delayChildren: 0.2,
-    },
+    transition: { staggerChildren: 0.12, delayChildren: 0.2 },
   },
 }
 
@@ -50,11 +75,7 @@ const fadeUpItem = {
   visible: {
     opacity: 1,
     y: 0,
-    transition: {
-      type: "spring",
-      stiffness: 100,
-      damping: 20,
-    },
+    transition: { type: "spring", stiffness: 100, damping: 20 },
   },
 }
 
@@ -63,59 +84,35 @@ export function MarketingPage() {
     <div className="flex flex-col min-h-screen bg-background text-foreground">
       <Navbar variant="default" />
 
-      {/* Hero — left-aligned, video background with warm stone overlay */}
+      {/* ===== Hero — left-aligned, video background ===== */}
       <section className="relative overflow-hidden border-b border-emerald-100 dark:border-emerald-900/20">
         <video
-          autoPlay
-          muted
-          loop
-          playsInline
+          autoPlay muted loop playsInline
           className="absolute inset-0 w-full h-full object-cover"
         >
           <source src="/hero-bg.mp4" type="video/mp4" />
         </video>
-        {/* Warm gradient overlay — heavy on the left for text, fading right */}
         <div className="absolute inset-0 bg-gradient-to-r from-stone-950/65 via-stone-950/35 to-stone-950/10" />
-        {/* Fade to next section at bottom */}
         <div className="absolute inset-0 bg-gradient-to-t from-background via-transparent to-transparent" />
 
         <div className="relative container px-4 md:px-6 mx-auto py-32 lg:py-40">
-          <motion.div
-            variants={staggerContainer}
-            initial="hidden"
-            animate="visible"
-            className="max-w-2xl"
-          >
-            <motion.h1
-              variants={fadeUpItem}
-              className="font-serif text-4xl font-bold tracking-tighter sm:text-6xl md:text-7xl lg:text-8xl text-white leading-[0.95]"
-            >
+          <motion.div variants={staggerContainer} initial="hidden" animate="visible" className="max-w-2xl">
+            <motion.h1 variants={fadeUpItem} className="font-serif text-4xl font-bold tracking-tighter sm:text-6xl md:text-7xl lg:text-8xl text-white leading-[0.95]">
               Your course materials,{" "}
               <span className="text-emerald-300">shared freely.</span>
             </motion.h1>
-            <motion.p
-              variants={fadeUpItem}
-              className="mt-6 max-w-xl text-lg md:text-xl text-white/70 leading-relaxed"
-            >
+            <motion.p variants={fadeUpItem} className="mt-6 max-w-xl text-lg md:text-xl text-white/70 leading-relaxed">
               UniShare is where students share lecture notes, videos, and resources
               &mdash; no paywalls, no credit systems, just a community that helps each
               other succeed.
             </motion.p>
-            <motion.div
-              variants={fadeUpItem}
-              className="flex flex-col sm:flex-row gap-4 mt-8"
-            >
+            <motion.div variants={fadeUpItem} className="flex flex-col sm:flex-row gap-4 mt-8">
               <Button asChild size="lg" className="font-semibold text-base h-12 px-8">
                 <Link href="/register">
                   Get Started Free <ArrowRight className="ml-2 w-5 h-5" />
                 </Link>
               </Button>
-              <Button
-                asChild
-                variant="outline"
-                size="lg"
-                className="font-semibold text-base h-12 px-8 border-white/20 text-white hover:bg-white/10 hover:text-white"
-              >
+              <Button asChild variant="outline" size="lg" className="font-semibold text-base h-12 px-8 border-white/20 text-white hover:bg-white/10 hover:text-white">
                 <Link href="/signin">Sign In</Link>
               </Button>
             </motion.div>
@@ -123,8 +120,53 @@ export function MarketingPage() {
         </div>
       </section>
 
-      {/* How It Works — zig-zag layout */}
+      {/* ===== Featured Bento Grid ===== */}
       <section className="py-32 bg-background">
+        <div className="container px-4 md:px-6 mx-auto max-w-7xl">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ type: "spring", stiffness: 100, damping: 20 }}
+            viewport={{ once: true }}
+            className="mb-16"
+          >
+            <p className="text-sm font-medium tracking-widest text-emerald-700 dark:text-emerald-300 uppercase mb-4">
+              Everything you need
+            </p>
+            <h2 className="font-serif text-4xl md:text-5xl font-bold tracking-tighter max-w-2xl">
+              All your course resources,{" "}
+              <span className="text-emerald-700 dark:text-emerald-300">in one place.</span>
+            </h2>
+          </motion.div>
+
+          {/* Bento grid — asymmetric: 1 large + 2 small */}
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-6 auto-rows-[240px]">
+            {bentoCards.map((card, i) => (
+              <motion.div
+                key={card.title}
+                initial={{ opacity: 0, y: 30 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                transition={{ type: "spring", stiffness: 100, damping: 20, delay: i * 0.1 }}
+                viewport={{ once: true }}
+                className={card.span}
+              >
+                <ParallaxTiltCard imageUrl={card.image} className="h-full">
+                  <div className="flex flex-col justify-end h-full p-8">
+                    <div className="w-10 h-10 rounded-xl bg-white/15 backdrop-blur flex items-center justify-center mb-3">
+                      <card.icon className="w-5 h-5 text-white" />
+                    </div>
+                    <h3 className="text-xl font-bold text-white mb-1">{card.title}</h3>
+                    <p className="text-sm text-white/70 leading-relaxed max-w-xs">{card.desc}</p>
+                  </div>
+                </ParallaxTiltCard>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ===== How It Works — zig-zag with images ===== */}
+      <section className="py-32 bg-muted/30 border-y border-border">
         <div className="container px-4 md:px-6 mx-auto max-w-7xl">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -154,13 +196,25 @@ export function MarketingPage() {
                   i % 2 === 1 ? "md:[direction:rtl]" : ""
                 }`}
               >
-                {/* Number + Icon side */}
+                {/* Image side */}
                 <div className={i % 2 === 1 ? "[direction:ltr]" : ""}>
-                  <div className="text-8xl font-serif font-bold text-emerald-100 dark:text-emerald-950/30 leading-none select-none">
-                    {step.number}
-                  </div>
-                  <div className="w-14 h-14 bg-emerald-100 dark:bg-emerald-900/20 rounded-2xl flex items-center justify-center mt-4">
-                    <step.icon className="w-7 h-7 text-emerald-700 dark:text-emerald-300" />
+                  <div className="relative overflow-hidden rounded-[2rem] aspect-[4/3] group">
+                    <div
+                      className="absolute inset-0 bg-cover bg-center transition-transform duration-700 group-hover:scale-105"
+                      style={{ backgroundImage: `url(${step.image})` }}
+                    />
+                    {/* Glass overlay */}
+                    <div className="absolute inset-0 bg-stone-950/15 backdrop-blur-[1px]" />
+                    {/* Number badge */}
+                    <div className="absolute top-6 left-6 w-14 h-14 bg-white/90 dark:bg-stone-900/90 backdrop-blur rounded-2xl flex items-center justify-center shadow-lg">
+                      <span className="font-serif text-xl font-bold text-emerald-700 dark:text-emerald-300">
+                        {step.number}
+                      </span>
+                    </div>
+                    {/* Icon badge */}
+                    <div className="absolute bottom-6 left-6 w-12 h-12 bg-white/90 dark:bg-stone-900/90 backdrop-blur rounded-xl flex items-center justify-center shadow-lg">
+                      <step.icon className="w-6 h-6 text-emerald-700 dark:text-emerald-300" />
+                    </div>
                   </div>
                 </div>
                 {/* Text side */}
@@ -176,8 +230,8 @@ export function MarketingPage() {
         </div>
       </section>
 
-      {/* Community Values — asymmetric grid */}
-      <section className="py-32 bg-muted/30 border-y border-border">
+      {/* ===== Community Values — asymmetric grid ===== */}
+      <section className="py-32 bg-background">
         <div className="container px-4 md:px-6 mx-auto max-w-7xl">
           <div className="grid md:grid-cols-[1.2fr_0.8fr] gap-16 items-center">
             <motion.div
@@ -236,8 +290,8 @@ export function MarketingPage() {
         </div>
       </section>
 
-      {/* Final CTA */}
-      <section className="py-32 bg-background">
+      {/* ===== Final CTA ===== */}
+      <section className="py-32 bg-muted/30 border-t border-border">
         <div className="container px-4 md:px-6 mx-auto max-w-7xl">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
