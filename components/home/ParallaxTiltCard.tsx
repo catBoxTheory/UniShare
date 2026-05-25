@@ -49,10 +49,12 @@ export function ParallaxTiltCard({ imageUrl, children, className = "" }: Paralla
         className="absolute inset-0 bg-cover bg-center transition-transform duration-700 group-hover:scale-105"
         style={{ backgroundImage: `url(${imageUrl})` }}
       />
+      {/* Emerald-tinted overlay for palette harmony */}
+      <div className="absolute inset-0 bg-gradient-to-br from-emerald-950/30 via-stone-950/20 to-stone-950/10" />
       {/* Liquid Glass overlay */}
-      <div className="absolute inset-0 bg-white/10 backdrop-blur-[2px] border border-white/10 shadow-[inset_0_1px_0_rgba(255,255,255,0.15)]" />
+      <div className="absolute inset-0 bg-white/5 backdrop-blur-[1px] border border-white/10 shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]" />
       {/* Gradient fade for text readability */}
-      <div className="absolute inset-0 bg-gradient-to-t from-stone-950/70 via-stone-950/20 to-transparent" />
+      <div className="absolute inset-0 bg-gradient-to-t from-stone-950/75 via-stone-950/25 to-transparent" />
       {/* Content */}
       <div className="relative z-10 h-full">{children}</div>
     </motion.div>
