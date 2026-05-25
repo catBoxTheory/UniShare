@@ -9,16 +9,19 @@ import { Footer } from "@/components/layout/Footer"
 
 const steps = [
   {
+    number: "01",
     icon: Search,
     title: "Find your course",
     desc: "Search for your university and course. Everything is organized by department and course code.",
   },
   {
+    number: "02",
     icon: BookOpen,
     title: "Access materials",
     desc: "Browse lecture notes, videos, and study resources shared by students who took the course before you.",
   },
   {
+    number: "03",
     icon: Upload,
     title: "Contribute back",
     desc: "Upload your own notes and help the next cohort. The more we share, the better it gets for everyone.",
@@ -31,157 +34,228 @@ const values = [
   { icon: Heart, title: "Made with care", desc: "Built by a student who was tired of paywalled resources." },
 ]
 
+const staggerContainer = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.15,
+      delayChildren: 0.2,
+    },
+  },
+}
+
+const fadeUpItem = {
+  hidden: { opacity: 0, y: 24 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: {
+      type: "spring",
+      stiffness: 100,
+      damping: 20,
+    },
+  },
+}
+
 export function MarketingPage() {
   return (
     <div className="flex flex-col min-h-screen bg-background text-foreground">
       <Navbar variant="default" />
 
-      {/* Hero */}
+      {/* Hero — left-aligned, video background */}
       <section className="relative overflow-hidden border-b border-amber-100 dark:border-amber-900/20">
-        {/* Video background */}
         <video
           autoPlay
           muted
           loop
           playsInline
-          className="absolute inset-0 w-full h-full object-cover -z-10"
+          className="absolute inset-0 w-full h-full object-cover"
         >
           <source src="/hero-bg.mp4" type="video/mp4" />
         </video>
-        {/* Warm overlay for text readability */}
-        <div className="absolute inset-0 bg-amber-50/60 dark:bg-black/60 -z-10" />
-        <div className="container px-4 md:px-6 mx-auto py-24 lg:py-32">
+        {/* Dark overlay for text contrast */}
+        <div className="absolute inset-0 bg-black/50" />
+        {/* Fade to next section at bottom */}
+        <div className="absolute inset-0 bg-gradient-to-t from-background via-transparent to-transparent" />
+
+        <div className="relative container px-4 md:px-6 mx-auto py-32 lg:py-40">
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6 }}
-            className="max-w-3xl mx-auto text-center space-y-6"
+            variants={staggerContainer}
+            initial="hidden"
+            animate="visible"
+            className="max-w-2xl"
           >
-            <h1 className="font-serif text-4xl font-bold tracking-tight sm:text-5xl md:text-6xl lg:text-7xl">
+            <motion.h1
+              variants={fadeUpItem}
+              className="font-serif text-4xl font-bold tracking-tighter sm:text-6xl md:text-7xl lg:text-8xl text-white leading-[0.95]"
+            >
               Your course materials,{" "}
-              <span className="text-amber-700 dark:text-amber-400">shared freely.</span>
-            </h1>
-            <p className="max-w-2xl mx-auto text-lg md:text-xl text-muted-foreground leading-relaxed">
-              UniShare is where students share lecture notes, videos, and resources —
-              no paywalls, no credit systems, just a community that helps each other succeed.
-            </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center pt-4">
+              <span className="text-amber-400">shared freely.</span>
+            </motion.h1>
+            <motion.p
+              variants={fadeUpItem}
+              className="mt-6 max-w-xl text-lg md:text-xl text-white/70 leading-relaxed"
+            >
+              UniShare is where students share lecture notes, videos, and resources
+              &mdash; no paywalls, no credit systems, just a community that helps each
+              other succeed.
+            </motion.p>
+            <motion.div
+              variants={fadeUpItem}
+              className="flex flex-col sm:flex-row gap-4 mt-8"
+            >
               <Button asChild size="lg" className="font-semibold text-base h-12 px-8">
                 <Link href="/register">
                   Get Started Free <ArrowRight className="ml-2 w-5 h-5" />
                 </Link>
               </Button>
-              <Button asChild variant="outline" size="lg" className="font-semibold text-base h-12 px-8">
-                <Link href="/signin">
-                  Sign In
-                </Link>
+              <Button
+                asChild
+                variant="outline"
+                size="lg"
+                className="font-semibold text-base h-12 px-8 border-white/20 text-white hover:bg-white/10 hover:text-white"
+              >
+                <Link href="/signin">Sign In</Link>
               </Button>
-            </div>
+            </motion.div>
           </motion.div>
         </div>
       </section>
 
-      {/* How It Works */}
-      <section className="py-24 bg-background">
-        <div className="container px-4 md:px-6 mx-auto">
-          <div className="text-center max-w-3xl mx-auto mb-16">
-            <h2 className="font-serif text-3xl font-bold tracking-tight sm:text-4xl">
+      {/* How It Works — zig-zag layout */}
+      <section className="py-32 bg-background">
+        <div className="container px-4 md:px-6 mx-auto max-w-7xl">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ type: "spring", stiffness: 100, damping: 20 }}
+            viewport={{ once: true }}
+            className="mb-20"
+          >
+            <p className="text-sm font-medium tracking-widest text-amber-700 dark:text-amber-400 uppercase mb-4">
               How it works
-            </h2>
-            <p className="mt-4 text-lg text-muted-foreground">
-              Three steps to start learning together.
             </p>
-          </div>
+            <h2 className="font-serif text-4xl md:text-5xl font-bold tracking-tighter">
+              Three steps to start{" "}
+              <span className="text-amber-700 dark:text-amber-400">learning together.</span>
+            </h2>
+          </motion.div>
 
-          <div className="grid md:grid-cols-3 gap-8 max-w-4xl mx-auto">
+          <div className="space-y-28">
             {steps.map((step, i) => (
               <motion.div
                 key={step.title}
-                initial={{ opacity: 0, y: 20 }}
+                initial={{ opacity: 0, y: 40 }}
                 whileInView={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5, delay: i * 0.1 }}
-                viewport={{ once: true }}
-                className="text-center space-y-3"
+                transition={{ type: "spring", stiffness: 100, damping: 20, delay: i * 0.1 }}
+                viewport={{ once: true, margin: "-100px" }}
+                className={`grid md:grid-cols-2 gap-12 items-center ${
+                  i % 2 === 1 ? "md:[direction:rtl]" : ""
+                }`}
               >
-                <div className="w-12 h-12 bg-amber-100 dark:bg-amber-900/30 rounded-xl flex items-center justify-center mx-auto">
-                  <step.icon className="w-6 h-6 text-amber-700 dark:text-amber-400" />
+                {/* Number + Icon side */}
+                <div className={i % 2 === 1 ? "[direction:ltr]" : ""}>
+                  <div className="text-8xl font-serif font-bold text-amber-100 dark:text-amber-950/50 leading-none select-none">
+                    {step.number}
+                  </div>
+                  <div className="w-14 h-14 bg-amber-100 dark:bg-amber-900/30 rounded-2xl flex items-center justify-center mt-4">
+                    <step.icon className="w-7 h-7 text-amber-700 dark:text-amber-400" />
+                  </div>
                 </div>
-                <h3 className="text-lg font-semibold">{step.title}</h3>
-                <p className="text-muted-foreground text-sm leading-relaxed max-w-xs mx-auto">{step.desc}</p>
+                {/* Text side */}
+                <div className={i % 2 === 1 ? "[direction:ltr]" : ""}>
+                  <h3 className="text-2xl font-bold tracking-tight mb-3">{step.title}</h3>
+                  <p className="text-muted-foreground text-lg leading-relaxed max-w-md">
+                    {step.desc}
+                  </p>
+                </div>
               </motion.div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* Community Values */}
-      <section className="py-24 bg-muted/30 border-y border-border">
-        <div className="container px-4 md:px-6 mx-auto">
-          <div className="max-w-4xl mx-auto">
-            <div className="grid md:grid-cols-2 gap-12 items-center">
-              <motion.div
-                initial={{ opacity: 0, x: -20 }}
-                whileInView={{ opacity: 1, x: 0 }}
-                transition={{ duration: 0.5 }}
-                viewport={{ once: true }}
-                className="space-y-6"
-              >
-                <h2 className="font-serif text-3xl font-bold tracking-tight sm:text-4xl">
-                  Built by students,{" "}
-                  <span className="text-amber-700 dark:text-amber-400">for students.</span>
-                </h2>
-                <p className="text-muted-foreground text-lg leading-relaxed">
-                  No venture capital. No paywalls. No &ldquo;premium&rdquo; content locked behind credit systems.
-                  Just a straightforward place to find and share course materials with your classmates.
-                </p>
-                <div className="flex gap-8 pt-4">
-                  <div>
-                    <div className="text-3xl font-bold">100%</div>
-                    <div className="text-sm text-muted-foreground">Free, forever</div>
+      {/* Community Values — asymmetric grid */}
+      <section className="py-32 bg-muted/30 border-y border-border">
+        <div className="container px-4 md:px-6 mx-auto max-w-7xl">
+          <div className="grid md:grid-cols-[1.2fr_0.8fr] gap-16 items-center">
+            <motion.div
+              initial={{ opacity: 0, x: -30 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              transition={{ type: "spring", stiffness: 100, damping: 20 }}
+              viewport={{ once: true }}
+            >
+              <p className="text-sm font-medium tracking-widest text-amber-700 dark:text-amber-400 uppercase mb-4">
+                Our values
+              </p>
+              <h2 className="font-serif text-4xl md:text-5xl font-bold tracking-tighter leading-tight mb-6">
+                Built by students,{" "}
+                <span className="text-amber-700 dark:text-amber-400">for students.</span>
+              </h2>
+              <p className="text-muted-foreground text-lg leading-relaxed max-w-lg">
+                No venture capital. No paywalls. No &ldquo;premium&rdquo; content locked behind
+                credit systems. Just a straightforward place to find and share course
+                materials with your classmates.
+              </p>
+              <div className="flex gap-12 mt-8">
+                <div>
+                  <div className="text-4xl font-bold tracking-tighter">100%</div>
+                  <div className="text-sm text-muted-foreground mt-1">Free, forever</div>
+                </div>
+                <div>
+                  <div className="text-4xl font-bold tracking-tighter">Open</div>
+                  <div className="text-sm text-muted-foreground mt-1">Source ethos</div>
+                </div>
+              </div>
+            </motion.div>
+
+            <motion.div
+              initial={{ opacity: 0, x: 30 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              transition={{ type: "spring", stiffness: 100, damping: 20 }}
+              viewport={{ once: true }}
+              className="space-y-1"
+            >
+              {values.map((v) => (
+                <div
+                  key={v.title}
+                  className="flex items-center gap-4 p-5 rounded-2xl hover:bg-amber-50/50 dark:hover:bg-amber-950/20 transition-colors duration-300"
+                >
+                  <div className="w-12 h-12 rounded-xl bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center shrink-0">
+                    <v.icon className="w-6 h-6 text-amber-700 dark:text-amber-400" />
                   </div>
                   <div>
-                    <div className="text-3xl font-bold">Open</div>
-                    <div className="text-sm text-muted-foreground">Source ethos</div>
+                    <p className="font-semibold text-lg">{v.title}</p>
+                    <p className="text-sm text-muted-foreground">{v.desc}</p>
                   </div>
                 </div>
-              </motion.div>
-
-              <motion.div
-                initial={{ opacity: 0, x: 20 }}
-                whileInView={{ opacity: 1, x: 0 }}
-                transition={{ duration: 0.5 }}
-                viewport={{ once: true }}
-                className="bg-card border border-border rounded-2xl p-8 space-y-6"
-              >
-                {values.map((v) => (
-                  <div key={v.title} className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center shrink-0">
-                      <v.icon className="w-5 h-5 text-amber-700 dark:text-amber-400" />
-                    </div>
-                    <div>
-                      <p className="font-semibold">{v.title}</p>
-                      <p className="text-sm text-muted-foreground">{v.desc}</p>
-                    </div>
-                  </div>
-                ))}
-              </motion.div>
-            </div>
+              ))}
+            </motion.div>
           </div>
         </div>
       </section>
 
       {/* Final CTA */}
-      <section className="py-24 bg-background">
-        <div className="container px-4 md:px-6 mx-auto text-center">
-          <h2 className="font-serif text-3xl font-bold tracking-tight sm:text-4xl mb-4">
-            Ready to start learning?
-          </h2>
-          <p className="text-muted-foreground text-lg mb-8 max-w-md mx-auto">
-            Join students who are already sharing and learning together.
-          </p>
-          <Button asChild size="lg" className="font-semibold h-12 px-8">
-            <Link href="/register">Join UniShare &mdash; it&apos;s free</Link>
-          </Button>
+      <section className="py-32 bg-background">
+        <div className="container px-4 md:px-6 mx-auto max-w-7xl">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ type: "spring", stiffness: 100, damping: 20 }}
+            viewport={{ once: true }}
+            className="text-center"
+          >
+            <h2 className="font-serif text-4xl md:text-5xl font-bold tracking-tighter mb-4">
+              Ready to start learning?
+            </h2>
+            <p className="text-muted-foreground text-lg mb-8 max-w-md mx-auto">
+              Join students who are already sharing and learning together.
+            </p>
+            <Button asChild size="lg" className="font-semibold h-12 px-8">
+              <Link href="/register">Join UniShare &mdash; it&apos;s free</Link>
+            </Button>
+          </motion.div>
         </div>
       </section>
 

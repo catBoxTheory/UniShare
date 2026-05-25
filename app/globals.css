@@ -81,15 +81,6 @@
   }
 }
 
-@keyframes kenburns {
-  0% {
-    transform: scale(1) translate(0, 0);
-  }
-  100% {
-    transform: scale(1.05) translate(-1%, -1%);
-  }
-}
-
 .custom-scrollbar::-webkit-scrollbar {
   width: 6px;
 }
