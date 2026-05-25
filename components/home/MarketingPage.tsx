@@ -38,13 +38,16 @@ export function MarketingPage() {
 
       {/* Hero */}
       <section className="relative overflow-hidden border-b border-amber-100 dark:border-amber-900/20">
-        {/* Animated background image */}
-        <div className="absolute inset-0 -z-10">
-          <div
-            className="absolute inset-0 bg-cover bg-center animate-[kenburns_20s_ease-in-out_infinite_alternate]"
-            style={{ backgroundImage: `url('/hero-bg.png')` }}
-          />
-        </div>
+        {/* Video background */}
+        <video
+          autoPlay
+          muted
+          loop
+          playsInline
+          className="absolute inset-0 w-full h-full object-cover -z-10"
+        >
+          <source src="/hero-bg.mp4" type="video/mp4" />
+        </video>
         {/* Warm overlay for text readability */}
         <div className="absolute inset-0 bg-amber-50/60 dark:bg-black/60 -z-10" />
         <div className="container px-4 md:px-6 mx-auto py-24 lg:py-32">
