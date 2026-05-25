@@ -282,9 +282,9 @@ export function DocumentPreview({ document }: DocumentPreviewProps) {
               title="Word Document Preview"
             />
           ) : (
-            <div className="flex-1 flex flex-col items-center justify-center p-8 bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-950/20 dark:to-indigo-950/20 h-full">
+            <div className="flex-1 flex flex-col items-center justify-center p-8 bg-gradient-to-br from-emerald-50 to-emerald-50 dark:from-emerald-950/20 dark:to-emerald-950/20 h-full">
               <div className="w-32 h-40 bg-card rounded-lg shadow-lg flex items-center justify-center mb-6 border border-border">
-                <FileText className="w-16 h-16 text-blue-600" />
+                <FileText className="w-16 h-16 text-emerald-600" />
               </div>
               <h4 className="text-lg font-medium text-foreground mb-2">Word Document</h4>
               <p className="text-sm text-muted-foreground text-center mb-4 max-w-xs">
@@ -360,7 +360,7 @@ export function DocumentPreview({ document }: DocumentPreviewProps) {
       <div className="h-full flex flex-col">
         <div className="flex items-center justify-between p-3 border-b border-border bg-muted">
           <h3 className="font-medium text-sm truncate flex-1 flex items-center gap-2 text-foreground">
-            <span className="text-blue-500 font-bold">Py</span>
+            <span className="text-emerald-500 font-bold">Py</span>
             {document.title}
           </h3>
           <Button variant="outline" size="sm" asChild>
@@ -391,7 +391,7 @@ export function DocumentPreview({ document }: DocumentPreviewProps) {
       <div className="h-full flex flex-col">
         <div className="flex items-center justify-between p-3 border-b border-border bg-muted">
           <h3 className="font-medium text-sm truncate flex-1 flex items-center gap-2 text-foreground">
-            <FileText className="w-4 h-4 text-blue-500" />
+            <FileText className="w-4 h-4 text-emerald-500" />
             {document.title}
           </h3>
           <Button variant="outline" size="sm" asChild>

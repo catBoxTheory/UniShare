@@ -13,7 +13,7 @@ import { CheckCircle2 } from "lucide-react"
 function SubmitButton() {
   const { pending } = useFormStatus()
   return (
-    <Button type="submit" className="w-full bg-blue-600 hover:bg-blue-700 mt-6" disabled={pending}>
+    <Button type="submit" className="w-full mt-6" disabled={pending}>
       {pending ? "Saving..." : "Save Changes"}
     </Button>
   )

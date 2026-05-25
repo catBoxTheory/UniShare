@@ -43,7 +43,7 @@ export function Navbar({ user, variant = "default", hideAuthButton = false }: Na
         {/* Logo */}
         <Link href="/" className={cn(
           "flex items-center gap-2 font-bold text-xl",
-          variant === "solid" ? "text-blue-700" : "text-primary"
+          variant === "solid" ? "text-primary" : "text-primary"
         )}>
           <GraduationCap className="h-6 w-6" />
           <span>UniShare</span>

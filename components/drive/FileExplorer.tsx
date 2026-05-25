@@ -134,9 +134,9 @@ export function FileExplorer({
           <div 
             key={folder.id}
             onClick={() => handleFolderClick(folder.id)}
-            className="group flex flex-col items-center p-4 rounded-lg border bg-blue-50/50 hover:bg-blue-100/50 cursor-pointer transition-colors"
+            className="group flex flex-col items-center p-4 rounded-lg border bg-emerald-50/50 hover:bg-emerald-100/50 cursor-pointer transition-colors"
           >
-            <FolderIcon className="h-12 w-12 text-blue-500 mb-2 group-hover:scale-110 transition-transform" />
+            <FolderIcon className="h-12 w-12 text-emerald-500 mb-2 group-hover:scale-110 transition-transform" />
             <span className="text-sm font-medium text-center line-clamp-2 w-full truncate">
               {folder.name}
             </span>

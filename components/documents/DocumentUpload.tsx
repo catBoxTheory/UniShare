@@ -289,7 +289,7 @@ export function DocumentUpload({ courseId, folderId, onUploadComplete }: Documen
                   "flex items-center gap-3 p-2 rounded-lg border",
                   item.status === "done" && "bg-green-50 border-green-200",
                   item.status === "error" && "bg-red-50 border-red-200",
-                  item.status === "uploading" && "bg-blue-50 border-blue-200",
+                  item.status === "uploading" && "bg-emerald-50 border-emerald-200",
                   item.status === "pending" && "bg-gray-50 border-gray-200"
                 )}
               >
@@ -297,7 +297,7 @@ export function DocumentUpload({ courseId, folderId, onUploadComplete }: Documen
                   "w-6 h-6 flex-shrink-0",
                   item.status === "done" && "text-green-500",
                   item.status === "error" && "text-red-500",
-                  item.status === "uploading" && "text-blue-500",
+                  item.status === "uploading" && "text-emerald-500",
                   item.status === "pending" && "text-gray-500"
                 )} />
                 <div className="flex-1 min-w-0">
@@ -312,11 +312,11 @@ export function DocumentUpload({ courseId, folderId, onUploadComplete }: Documen
                   <div className="flex items-center gap-1.5">
                     <div className="w-12 h-1.5 bg-gray-200 rounded-full overflow-hidden">
                       <div 
-                        className="h-full bg-blue-500 transition-all duration-200"
+                        className="h-full bg-emerald-500 transition-all duration-200"
                         style={{ width: `${item.progress || 0}%` }}
                       />
                     </div>
-                    <span className="text-xs text-blue-600 font-medium w-8">
+                    <span className="text-xs text-emerald-600 font-medium w-8">
                       {item.progress || 0}%
                     </span>
                   </div>

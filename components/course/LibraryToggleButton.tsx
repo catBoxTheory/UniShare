@@ -37,7 +37,7 @@ export function LibraryToggleButton({ courseId, initialEnrolled, minimal = false
         disabled={isPending}
         className={cn(
           "h-8 w-8 bg-white/90 hover:bg-white shadow-sm transition-colors",
-          isEnrolled ? "text-green-600 hover:text-green-700" : "text-gray-400 hover:text-blue-600",
+          isEnrolled ? "text-emerald-600 hover:text-emerald-700" : "text-gray-400 hover:text-emerald-600",
           className
         )}
         title={isEnrolled ? "Remove from Library" : "Add to Library"}
@@ -59,7 +59,7 @@ export function LibraryToggleButton({ courseId, initialEnrolled, minimal = false
       onClick={handleToggle}
       disabled={isPending}
       className={cn(
-        isEnrolled ? "border-green-500 text-green-600 hover:bg-green-50" : "bg-blue-600 hover:bg-blue-700",
+        isEnrolled ? "border-emerald-500 text-emerald-600 hover:bg-emerald-50" : "",
         className
       )}
     >

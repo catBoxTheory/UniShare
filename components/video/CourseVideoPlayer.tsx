@@ -19,7 +19,7 @@ const VideoItem = ({ id, title, isActive }: VideoItemProps) => (
   <div 
     className={cn(
     "flex gap-3 p-3 rounded-md cursor-pointer hover:bg-slate-100 transition-colors",
-    isActive && "bg-slate-100 border-l-4 border-blue-500"
+    isActive && "bg-slate-100 border-l-4 border-emerald-500"
   )}>
     <div className="relative w-24 h-16 bg-slate-200 flex-shrink-0 rounded overflow-hidden flex items-center justify-center">
         <Play className="w-6 h-6 text-slate-400" />
@@ -70,7 +70,7 @@ export function CourseVideoPlayer({
                                 href={video.url} 
                                 target="_blank" 
                                 rel="noopener noreferrer"
-                                className="mt-4 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
+                                className="mt-4 px-4 py-2 bg-emerald-600 text-white rounded hover:bg-emerald-700 transition-colors"
                             >
                                 Download File
                             </a>

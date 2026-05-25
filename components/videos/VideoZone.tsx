@@ -1238,8 +1238,8 @@ export function VideoZone({ courseId, initialVideos = [] }: VideoZoneProps) {
                   </>
                 ) : (
                   <>
-                    <div className="w-12 h-12 rounded-full bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center">
-                      <AlertCircle className="w-6 h-6 text-amber-600 dark:text-amber-400" />
+                    <div className="w-12 h-12 rounded-full bg-emerald-100 dark:bg-emerald-900/20 flex items-center justify-center">
+                      <AlertCircle className="w-6 h-6 text-emerald-600 dark:text-emerald-300" />
                     </div>
                     <div className="text-center">
                       <p className="text-sm font-medium text-foreground">No Captions Available</p>

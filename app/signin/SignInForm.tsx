@@ -11,7 +11,7 @@ import Link from "next/link"
 function SubmitButton() {
   const { pending } = useFormStatus()
   return (
-    <Button type="submit" className="w-full bg-blue-600 hover:bg-blue-700" disabled={pending}>
+    <Button type="submit" className="w-full" disabled={pending}>
       {pending ? "Signing in..." : "Sign In"}
     </Button>
   )
