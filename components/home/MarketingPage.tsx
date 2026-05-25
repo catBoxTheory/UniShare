@@ -93,7 +93,7 @@ export function MarketingPage() {
           autoPlay muted loop playsInline
           className="absolute inset-0 w-full h-full object-cover"
         >
-          <source src="/hero-bg.mp4" type="video/mp4" />
+          <source src="/mp_.mp4" type="video/mp4" />
         </video>
         <div className="absolute inset-0 bg-gradient-to-r from-stone-950/65 via-stone-950/35 to-stone-950/10" />
         <div className="absolute inset-0 bg-gradient-to-t from-background via-transparent to-transparent" />

@@ -49,10 +49,12 @@ Most CRUD operations go through server actions in `app/actions/`, not API routes
 | `app/actions/folders.ts` | Folder creation, folder contents listing, breadcrumb path |
 | `app/actions/materials.ts` | Save material to DB, YouTube video validation/save |
 | `app/actions/files.ts` | File fetch, delete (from DB + storage), related files |
-| `app/actions/auth.ts` | Sign-in, sign-up, password reset |
+| `app/actions/transcripts.ts` | Subtitle fetching, AI transcription, Chinese translation |
+| `app/actions/auth.ts` | Sign-in, sign-up, password reset, Google OAuth |
 | `app/actions/register.ts` | Registration flow |
 | `app/actions/verification.ts` | Email verification token management |
 | `app/actions/user.ts` | User profile updates |
+| `app/actions/contact.ts` | Contact form submission with zod validation |
 
 ### API Routes (narrower scope)
 
@@ -90,13 +92,16 @@ PostgreSQL with Prisma ORM. Key models:
 ```
 /                    → MarketingPage (unauthenticated) or Dashboard (authenticated)
 /signin              → SignInForm
-/register            → Registration form with email verification
+/register            → Registration form with Google OAuth + email, university dropdown
 /onboarding          → OnboardingForm (university, region, start year)
-/courses/[courseId]  → Course dashboard with FileExplorer (server component)
+/courses/[courseId]  → Course dashboard with tabs (server component)
 /courses/[courseId]/watch → Video watch page (server component)
 /search              → Course search/browse
 /settings            → User settings
 /enter-password      → Site-wide password gate page
+/contact             → Contact form page
+/privacy             → Privacy policy page
+/terms               → Terms of service page
 ```
 
 ### Storage Layer (`lib/storage.ts`)
@@ -113,6 +118,16 @@ Uses `@prisma/adapter-pg` with a `pg.Pool` connection (not the default Prisma bi
 ### Onboarding Gate
 
 The home page (`app/page.tsx`) checks `user.isOnboardingCompleted` and redirects to `/onboarding` if false. This gate prevents users from accessing the dashboard until they complete onboarding.
+
+## Design System
+
+The project uses a warm earth + emerald palette defined as HSL custom properties in `app/globals.css` (light and dark mode). Key conventions:
+
+- **Typography**: Inter for body, EB Garamond (`font-serif`) for headings. Headings use `tracking-tighter leading-tight`.
+- **Color**: Emerald green accent (`--primary: 150 30% 35%`), warm stone neutrals. No purple/blue gradients, no pure `#000000`.
+- **"Liquid Glass"**: Cards and elevated surfaces use `backdrop-blur` + `border border-white/10` + `shadow-[inset_0_1px_0_rgba(255,255,255,0.1)]` for a premium frosted glass effect.
+- **Layout**: No centered hero sections — left-aligned content. No 3-column card grids — use asymmetric or zig-zag layouts instead.
+- **Components**: `shadcn/ui` primitives in `components/ui/`, customized to match the warm earth palette via CSS variables.
 
 ## Environment Variables
 
