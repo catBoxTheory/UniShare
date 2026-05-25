@@ -63,8 +63,8 @@ export function MarketingPage() {
     <div className="flex flex-col min-h-screen bg-background text-foreground">
       <Navbar variant="default" />
 
-      {/* Hero — left-aligned, video background */}
-      <section className="relative overflow-hidden border-b border-amber-100 dark:border-amber-900/20">
+      {/* Hero — left-aligned, video background with warm stone overlay */}
+      <section className="relative overflow-hidden border-b border-emerald-100 dark:border-emerald-900/20">
         <video
           autoPlay
           muted
@@ -74,8 +74,8 @@ export function MarketingPage() {
         >
           <source src="/hero-bg.mp4" type="video/mp4" />
         </video>
-        {/* Dark overlay for text contrast */}
-        <div className="absolute inset-0 bg-black/50" />
+        {/* Warm gradient overlay — heavy on the left for text, fading right */}
+        <div className="absolute inset-0 bg-gradient-to-r from-stone-950/65 via-stone-950/35 to-stone-950/10" />
         {/* Fade to next section at bottom */}
         <div className="absolute inset-0 bg-gradient-to-t from-background via-transparent to-transparent" />
 
@@ -91,7 +91,7 @@ export function MarketingPage() {
               className="font-serif text-4xl font-bold tracking-tighter sm:text-6xl md:text-7xl lg:text-8xl text-white leading-[0.95]"
             >
               Your course materials,{" "}
-              <span className="text-amber-400">shared freely.</span>
+              <span className="text-emerald-300">shared freely.</span>
             </motion.h1>
             <motion.p
               variants={fadeUpItem}
@@ -133,12 +133,12 @@ export function MarketingPage() {
             viewport={{ once: true }}
             className="mb-20"
           >
-            <p className="text-sm font-medium tracking-widest text-amber-700 dark:text-amber-400 uppercase mb-4">
+            <p className="text-sm font-medium tracking-widest text-emerald-700 dark:text-emerald-300 uppercase mb-4">
               How it works
             </p>
             <h2 className="font-serif text-4xl md:text-5xl font-bold tracking-tighter">
               Three steps to start{" "}
-              <span className="text-amber-700 dark:text-amber-400">learning together.</span>
+              <span className="text-emerald-700 dark:text-emerald-300">learning together.</span>
             </h2>
           </motion.div>
 
@@ -156,11 +156,11 @@ export function MarketingPage() {
               >
                 {/* Number + Icon side */}
                 <div className={i % 2 === 1 ? "[direction:ltr]" : ""}>
-                  <div className="text-8xl font-serif font-bold text-amber-100 dark:text-amber-950/50 leading-none select-none">
+                  <div className="text-8xl font-serif font-bold text-emerald-100 dark:text-emerald-950/30 leading-none select-none">
                     {step.number}
                   </div>
-                  <div className="w-14 h-14 bg-amber-100 dark:bg-amber-900/30 rounded-2xl flex items-center justify-center mt-4">
-                    <step.icon className="w-7 h-7 text-amber-700 dark:text-amber-400" />
+                  <div className="w-14 h-14 bg-emerald-100 dark:bg-emerald-900/20 rounded-2xl flex items-center justify-center mt-4">
+                    <step.icon className="w-7 h-7 text-emerald-700 dark:text-emerald-300" />
                   </div>
                 </div>
                 {/* Text side */}
@@ -186,12 +186,12 @@ export function MarketingPage() {
               transition={{ type: "spring", stiffness: 100, damping: 20 }}
               viewport={{ once: true }}
             >
-              <p className="text-sm font-medium tracking-widest text-amber-700 dark:text-amber-400 uppercase mb-4">
+              <p className="text-sm font-medium tracking-widest text-emerald-700 dark:text-emerald-300 uppercase mb-4">
                 Our values
               </p>
               <h2 className="font-serif text-4xl md:text-5xl font-bold tracking-tighter leading-tight mb-6">
                 Built by students,{" "}
-                <span className="text-amber-700 dark:text-amber-400">for students.</span>
+                <span className="text-emerald-700 dark:text-emerald-300">for students.</span>
               </h2>
               <p className="text-muted-foreground text-lg leading-relaxed max-w-lg">
                 No venture capital. No paywalls. No &ldquo;premium&rdquo; content locked behind
@@ -220,10 +220,10 @@ export function MarketingPage() {
               {values.map((v) => (
                 <div
                   key={v.title}
-                  className="flex items-center gap-4 p-5 rounded-2xl hover:bg-amber-50/50 dark:hover:bg-amber-950/20 transition-colors duration-300"
+                  className="flex items-center gap-4 p-5 rounded-2xl hover:bg-emerald-50/50 dark:hover:bg-emerald-950/20 transition-colors duration-300"
                 >
-                  <div className="w-12 h-12 rounded-xl bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center shrink-0">
-                    <v.icon className="w-6 h-6 text-amber-700 dark:text-amber-400" />
+                  <div className="w-12 h-12 rounded-xl bg-emerald-100 dark:bg-emerald-900/20 flex items-center justify-center shrink-0">
+                    <v.icon className="w-6 h-6 text-emerald-700 dark:text-emerald-300" />
                   </div>
                   <div>
                     <p className="font-semibold text-lg">{v.title}</p>
