@@ -36,3 +36,10 @@ yarn-error.log*
 next-env.d.ts
 
 /app/generated/prisma
+
+# project clutter
+cloudflared.exe
+tunnel.log
+debug-prisma.js
+PhotoAndVideo/
+audio-service/

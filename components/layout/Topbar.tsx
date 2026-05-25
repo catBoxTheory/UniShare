@@ -14,7 +14,7 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { signOutAction } from "@/app/actions/auth"
 import { useRouter } from "next/navigation"
-import { ThemeToggle } from "@/components/theme-toggle"
+import { ThemeToggle } from "@/components/theme/ThemeToggle"
 
 interface TopbarProps {
   user: {

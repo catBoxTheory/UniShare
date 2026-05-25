@@ -4,7 +4,7 @@ import { useState } from "react";
 import { FileText, Video } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { DocumentZone } from "@/components/documents/DocumentZone";
-import { VideoZone } from "@/components/videos/VideoZone";
+import { VideoZone } from "@/components/video/VideoZone";
 
 interface Document {
   id: string;

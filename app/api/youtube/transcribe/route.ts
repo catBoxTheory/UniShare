@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { fetchAndTranslateSubtitles } from "@/lib/actions/transcripts";
+import { fetchAndTranslateSubtitles } from "@/app/actions/transcripts";
 
 export const maxDuration = 60; // Allow up to 1 minute for subtitle fetching and translation
 

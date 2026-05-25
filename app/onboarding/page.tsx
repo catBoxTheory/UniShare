@@ -2,7 +2,7 @@ import { auth } from "@/auth"
 import { redirect } from "next/navigation"
 import { OnboardingForm } from "./OnboardingForm"
 import prisma from "@/lib/prisma"
-import { ThemeProvider } from "@/components/theme-provider"
+import { ThemeProvider } from "@/components/theme/ThemeProvider"
 
 export default async function OnboardingPage() {
     const session = await auth()

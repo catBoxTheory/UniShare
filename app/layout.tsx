@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { Inter, EB_Garamond } from "next/font/google";
 import "./globals.css";
 import { SessionProvider } from "next-auth/react";
-import { ThemeProvider } from "@/components/theme-provider";
+import { ThemeProvider } from "@/components/theme/ThemeProvider";
 
 const inter = Inter({ subsets: ["latin"] });
 
