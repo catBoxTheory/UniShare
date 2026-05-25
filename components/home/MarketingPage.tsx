@@ -6,7 +6,6 @@ import { Button } from "@/components/ui/button"
 import { ArrowRight, BookOpen, Users, Share2, Search, Upload, Heart, FileText, Video, MessageCircle } from "lucide-react"
 import { Navbar } from "@/components/layout/Navbar"
 import { Footer } from "@/components/layout/Footer"
-import { ParallaxTiltCard } from "./ParallaxTiltCard"
 
 const steps = [
   {
@@ -14,24 +13,24 @@ const steps = [
     icon: Search,
     title: "Find your course",
     desc: "Search for your university and course. Everything is organized by department and course code.",
-    image: "https://picsum.photos/seed/campus-library/800/600",
     gradient: "from-emerald-500 to-emerald-700",
+    accent: "bg-emerald-400",
   },
   {
     number: "02",
     icon: BookOpen,
     title: "Access materials",
     desc: "Browse lecture notes, videos, and study resources shared by students who took the course before you.",
-    image: "https://picsum.photos/seed/study-collaboration/800/600",
     gradient: "from-emerald-600 to-teal-700",
+    accent: "bg-teal-400",
   },
   {
     number: "03",
     icon: Upload,
     title: "Contribute back",
     desc: "Upload your own notes and help the next cohort. The more we share, the better it gets for everyone.",
-    image: "https://picsum.photos/seed/lecture-classroom/800/600",
     gradient: "from-teal-600 to-emerald-800",
+    accent: "bg-emerald-500",
   },
 ]
 
@@ -40,7 +39,6 @@ const bentoCards = [
     icon: FileText,
     title: "Lecture notes",
     desc: "Thousands of student-contributed notes across every department.",
-    image: "https://picsum.photos/seed/lecture-notes-desk/900/700",
     gradient: "from-emerald-500 to-emerald-700",
     span: "md:row-span-2 md:col-span-2",
   },
@@ -48,7 +46,6 @@ const bentoCards = [
     icon: Video,
     title: "Course videos",
     desc: "Watch recorded lectures with bilingual subtitles.",
-    image: "https://picsum.photos/seed/video-lecture-hall/600/400",
     gradient: "from-emerald-600 to-teal-700",
     span: "",
   },
@@ -56,7 +53,6 @@ const bentoCards = [
     icon: MessageCircle,
     title: "Community driven",
     desc: "No paywalls, no credit systems. Just students helping students.",
-    image: "https://picsum.photos/seed/students-discussing/600/400",
     gradient: "from-teal-600 to-emerald-800",
     span: "",
   },
@@ -84,6 +80,7 @@ const fadeUpItem = {
     transition: { type: "spring", stiffness: 100, damping: 20 },
   },
 }
+
 
 export function MarketingPage() {
   return (
@@ -145,7 +142,6 @@ export function MarketingPage() {
             </h2>
           </motion.div>
 
-          {/* Bento grid — asymmetric: 1 large card + 2 smaller */}
           <div className="grid grid-cols-1 md:grid-cols-4 gap-6 auto-rows-[240px]">
             {bentoCards.map((card, i) => (
               <motion.div
@@ -156,24 +152,36 @@ export function MarketingPage() {
                 viewport={{ once: true }}
                 className={card.span}
               >
-                <div className={`relative overflow-hidden rounded-[2rem] bg-gradient-to-br ${card.gradient} h-full group cursor-pointer`}>
-                  <ParallaxTiltCard imageUrl={card.image} className="h-full">
-                    <div className="flex flex-col justify-end h-full p-8">
-                      <div className="w-10 h-10 rounded-xl bg-white/15 backdrop-blur flex items-center justify-center mb-3">
-                        <card.icon className="w-5 h-5 text-white" />
-                      </div>
-                      <h3 className="text-xl font-bold text-white mb-1">{card.title}</h3>
-                      <p className="text-sm text-white/70 leading-relaxed max-w-xs">{card.desc}</p>
+                <motion.div
+                  whileHover={{ scale: 1.01 }}
+                  className={`relative overflow-hidden rounded-[2rem] bg-gradient-to-br ${card.gradient} h-full group cursor-pointer shadow-[inset_0_1px_0_rgba(255,255,255,0.1)]`}
+                >
+                  {/* Animated gradient blobs */}
+                  <div className="absolute -top-1/4 -right-1/4 w-3/4 h-3/4 rounded-full bg-white/8 animate-[float_8s_ease-in-out_infinite]" />
+                  <div className="absolute -bottom-1/4 -left-1/4 w-2/3 h-2/3 rounded-full bg-white/5 animate-[float_10s_ease-in-out_infinite_2s]" />
+                  <div className="absolute top-1/3 right-1/3 w-1/4 h-1/4 rounded-full bg-white/6 animate-[float_7s_ease-in-out_infinite_1s]" />
+                  {/* Diagonal line decoration */}
+                  <div className="absolute inset-0 opacity-[0.04]">
+                    <div className="absolute top-0 right-0 w-px h-full bg-white rotate-12 origin-top-right scale-y-150" />
+                    <div className="absolute top-0 right-6 w-px h-full bg-white rotate-12 origin-top-right scale-y-150" />
+                    <div className="absolute top-0 right-12 w-px h-full bg-white rotate-12 origin-top-right scale-y-150" />
+                  </div>
+                  {/* Content */}
+                  <div className="relative z-10 flex flex-col justify-end h-full p-8">
+                    <div className="w-10 h-10 rounded-xl bg-white/10 backdrop-blur border border-white/10 shadow-[inset_0_1px_0_rgba(255,255,255,0.12)] flex items-center justify-center mb-3">
+                      <card.icon className="w-5 h-5 text-white" />
                     </div>
-                  </ParallaxTiltCard>
-                </div>
+                    <h3 className="text-xl font-bold text-white mb-1">{card.title}</h3>
+                    <p className="text-sm text-white/70 leading-relaxed max-w-xs">{card.desc}</p>
+                  </div>
+                </motion.div>
               </motion.div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* ===== How It Works — zig-zag with photo panels ===== */}
+      {/* ===== How It Works — zig-zag with gradient panels ===== */}
       <section className="py-32 bg-muted/30 border-y border-border">
         <div className="container px-4 md:px-6 mx-auto max-w-7xl">
           <motion.div
@@ -204,24 +212,24 @@ export function MarketingPage() {
                   i % 2 === 1 ? "md:[direction:rtl]" : ""
                 }`}
               >
-                {/* Photo panel side */}
+                {/* Gradient panel side */}
                 <div className={i % 2 === 1 ? "[direction:ltr]" : ""}>
-                  <div className={`relative overflow-hidden rounded-[2rem] aspect-[4/3] group`}>
-                    {/* Photo background */}
-                    <div
-                      className="absolute inset-0 bg-cover bg-center transition-transform duration-700 group-hover:scale-105"
-                      style={{ backgroundImage: `url(${step.image})` }}
-                    />
-                    {/* Emerald tint overlay */}
-                    <div className={`absolute inset-0 bg-gradient-to-br ${step.gradient} opacity-40 group-hover:opacity-35 transition-opacity duration-500`} />
-                    {/* Gradient fade for depth */}
-                    <div className="absolute inset-0 bg-gradient-to-t from-stone-950/50 via-stone-950/10 to-transparent" />
+                  <div className={`relative overflow-hidden rounded-[2rem] aspect-[4/3] bg-gradient-to-br ${step.gradient} group shadow-[inset_0_1px_0_rgba(255,255,255,0.1)]`}>
+                    {/* Animated blobs */}
+                    <div className="absolute -top-1/4 right-0 w-2/3 h-2/3 rounded-full bg-white/8 animate-[float_8s_ease-in-out_infinite]" />
+                    <div className="absolute bottom-0 -left-1/4 w-1/2 h-1/2 rounded-full bg-white/5 animate-[float_9s_ease-in-out_infinite_3s]" />
+                    {/* Geometric line grid */}
+                    <div className="absolute inset-0 opacity-[0.04]">
+                      <div className="absolute inset-0" style={{
+                        backgroundImage: `repeating-linear-gradient(45deg, transparent, transparent 30px, rgba(255,255,255,0.3) 30px, rgba(255,255,255,0.3) 31px)`
+                      }} />
+                    </div>
                     {/* Watermark number */}
-                    <span className="absolute inset-0 flex items-center justify-center font-serif font-bold text-[14rem] text-white/15 select-none leading-none">
+                    <span className="absolute inset-0 flex items-center justify-center font-serif font-bold text-[14rem] text-white/10 select-none leading-none">
                       {step.number}
                     </span>
-                    {/* Icon badge */}
-                    <div className="absolute bottom-6 left-6 w-14 h-14 bg-white/90 dark:bg-stone-900/90 backdrop-blur rounded-2xl flex items-center justify-center shadow-lg">
+                    {/* Glass icon badge */}
+                    <div className="absolute bottom-6 left-6 w-14 h-14 bg-white/90 dark:bg-stone-900/90 backdrop-blur border border-white/10 shadow-[inset_0_1px_0_rgba(255,255,255,0.12)] rounded-2xl flex items-center justify-center shadow-lg">
                       <step.icon className="w-7 h-7 text-emerald-700 dark:text-emerald-300" />
                     </div>
                   </div>
@@ -278,23 +286,14 @@ export function MarketingPage() {
               whileInView={{ opacity: 1, x: 0 }}
               transition={{ type: "spring", stiffness: 100, damping: 20 }}
               viewport={{ once: true }}
-              className="space-y-4"
+              className="space-y-1"
             >
-              {/* Decorative campus photo */}
-              <div className="relative overflow-hidden rounded-[2rem] aspect-[16/9] group">
-                <div
-                  className="absolute inset-0 bg-cover bg-center transition-transform duration-700 group-hover:scale-105"
-                  style={{ backgroundImage: "url(https://picsum.photos/seed/university-campus/600/400)" }}
-                />
-                <div className="absolute inset-0 bg-gradient-to-br from-emerald-900/30 to-stone-950/40" />
-              </div>
-              <div className="space-y-1">
               {values.map((v) => (
                 <div
                   key={v.title}
-                  className="flex items-center gap-4 p-5 rounded-2xl hover:bg-emerald-50/50 dark:hover:bg-emerald-950/20 transition-colors duration-300"
+                  className="flex items-center gap-4 p-5 rounded-2xl hover:bg-emerald-50/50 dark:hover:bg-emerald-950/20 transition-colors duration-300 group"
                 >
-                  <div className="w-12 h-12 rounded-xl bg-emerald-100 dark:bg-emerald-900/20 flex items-center justify-center shrink-0">
+                  <div className="w-12 h-12 rounded-xl bg-emerald-100 dark:bg-emerald-900/20 border border-emerald-200/50 dark:border-emerald-800/30 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform duration-300">
                     <v.icon className="w-6 h-6 text-emerald-700 dark:text-emerald-300" />
                   </div>
                   <div>
@@ -303,7 +302,6 @@ export function MarketingPage() {
                   </div>
                 </div>
               ))}
-              </div>
             </motion.div>
           </div>
         </div>
