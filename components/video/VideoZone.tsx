@@ -11,6 +11,9 @@ import { cn } from "@/lib/utils";
 import { saveYouTubeVideo } from "@/app/actions/materials";
 import { YouTubePlayer } from "./YouTubePlayer";
 import { MaterialRating } from "@/components/course/MaterialRating";
+import { MaterialTypeBadge } from "@/components/course/MaterialTypeBadge";
+import { BookmarkButton } from "@/components/course/BookmarkButton";
+import { MaterialNoteEditor } from "@/components/course/MaterialNoteEditor";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -50,11 +53,14 @@ interface Video {
   id: string;
   title: string;
   url: string;
+  type?: string;
   folderId?: string | null;
   createdAt: Date;
   avgRating?: number;
   totalRatings?: number;
   userRating?: number | null;
+  commentCount?: number;
+  isBookmarked?: boolean;
 }
 
 interface VideoFolder {
@@ -1020,17 +1026,34 @@ export function VideoZone({ courseId, initialVideos = [] }: VideoZoneProps) {
                           />
                         ) : (
                           <>
-                            <p className="text-xs font-medium text-foreground line-clamp-2 leading-tight">
-                              {video.title}
-                            </p>
-                            <MaterialRating
-                              materialId={video.id}
-                              initialRating={video.userRating ?? null}
-                              avgRating={video.avgRating ?? 0}
-                              totalRatings={video.totalRatings ?? 0}
-                            />
+                            <div className="flex items-center gap-1.5">
+                              <p className="text-xs font-medium text-foreground line-clamp-2 leading-tight">
+                                {video.title}
+                              </p>
+                              {video.type && <MaterialTypeBadge type={video.type as any} />}
+                              {video.commentCount !== undefined && video.commentCount > 0 && (
+                                <span className="text-[10px] text-emerald-500 flex-shrink-0">
+                                  {video.commentCount}
+                                </span>
+                              )}
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <MaterialRating
+                                materialId={video.id}
+                                initialRating={video.userRating ?? null}
+                                avgRating={video.avgRating ?? 0}
+                                totalRatings={video.totalRatings ?? 0}
+                              />
+                              <MaterialNoteEditor materialId={video.id} />
+                            </div>
                           </>
                         )}
+                      </div>
+                      <div className="flex items-center gap-1 self-center">
+                        <BookmarkButton
+                          materialId={video.id}
+                          initialSaved={video.isBookmarked ?? false}
+                        />
                       </div>
                       <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity self-center">
                         <Button

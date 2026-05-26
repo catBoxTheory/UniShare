@@ -8,6 +8,11 @@ import { cn } from "@/lib/utils";
 import { DocumentUpload } from "./DocumentUpload";
 import { DocumentPreview } from "./DocumentPreview";
 import { MaterialRating } from "@/components/course/MaterialRating";
+import { MaterialTypeBadge } from "@/components/course/MaterialTypeBadge";
+import { BookmarkButton } from "@/components/course/BookmarkButton";
+import { MaterialNoteEditor } from "@/components/course/MaterialNoteEditor";
+import { CommentSection } from "@/components/course/CommentSection";
+import { getComments } from "@/app/actions/comments";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -46,11 +51,14 @@ interface Document {
   id: string;
   title: string;
   url: string;
+  type?: string;
   folderId?: string | null;
   createdAt: Date;
   avgRating?: number;
   totalRatings?: number;
   userRating?: number | null;
+  commentCount?: number;
+  isBookmarked?: boolean;
 }
 
 interface DocFolder {
@@ -648,20 +656,35 @@ export function DocumentZone({ courseId, initialDocuments = [] }: DocumentZonePr
                             />
                           ) : (
                             <>
-                              <p className="text-sm font-medium text-foreground truncate">
-                                {doc.title}
-                              </p>
-                              <p className="text-xs text-muted-foreground">
-                                {getFileType(doc.title)} • {new Date(doc.createdAt).toLocaleDateString("en-US")}
-                              </p>
-                              <MaterialRating
-                                materialId={doc.id}
-                                initialRating={doc.userRating ?? null}
-                                avgRating={doc.avgRating ?? 0}
-                                totalRatings={doc.totalRatings ?? 0}
-                              />
+                              <div className="flex items-center gap-2">
+                                <p className="text-sm font-medium text-foreground truncate">
+                                  {doc.title}
+                                </p>
+                                {doc.type && <MaterialTypeBadge type={doc.type as any} />}
+                              </div>
+                              <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                                <span>{getFileType(doc.title)} • {new Date(doc.createdAt).toLocaleDateString("en-US")}</span>
+                                {doc.commentCount !== undefined && doc.commentCount > 0 && (
+                                  <span className="text-emerald-500">({doc.commentCount} comment{doc.commentCount !== 1 ? 's' : ''})</span>
+                                )}
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <MaterialRating
+                                  materialId={doc.id}
+                                  initialRating={doc.userRating ?? null}
+                                  avgRating={doc.avgRating ?? 0}
+                                  totalRatings={doc.totalRatings ?? 0}
+                                />
+                                <MaterialNoteEditor materialId={doc.id} />
+                              </div>
                             </>
                           )}
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <BookmarkButton
+                            materialId={doc.id}
+                            initialSaved={doc.isBookmarked ?? false}
+                          />
                         </div>
                         <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                           <Button

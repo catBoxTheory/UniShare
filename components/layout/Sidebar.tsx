@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { Home, Library, Settings, BookOpen } from "lucide-react"
+import { Home, Library, Bookmark, BookOpen } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 interface SidebarProps {
@@ -26,12 +26,12 @@ export function Sidebar({ onTabChange, activeTab = "home" }: SidebarProps) {
       value: "library",
       onClick: () => onTabChange?.("library"),
     },
-    // {
-    //   title: "Settings",
-    //   icon: Settings,
-    //   value: "settings",
-    //   onClick: () => onTabChange?.("settings"),
-    // }
+    {
+      title: "Saved",
+      icon: Bookmark,
+      value: "saved",
+      onClick: () => onTabChange?.("saved"),
+    },
   ]
 
   return (

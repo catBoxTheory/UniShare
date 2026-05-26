@@ -26,7 +26,13 @@ model User {
   enrollments   Enrollment[]
   recentViews   RecentView[]
   ratings       MaterialRating[]
-  
+  savedMaterials  SavedMaterial[]
+  comments        Comment[]
+  materialViews   MaterialView[]
+  materialNotes   MaterialNote[]
+  notifications   Notification[]
+  lastVisitAt     DateTime?
+
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 }
@@ -172,6 +178,10 @@ model Material {
   folderId   String?
   folder     Folder?      @relation(fields: [folderId], references: [id], onDelete: Cascade)
   ratings    MaterialRating[]
+  savedBy    SavedMaterial[]
+  comments   Comment[]
+  views      MaterialView[]
+  notes      MaterialNote[]
 
   createdAt  DateTime     @default(now())
   updatedAt  DateTime     @updatedAt
@@ -188,4 +198,71 @@ model MaterialRating {
   material Material @relation(fields: [materialId], references: [id], onDelete: Cascade)
 
   @@unique([userId, materialId])
+}
+
+model SavedMaterial {
+  id         String   @id @default(uuid())
+  userId     String
+  materialId String
+  createdAt  DateTime @default(now())
+
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  material Material @relation(fields: [materialId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, materialId])
+}
+
+model Comment {
+  id         String    @id @default(uuid())
+  userId     String
+  materialId String
+  parentId   String?
+  content    String
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  material Material  @relation(fields: [materialId], references: [id], onDelete: Cascade)
+  parent   Comment?  @relation("CommentReplies", fields: [parentId], references: [id], onDelete: SetNull)
+  replies  Comment[] @relation("CommentReplies")
+}
+
+model MaterialView {
+  id         String   @id @default(uuid())
+  userId     String
+  materialId String
+  completed  Boolean  @default(false)
+  viewedAt   DateTime @default(now())
+
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  material Material @relation(fields: [materialId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, materialId])
+}
+
+model MaterialNote {
+  id         String   @id @default(uuid())
+  userId     String
+  materialId String
+  content    String
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  material Material @relation(fields: [materialId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, materialId])
+}
+
+model Notification {
+  id        String    @id @default(uuid())
+  userId    String
+  type      String
+  title     String
+  message   String
+  link      String?
+  read      Boolean   @default(false)
+  createdAt DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }

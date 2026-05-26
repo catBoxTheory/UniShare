@@ -57,7 +57,7 @@ export async function createCourse(title: string, code: string, universityName: 
   }
 }
 
-export async function getCourses(query?: string, limit?: number) {
+export async function getCourses(query?: string, limit?: number, page?: number, pageSize?: number) {
     try {
         const where: any = {};
 
@@ -66,6 +66,22 @@ export async function getCourses(query?: string, limit?: number) {
                 { title: { contains: query, mode: 'insensitive' } },
                 { code: { contains: query, mode: 'insensitive' } }
             ];
+        }
+
+        // Paginated response
+        if (page && pageSize) {
+            const skip = (page - 1) * pageSize;
+            const [courses, total] = await Promise.all([
+                prisma.course.findMany({
+                    where,
+                    orderBy: { createdAt: 'desc' },
+                    include: { department: true },
+                    skip,
+                    take: pageSize,
+                }),
+                prisma.course.count({ where }),
+            ]);
+            return { courses, total, page, totalPages: Math.ceil(total / pageSize) };
         }
 
         return await prisma.course.findMany({
@@ -349,6 +365,68 @@ export async function getTrendingCourses() {
             }));
     } catch (error) {
         console.error("Failed to get trending courses:", error);
+        return [];
+    }
+}
+
+export async function updateLastVisit() {
+    try {
+        const session = await auth();
+        if (!session?.user?.id) return;
+
+        await prisma.user.update({
+            where: { id: session.user.id },
+            data: { lastVisitAt: new Date() },
+        });
+    } catch (error) {
+        console.error("Failed to update last visit:", error);
+    }
+}
+
+export async function getNewSinceLastVisit() {
+    try {
+        const session = await auth();
+        if (!session?.user?.id) return [];
+
+        const user = await prisma.user.findUnique({
+            where: { id: session.user.id },
+            select: { lastVisitAt: true },
+        });
+
+        if (!user?.lastVisitAt) return [];
+
+        const enrollments = await prisma.enrollment.findMany({
+            where: { userId: session.user.id },
+            select: { courseId: true },
+        });
+        const courseIds = enrollments.map((e) => e.courseId);
+
+        if (courseIds.length === 0) return [];
+
+        const materials = await prisma.material.findMany({
+            where: {
+                courseId: { in: courseIds },
+                createdAt: { gte: user.lastVisitAt },
+            },
+            orderBy: { createdAt: 'desc' },
+            include: {
+                course: { include: { department: true } },
+            },
+            take: 8,
+        });
+
+        return materials.map((m) => ({
+            id: m.id,
+            title: m.title,
+            type: m.type,
+            createdAt: m.createdAt,
+            courseId: m.courseId,
+            courseTitle: m.course.title,
+            courseCode: m.course.code,
+            departmentName: m.course.department?.name || '',
+        }));
+    } catch (error) {
+        console.error("Failed to get new materials:", error);
         return [];
     }
 }

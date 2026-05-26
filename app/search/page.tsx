@@ -7,14 +7,19 @@ import { CreateCourseButton } from "@/components/course/CreateCourseButton";
 import { CourseCard } from "@/components/course/CourseCard";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
+import { Pagination } from "@/components/ui/pagination";
 import { auth } from "@/auth";
 import prisma from "@/lib/prisma";
 
-export default async function SearchPage({ searchParams }: { searchParams: { q?: string } }) {
+export default async function SearchPage({ searchParams }: { searchParams: { q?: string; page?: string } }) {
   const session = await auth();
-  
-  // Fetch real courses from the database filtering by query
-  const courses = await getCourses(searchParams?.q);
+  const page = parseInt(searchParams.page || "1");
+  const pageSize = 12;
+
+  // Fetch paginated courses
+  const result = await getCourses(searchParams?.q, undefined, page, pageSize);
+  const courses = Array.isArray(result) ? result : result.courses;
+  const pagination = Array.isArray(result) ? null : { page: result.page, totalPages: result.totalPages, total: result.total };
 
   // Fetch enrolled course IDs if user is logged in
   let enrolledCourseIds: string[] = [];
@@ -95,13 +100,21 @@ export default async function SearchPage({ searchParams }: { searchParams: { q?:
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
               {courses.map((course) => (
-                <CourseCard 
-                  key={course.id} 
-                  course={course} 
+                <CourseCard
+                  key={course.id}
+                  course={course}
                   initialEnrolled={enrolledCourseIds.includes(course.id)}
                 />
               ))}
             </div>
+          )}
+
+          {pagination && pagination.totalPages > 1 && (
+            <Pagination
+              currentPage={pagination.page}
+              totalPages={pagination.totalPages}
+            />
+          )}
           )}
         </div>
       </div>

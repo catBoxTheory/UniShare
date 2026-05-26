@@ -25,3 +25,17 @@ export const updateUserInfo = async (data: { name: string; image?: string }) => 
   }
 };
 
+export const updateLastVisit = async () => {
+  const session = await auth();
+  if (!session?.user?.id) return;
+
+  try {
+    await prisma.user.update({
+      where: { id: session.user.id },
+      data: { lastVisitAt: new Date() },
+    });
+  } catch (error) {
+    console.error("Failed to update last visit:", error);
+  }
+};
+

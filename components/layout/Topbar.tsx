@@ -14,6 +14,7 @@ import {
 import { signOutAction } from "@/app/actions/auth"
 import { ThemeToggle } from "@/components/theme/ThemeToggle"
 import { SearchBar } from "@/components/layout/SearchBar"
+import { NotificationBell } from "@/components/layout/NotificationBell"
 
 interface TopbarProps {
   user: {
@@ -31,6 +32,7 @@ export function Topbar({ user }: TopbarProps) {
       {/* User Profile */}
       <div className="flex items-center gap-4">
         <ThemeToggle />
+        <NotificationBell />
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" className="relative h-10 w-10 rounded-full p-0 overflow-hidden border">

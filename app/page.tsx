@@ -2,7 +2,8 @@ import { auth } from "@/auth";
 import { redirect } from "next/navigation";
 import { MarketingPage } from "@/components/home/MarketingPage";
 import { Dashboard } from "@/components/home/Dashboard";
-import { getRecentCourses, getEnrolledCourses, getDashboardStats, getTrendingCourses } from "@/app/actions/courses";
+import { getRecentCourses, getEnrolledCourses, getDashboardStats, getTrendingCourses, getNewSinceLastVisit, updateLastVisit } from "@/app/actions/courses";
+import { getLeaderboard } from "@/app/actions/leaderboard";
 import prisma from "@/lib/prisma";
 
 export const dynamic = 'force-dynamic';
@@ -26,12 +27,17 @@ export default async function Home({ searchParams }: { searchParams: { tab?: str
   }
 
   // Logged in and onboarded -> show dashboard
-  const [recentCourses, enrolledCourses, stats, trendingCourses] = await Promise.all([
+  const [recentCourses, enrolledCourses, stats, trendingCourses, newMaterials, leaderboard] = await Promise.all([
     getRecentCourses(),
     getEnrolledCourses(),
     getDashboardStats(),
     getTrendingCourses(),
+    getNewSinceLastVisit(),
+    getLeaderboard(),
   ]);
+
+  // Update last visit timestamp (fire and forget)
+  updateLastVisit();
 
   return (
     <Dashboard
@@ -44,6 +50,8 @@ export default async function Home({ searchParams }: { searchParams: { tab?: str
       enrolledCourses={enrolledCourses}
       stats={stats}
       trendingCourses={trendingCourses}
+      newMaterials={newMaterials}
+      leaderboard={leaderboard}
       initialTab={searchParams.tab}
     />
   );

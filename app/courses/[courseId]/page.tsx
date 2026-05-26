@@ -2,10 +2,12 @@ import React from "react";
 import Link from "next/link";
 import { ChevronRight } from "lucide-react";
 import { getCourseById, logView, isEnrolled } from "@/app/actions/courses";
+import { getCourseProgress } from "@/app/actions/progress";
 import { CourseDashboardTabs } from "@/components/course/CourseDashboardTabs";
 import { DeleteCourseButton } from "@/components/course/DeleteCourseButton";
 import { EditableCourseHeader } from "@/components/course/EditableCourseHeader";
 import { LibraryToggleButton } from "@/components/course/LibraryToggleButton";
+import { ProgressBar } from "@/components/course/ProgressBar";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
 import prisma from "@/lib/prisma";
@@ -46,6 +48,9 @@ const CoursePage = async ({ params, searchParams }: CoursePageProps) => {
 
   // Check if enrolled
   const enrolled = session?.user ? await isEnrolled(params.courseId) : false;
+
+  // Fetch progress
+  const progress = session?.user ? await getCourseProgress(params.courseId) : null;
 
   // Fetch initial documents (non-video materials)
   const documents = await prisma.material.findMany({
@@ -117,6 +122,13 @@ const CoursePage = async ({ params, searchParams }: CoursePageProps) => {
           />
         </div>
       </div>
+
+      {/* Progress Bar */}
+      {progress && progress.total > 0 && (
+        <div className="mb-6 max-w-md">
+          <ProgressBar viewed={progress.viewed} total={progress.total} completed={progress.completed} />
+        </div>
+      )}
 
       {/* Tabbed Content */}
       <CourseDashboardTabs

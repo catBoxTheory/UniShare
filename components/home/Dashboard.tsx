@@ -4,10 +4,12 @@ import { useState } from "react"
 import { Sidebar } from "@/components/layout/Sidebar"
 import { Topbar } from "@/components/layout/Topbar"
 import { CourseCard } from "@/components/course/CourseCard"
-import { Clock, Library, BookOpen, FileText, TrendingUp, Star, Flame } from "lucide-react"
+import { Clock, Library, BookOpen, FileText, TrendingUp, Star, Flame, Sparkles, Bookmark } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
 import { CreateCourseButton } from "@/components/course/CreateCourseButton"
+import { Leaderboard } from "@/components/course/Leaderboard"
+import { BottomTabBar } from "@/components/layout/BottomTabBar"
 
 interface Course {
   id: string
@@ -35,6 +37,37 @@ interface TrendingCourse {
   recentCount: number
 }
 
+interface NewMaterial {
+  id: string
+  title: string
+  type: string
+  createdAt: Date
+  courseId: string
+  courseTitle: string
+  courseCode: string
+  departmentName: string
+}
+
+interface LeaderboardEntry {
+  rank: number
+  courseId: string
+  courseTitle: string
+  courseCode: string
+  departmentName: string
+  materialCount: number
+  enrollmentCount: number
+}
+
+interface BookmarkedMaterial {
+  id: string
+  title: string
+  type: string
+  url: string
+  courseId: string
+  courseTitle: string
+  courseCode: string
+}
+
 interface DashboardProps {
   user: {
     name?: string | null
@@ -45,9 +78,11 @@ interface DashboardProps {
   enrolledCourses: Course[]
   stats?: DashboardStats | null
   trendingCourses?: TrendingCourse[]
+  newMaterials?: NewMaterial[]
+  leaderboard?: LeaderboardEntry[]
 }
 
-export function Dashboard({ user, recentCourses, enrolledCourses, stats, trendingCourses, initialTab = "home" }: DashboardProps & { initialTab?: string }) {
+export function Dashboard({ user, recentCourses, enrolledCourses, stats, trendingCourses, newMaterials, leaderboard, initialTab = "home" }: DashboardProps & { initialTab?: string }) {
   const [activeTab, setActiveTab] = useState(initialTab)
 
   return (
@@ -118,6 +153,43 @@ export function Dashboard({ user, recentCourses, enrolledCourses, stats, trendin
                   </div>
                 )}
 
+                {/* New Since Last Visit */}
+                {newMaterials && newMaterials.length > 0 && (
+                  <div>
+                    <div className="flex items-center gap-2 mb-4">
+                      <Sparkles className="w-5 h-5 text-emerald-500" />
+                      <h2 className="text-xl font-bold text-foreground">New Since Last Visit</h2>
+                    </div>
+                    <div className="space-y-2">
+                      {newMaterials.map((m) => (
+                        <Link
+                          key={m.id}
+                          href={`/courses/${m.courseId}`}
+                          className="flex items-center gap-3 px-4 py-3 rounded-lg bg-emerald-500/5 border border-emerald-500/10 hover:bg-emerald-500/10 transition-colors"
+                        >
+                          <div className="w-8 h-8 rounded-md bg-emerald-500/10 flex items-center justify-center flex-shrink-0">
+                            <FileText className="w-4 h-4 text-emerald-500" />
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <p className="text-sm font-medium text-foreground truncate">{m.title}</p>
+                            <p className="text-xs text-muted-foreground">
+                              {m.courseCode} - {m.courseTitle}
+                            </p>
+                          </div>
+                          <span className="text-[11px] text-muted-foreground">
+                            {new Date(m.createdAt).toLocaleDateString()}
+                          </span>
+                        </Link>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Leaderboard */}
+                {leaderboard && leaderboard.length > 0 && (
+                  <Leaderboard data={leaderboard} />
+                )}
+
                 {/* Recent Views */}
                 <div>
                   <div className="flex items-center gap-2 mb-4">
@@ -141,6 +213,25 @@ export function Dashboard({ user, recentCourses, enrolledCourses, stats, trendin
                   )}
                 </div>
 
+              </div>
+            )}
+
+            {activeTab === "saved" && (
+              <div className="space-y-6">
+                <div className="flex items-center gap-2 mb-4">
+                  <Bookmark className="w-5 h-5 text-primary" />
+                  <h2 className="text-xl font-bold text-foreground">Saved Materials</h2>
+                </div>
+                <div className="bg-card rounded-xl border border-dashed border-border p-12 text-center">
+                  <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <Bookmark className="w-8 h-8 text-primary" />
+                  </div>
+                  <h3 className="text-lg font-semibold text-foreground mb-2">Bookmark materials to see them here</h3>
+                  <p className="text-muted-foreground mb-6">Click the bookmark icon on any material in a course to save it for quick access.</p>
+                  <Button asChild>
+                    <Link href="/search">Browse Courses</Link>
+                  </Button>
+                </div>
               </div>
             )}
 
@@ -180,6 +271,7 @@ export function Dashboard({ user, recentCourses, enrolledCourses, stats, trendin
           </div>
         </main>
       </div>
+      <BottomTabBar activeTab={activeTab} onTabChange={setActiveTab} />
     </div>
   )
 }

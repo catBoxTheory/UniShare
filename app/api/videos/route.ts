@@ -9,6 +9,8 @@ export async function GET(req: NextRequest) {
     const courseId = searchParams.get("courseId");
     const folderId = searchParams.get("folderId");
     const sort = searchParams.get("sort") || "name_asc";
+    const page = parseInt(searchParams.get("page") || "1");
+    const pageSize = parseInt(searchParams.get("pageSize") || "50");
 
     if (!courseId) {
       return NextResponse.json({ error: "courseId is required" }, { status: 400 });
@@ -48,22 +50,39 @@ export async function GET(req: NextRequest) {
       whereClause.folderId = null;
     }
 
-    const rawVideos = await prisma.material.findMany({
-      where: whereClause,
-      orderBy: materialOrderBy,
-      select: {
-        id: true,
-        title: true,
-        url: true,
-        folderId: true,
-        createdAt: true,
-        ratings: {
-          select: { userId: true, rating: true },
+    const [rawVideos, totalCount] = await Promise.all([
+      prisma.material.findMany({
+        where: whereClause,
+        orderBy: materialOrderBy,
+        skip: (page - 1) * pageSize,
+        take: pageSize,
+        select: {
+          id: true,
+          title: true,
+          url: true,
+          type: true,
+          folderId: true,
+          createdAt: true,
+          ratings: {
+            select: { userId: true, rating: true },
+          },
+          _count: { select: { comments: true } },
         },
-      }
-    });
+      }),
+      prisma.material.count({ where: whereClause }),
+    ]);
 
-    const videos = rawVideos.map(({ ratings, ...vid }) => {
+    // Get user's bookmarks
+    let bookmarkedIds = new Set<string>();
+    if (userId) {
+      const bookmarks = await prisma.savedMaterial.findMany({
+        where: { userId, materialId: { in: rawVideos.map((v) => v.id) } },
+        select: { materialId: true },
+      });
+      bookmarkedIds = new Set(bookmarks.map((b) => b.materialId));
+    }
+
+    const videos = rawVideos.map(({ ratings, _count, ...vid }) => {
       const totalRatings = ratings.length;
       const avgRating = totalRatings > 0
         ? Math.round((ratings.reduce((sum, r) => sum + r.rating, 0) / totalRatings) * 10) / 10
@@ -71,7 +90,14 @@ export async function GET(req: NextRequest) {
       const userRating = userId
         ? ratings.find((r) => r.userId === userId)?.rating || null
         : null;
-      return { ...vid, avgRating, totalRatings, userRating };
+      return {
+        ...vid,
+        avgRating,
+        totalRatings,
+        userRating,
+        commentCount: _count.comments,
+        isBookmarked: bookmarkedIds.has(vid.id),
+      };
     });
 
     // Get subfolders in the current folder - ONLY VIDEO type folders
@@ -106,7 +132,8 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({
       videos,
       folders,
-      currentFolder
+      currentFolder,
+      pagination: { page, pageSize, total: totalCount, totalPages: Math.ceil(totalCount / pageSize) },
     });
   } catch (error) {
     console.error("Failed to fetch videos:", error);

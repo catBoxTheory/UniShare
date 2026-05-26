@@ -29,6 +29,10 @@ export async function saveMaterialToDb({
     });
 
     revalidatePath(`/courses/${courseId}`);
+
+    // Notify enrolled users
+    notifyEnrolledUsers(courseId, title, `/courses/${courseId}`);
+
     return { success: true, material };
   } catch (error) {
     console.error("Failed to save material to DB:", error);
@@ -74,10 +78,42 @@ export async function saveYouTubeVideo({
     });
 
     revalidatePath(`/courses/${courseId}`);
+
+    // Notify enrolled users
+    notifyEnrolledUsers(courseId, title, `/courses/${courseId}`);
+
     return { success: true, material };
   } catch (error) {
     console.error("Failed to save YouTube video:", error);
     return { success: false, error: "Failed to save video" };
+  }
+}
+
+async function notifyEnrolledUsers(courseId: string, materialTitle: string, link: string) {
+  try {
+    const course = await prisma.course.findUnique({
+      where: { id: courseId },
+      select: { code: true },
+    });
+
+    const enrollments = await prisma.enrollment.findMany({
+      where: { courseId },
+      select: { userId: true },
+    });
+
+    const notifications = enrollments.map((e) => ({
+      userId: e.userId,
+      type: "new_material",
+      title: "New Material Added",
+      message: `"${materialTitle}" was added to ${course?.code || "a course"}`,
+      link,
+    }));
+
+    if (notifications.length > 0) {
+      await prisma.notification.createMany({ data: notifications });
+    }
+  } catch (error) {
+    console.error("Failed to notify enrolled users:", error);
   }
 }
 
