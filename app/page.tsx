@@ -2,7 +2,7 @@ import { auth } from "@/auth";
 import { redirect } from "next/navigation";
 import { MarketingPage } from "@/components/home/MarketingPage";
 import { Dashboard } from "@/components/home/Dashboard";
-import { getRecentCourses, getEnrolledCourses } from "@/app/actions/courses";
+import { getRecentCourses, getEnrolledCourses, getDashboardStats, getTrendingCourses } from "@/app/actions/courses";
 import prisma from "@/lib/prisma";
 
 export const dynamic = 'force-dynamic';
@@ -26,13 +26,15 @@ export default async function Home({ searchParams }: { searchParams: { tab?: str
   }
 
   // Logged in and onboarded -> show dashboard
-  const [recentCourses, enrolledCourses] = await Promise.all([
+  const [recentCourses, enrolledCourses, stats, trendingCourses] = await Promise.all([
     getRecentCourses(),
-    getEnrolledCourses()
+    getEnrolledCourses(),
+    getDashboardStats(),
+    getTrendingCourses(),
   ]);
 
   return (
-    <Dashboard 
+    <Dashboard
       user={{
         name: session.user.name,
         email: session.user.email,
@@ -40,6 +42,8 @@ export default async function Home({ searchParams }: { searchParams: { tab?: str
       }}
       recentCourses={recentCourses}
       enrolledCourses={enrolledCourses}
+      stats={stats}
+      trendingCourses={trendingCourses}
       initialTab={searchParams.tab}
     />
   );

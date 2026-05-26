@@ -1,7 +1,6 @@
 "use client"
 
-import { Search, User, LogOut, Settings as SettingsIcon } from "lucide-react"
-import { Input } from "@/components/ui/input"
+import { User, LogOut, Settings as SettingsIcon } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
 import {
@@ -13,8 +12,8 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { signOutAction } from "@/app/actions/auth"
-import { useRouter } from "next/navigation"
 import { ThemeToggle } from "@/components/theme/ThemeToggle"
+import { SearchBar } from "@/components/layout/SearchBar"
 
 interface TopbarProps {
   user: {
@@ -25,30 +24,9 @@ interface TopbarProps {
 }
 
 export function Topbar({ user }: TopbarProps) {
-  const router = useRouter()
-
-  const handleSearch = (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault()
-    const formData = new FormData(e.currentTarget)
-    const query = formData.get("q") as string
-    if (query) {
-      router.push(`/search?q=${encodeURIComponent(query)}`)
-    }
-  }
-
   return (
     <header className="h-16 border-b border-border bg-background flex items-center justify-between px-6">
-      {/* Search */}
-      <div className="w-full max-w-xl">
-        <form onSubmit={handleSearch} className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-          <Input 
-            name="q"
-            className="pl-10 bg-muted/50 border-input focus:bg-background transition-colors" 
-            placeholder="Search for courses, documents..." 
-          />
-        </form>
-      </div>
+      <SearchBar />
 
       {/* User Profile */}
       <div className="flex items-center gap-4">

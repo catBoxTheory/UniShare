@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
+import { auth } from "@/auth";
 import { MaterialType, FolderType } from "@prisma/client";
 
 export async function GET(req: NextRequest) {
@@ -12,6 +13,9 @@ export async function GET(req: NextRequest) {
     if (!courseId) {
       return NextResponse.json({ error: "courseId is required" }, { status: 400 });
     }
+
+    const session = await auth();
+    const userId = session?.user?.id;
 
     // Determine order
     let materialOrderBy: any = { title: "asc" };
@@ -38,16 +42,13 @@ export async function GET(req: NextRequest) {
       type: MaterialType.VIDEO
     };
 
-    // If folderId is provided, filter by folder
-    // If folderId is "root" or not provided, get videos with no folder (root level)
     if (folderId && folderId !== "root") {
       whereClause.folderId = folderId;
     } else {
       whereClause.folderId = null;
     }
 
-    // Get video materials in the specified folder
-    const videos = await prisma.material.findMany({
+    const rawVideos = await prisma.material.findMany({
       where: whereClause,
       orderBy: materialOrderBy,
       select: {
@@ -55,8 +56,22 @@ export async function GET(req: NextRequest) {
         title: true,
         url: true,
         folderId: true,
-        createdAt: true
+        createdAt: true,
+        ratings: {
+          select: { userId: true, rating: true },
+        },
       }
+    });
+
+    const videos = rawVideos.map(({ ratings, ...vid }) => {
+      const totalRatings = ratings.length;
+      const avgRating = totalRatings > 0
+        ? Math.round((ratings.reduce((sum, r) => sum + r.rating, 0) / totalRatings) * 10) / 10
+        : 0;
+      const userRating = userId
+        ? ratings.find((r) => r.userId === userId)?.rating || null
+        : null;
+      return { ...vid, avgRating, totalRatings, userRating };
     });
 
     // Get subfolders in the current folder - ONLY VIDEO type folders

@@ -57,10 +57,10 @@ export async function createCourse(title: string, code: string, universityName: 
   }
 }
 
-export async function getCourses(query?: string) {
+export async function getCourses(query?: string, limit?: number) {
     try {
         const where: any = {};
-        
+
         if (query) {
             where.OR = [
                 { title: { contains: query, mode: 'insensitive' } },
@@ -71,7 +71,8 @@ export async function getCourses(query?: string) {
         return await prisma.course.findMany({
             where,
             orderBy: { createdAt: 'desc' },
-            include: { department: true }
+            include: { department: true },
+            ...(limit ? { take: limit } : {}),
         });
     } catch (error) {
         console.error("Failed to get courses:", error);
@@ -268,9 +269,86 @@ export async function logView(courseId: string) {
                 viewedAt: new Date()
             }
         });
-        
+
         revalidatePath('/');
     } catch (error) {
         console.error("Failed to log view:", error);
+    }
+}
+
+export async function getDashboardStats() {
+    try {
+        const session = await auth();
+        if (!session?.user?.id) return null;
+
+        const enrolledCount = await prisma.enrollment.count({
+            where: { userId: session.user.id },
+        });
+
+        const enrolledCourses = await prisma.enrollment.findMany({
+            where: { userId: session.user.id },
+            select: { courseId: true },
+        });
+        const courseIds = enrolledCourses.map((e) => e.courseId);
+
+        const totalMaterials = courseIds.length > 0
+            ? await prisma.material.count({
+                where: { courseId: { in: courseIds } },
+              })
+            : 0;
+
+        const oneWeekAgo = new Date();
+        oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
+
+        const newThisWeek = courseIds.length > 0
+            ? await prisma.material.count({
+                where: {
+                    courseId: { in: courseIds },
+                    createdAt: { gte: oneWeekAgo },
+                },
+              })
+            : 0;
+
+        const yourUploads = await prisma.materialRating.count({
+            where: {
+                material: { courseId: { in: courseIds } },
+            },
+        });
+
+        return { enrolledCount, totalMaterials, newThisWeek, yourUploads };
+    } catch (error) {
+        console.error("Failed to get dashboard stats:", error);
+        return null;
+    }
+}
+
+export async function getTrendingCourses() {
+    try {
+        const thirtyDaysAgo = new Date();
+        thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+        const courses = await prisma.course.findMany({
+            include: {
+                department: true,
+                _count: { select: { materials: true } },
+                materials: {
+                    where: { createdAt: { gte: thirtyDaysAgo } },
+                    select: { id: true },
+                },
+            },
+            orderBy: { materials: { _count: 'desc' } },
+            take: 4,
+        });
+
+        return courses
+            .filter((c) => c._count.materials > 0)
+            .map(({ materials, _count, ...course }) => ({
+                ...course,
+                materialCount: _count.materials,
+                recentCount: materials.length,
+            }));
+    } catch (error) {
+        console.error("Failed to get trending courses:", error);
+        return [];
     }
 }

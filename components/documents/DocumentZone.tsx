@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { DocumentUpload } from "./DocumentUpload";
 import { DocumentPreview } from "./DocumentPreview";
+import { MaterialRating } from "@/components/course/MaterialRating";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -47,6 +48,9 @@ interface Document {
   url: string;
   folderId?: string | null;
   createdAt: Date;
+  avgRating?: number;
+  totalRatings?: number;
+  userRating?: number | null;
 }
 
 interface DocFolder {
@@ -650,6 +654,12 @@ export function DocumentZone({ courseId, initialDocuments = [] }: DocumentZonePr
                               <p className="text-xs text-muted-foreground">
                                 {getFileType(doc.title)} • {new Date(doc.createdAt).toLocaleDateString("en-US")}
                               </p>
+                              <MaterialRating
+                                materialId={doc.id}
+                                initialRating={doc.userRating ?? null}
+                                avgRating={doc.avgRating ?? 0}
+                                totalRatings={doc.totalRatings ?? 0}
+                              />
                             </>
                           )}
                         </div>

@@ -4,7 +4,7 @@ import { useState } from "react"
 import { Sidebar } from "@/components/layout/Sidebar"
 import { Topbar } from "@/components/layout/Topbar"
 import { CourseCard } from "@/components/course/CourseCard"
-import { Clock, Library, BookOpen } from "lucide-react"
+import { Clock, Library, BookOpen, FileText, TrendingUp, Star, Flame } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
 import { CreateCourseButton } from "@/components/course/CreateCourseButton"
@@ -19,6 +19,22 @@ interface Course {
   isEnrolled?: boolean
 }
 
+interface DashboardStats {
+  enrolledCount: number
+  totalMaterials: number
+  newThisWeek: number
+  yourUploads: number
+}
+
+interface TrendingCourse {
+  id: string
+  title: string
+  code: string
+  department?: { name: string } | null
+  materialCount: number
+  recentCount: number
+}
+
 interface DashboardProps {
   user: {
     name?: string | null
@@ -27,9 +43,11 @@ interface DashboardProps {
   }
   recentCourses: Course[]
   enrolledCourses: Course[]
+  stats?: DashboardStats | null
+  trendingCourses?: TrendingCourse[]
 }
 
-export function Dashboard({ user, recentCourses, enrolledCourses, initialTab = "home" }: DashboardProps & { initialTab?: string }) {
+export function Dashboard({ user, recentCourses, enrolledCourses, stats, trendingCourses, initialTab = "home" }: DashboardProps & { initialTab?: string }) {
   const [activeTab, setActiveTab] = useState(initialTab)
 
   return (
@@ -43,6 +61,63 @@ export function Dashboard({ user, recentCourses, enrolledCourses, initialTab = "
           <div className="max-w-7xl space-y-8">
             {activeTab === "home" && (
               <div className="space-y-8">
+                {/* Stats Cards */}
+                {stats && (
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <div className="glass-card rounded-xl p-4 flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                        <Library className="w-5 h-5 text-primary" />
+                      </div>
+                      <div>
+                        <p className="text-2xl font-bold tabular-nums">{stats.enrolledCount}</p>
+                        <p className="text-xs text-muted-foreground">Enrolled Courses</p>
+                      </div>
+                    </div>
+                    <div className="glass-card rounded-xl p-4 flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                        <FileText className="w-5 h-5 text-primary" />
+                      </div>
+                      <div>
+                        <p className="text-2xl font-bold tabular-nums">{stats.totalMaterials}</p>
+                        <p className="text-xs text-muted-foreground">Total Materials</p>
+                      </div>
+                    </div>
+                    <div className="glass-card rounded-xl p-4 flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-lg bg-emerald-500/10 flex items-center justify-center">
+                        <TrendingUp className="w-5 h-5 text-emerald-500" />
+                      </div>
+                      <div>
+                        <p className="text-2xl font-bold tabular-nums">{stats.newThisWeek}</p>
+                        <p className="text-xs text-muted-foreground">New This Week</p>
+                      </div>
+                    </div>
+                    <div className="glass-card rounded-xl p-4 flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-lg bg-amber-500/10 flex items-center justify-center">
+                        <Star className="w-5 h-5 text-amber-500" />
+                      </div>
+                      <div>
+                        <p className="text-2xl font-bold tabular-nums">{stats.yourUploads}</p>
+                        <p className="text-xs text-muted-foreground">Ratings Given</p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Trending Courses */}
+                {trendingCourses && trendingCourses.length > 0 && (
+                  <div>
+                    <div className="flex items-center gap-2 mb-4">
+                      <Flame className="w-5 h-5 text-emerald-500" />
+                      <h2 className="text-xl font-bold text-foreground">Trending Courses</h2>
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+                      {trendingCourses.map((course) => (
+                        <CourseCard key={course.id} course={course} />
+                      ))}
+                    </div>
+                  </div>
+                )}
+
                 {/* Recent Views */}
                 <div>
                   <div className="flex items-center gap-2 mb-4">

@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { saveYouTubeVideo } from "@/app/actions/materials";
 import { YouTubePlayer } from "./YouTubePlayer";
+import { MaterialRating } from "@/components/course/MaterialRating";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -51,6 +52,9 @@ interface Video {
   url: string;
   folderId?: string | null;
   createdAt: Date;
+  avgRating?: number;
+  totalRatings?: number;
+  userRating?: number | null;
 }
 
 interface VideoFolder {
@@ -1015,9 +1019,17 @@ export function VideoZone({ courseId, initialVideos = [] }: VideoZoneProps) {
                             className="h-7 text-sm"
                           />
                         ) : (
-                          <p className="text-xs font-medium text-foreground line-clamp-2 leading-tight">
-                            {video.title}
-                          </p>
+                          <>
+                            <p className="text-xs font-medium text-foreground line-clamp-2 leading-tight">
+                              {video.title}
+                            </p>
+                            <MaterialRating
+                              materialId={video.id}
+                              initialRating={video.userRating ?? null}
+                              avgRating={video.avgRating ?? 0}
+                              totalRatings={video.totalRatings ?? 0}
+                            />
+                          </>
                         )}
                       </div>
                       <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity self-center">
