@@ -115,7 +115,6 @@ export default async function SearchPage({ searchParams }: { searchParams: { q?:
               totalPages={pagination.totalPages}
             />
           )}
-          )}
         </div>
       </div>
       <Footer />
