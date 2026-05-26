@@ -14,6 +14,7 @@ import { MaterialRating } from "@/components/course/MaterialRating";
 import { MaterialTypeBadge } from "@/components/course/MaterialTypeBadge";
 import { BookmarkButton } from "@/components/course/BookmarkButton";
 import { MaterialNoteEditor } from "@/components/course/MaterialNoteEditor";
+import { logMaterialView, markCompleted } from "@/app/actions/progress";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -230,6 +231,7 @@ export function VideoZone({ courseId, initialVideos = [] }: VideoZoneProps) {
   const handleVideoSelect = (video: Video) => {
     if (editingVideoId === video.id) return;
     setCurrentVideo(video);
+    logMaterialView(video.id);
   };
 
   const handleFolderClick = (folder: VideoFolder) => {
@@ -544,10 +546,14 @@ export function VideoZone({ courseId, initialVideos = [] }: VideoZoneProps) {
   };
 
   const handleVideoEnded = useCallback(() => {
+    if (currentVideo) {
+      markCompleted(currentVideo.id);
+    }
     const currentIndex = videos.findIndex(v => v.id === currentVideo?.id);
     if (currentIndex !== -1 && currentIndex < videos.length - 1) {
       const nextVideo = videos[currentIndex + 1];
       setCurrentVideo(nextVideo);
+      logMaterialView(nextVideo.id);
     }
   }, [videos, currentVideo]);
 

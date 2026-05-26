@@ -13,6 +13,7 @@ import { BookmarkButton } from "@/components/course/BookmarkButton";
 import { MaterialNoteEditor } from "@/components/course/MaterialNoteEditor";
 import { CommentSection } from "@/components/course/CommentSection";
 import { getComments } from "@/app/actions/comments";
+import { logMaterialView } from "@/app/actions/progress";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -626,7 +627,7 @@ export function DocumentZone({ courseId, initialDocuments = [] }: DocumentZonePr
                         draggable
                         onDragStart={(e) => handleDragStart(e, doc.id)}
                         onDragEnd={handleDragEnd}
-                        onClick={() => setSelectedDocument(doc)}
+                        onClick={() => { setSelectedDocument(doc); logMaterialView(doc.id); }}
                         onDoubleClick={(e) => {
                           e.stopPropagation();
                           startDocumentEdit(doc);

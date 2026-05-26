@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Play, FileText, Upload } from 'lucide-react';
+import { logMaterialView } from "@/app/actions/progress";
 import { cn } from "@/lib/utils";
 import ReactPlayer from 'react-player';
 import Link from 'next/link';
@@ -43,7 +44,10 @@ export function CourseVideoPlayer({
 
   useEffect(() => {
     setMounted(true);
-  }, []);
+    if (video?.id) {
+      logMaterialView(video.id);
+    }
+  }, [video?.id]);
 
   if (!video) return <div>Video not found</div>;
 
