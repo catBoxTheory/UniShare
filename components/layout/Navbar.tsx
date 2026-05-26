@@ -19,6 +19,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { signOutAction } from "@/app/actions/auth";
+import { ThemeToggle } from "@/components/theme/ThemeToggle";
 import { cn } from "@/lib/utils";
 
 interface NavbarProps {
@@ -51,6 +52,7 @@ export function Navbar({ user, variant = "default", hideAuthButton = false }: Na
 
         {/* Desktop Navigation */}
         <div className="hidden md:flex items-center gap-4">
+          <ThemeToggle />
           {user ? (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -111,6 +113,9 @@ export function Navbar({ user, variant = "default", hideAuthButton = false }: Na
                   </SheetTitle>
                 </SheetHeader>
                 <div className="flex flex-col gap-4 mt-8">
+                  <div className="flex justify-end">
+                    <ThemeToggle />
+                  </div>
                   {user ? (
                     <>
                       <div className="flex items-center gap-3 px-2 py-3 border-b">
