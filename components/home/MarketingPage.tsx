@@ -263,17 +263,72 @@ export function MarketingPage() {
                   i % 2 === 0 ? "md:flex-row" : "md:flex-row-reverse"
                 } items-center`}
               >
+                {/* Visual panel — content varies per step */}
                 <div className="w-full md:w-1/2">
                   <div className="aspect-[4/3] rounded-3xl overflow-hidden glass-card border border-border p-2">
                     <div className="w-full h-full rounded-2xl bg-card border border-border/50 flex flex-col items-center justify-center p-8 relative overflow-hidden">
                       <div className="absolute -right-4 -top-4 w-32 h-32 bg-primary/5 rounded-full blur-3xl" />
-                      <step.icon className="h-16 w-16 text-primary/40 mb-6" />
-                      <span className="font-serif font-bold text-[10rem] text-primary/5 absolute inset-0 flex items-center justify-center select-none leading-none">
-                        {step.number}
-                      </span>
+                      {i === 0 && (
+                        <div className="flex flex-col items-center gap-6 w-full max-w-xs">
+                          <Search className="h-12 w-12 text-primary/40" />
+                          <div className="w-full h-11 bg-muted rounded-full border border-border flex items-center px-4">
+                            <Search className="h-4 w-4 text-muted-foreground mr-3" />
+                            <div className="h-2 w-24 bg-muted-foreground/30 rounded-full" />
+                          </div>
+                          <div className="flex gap-2 flex-wrap justify-center">
+                            <span className="px-3 py-1.5 rounded-full bg-muted text-xs font-medium">ECON 101</span>
+                            <span className="px-3 py-1.5 rounded-full bg-primary/10 text-primary text-xs font-medium">BIOL 204</span>
+                            <span className="px-3 py-1.5 rounded-full bg-muted text-xs font-medium">CHEM 300</span>
+                          </div>
+                        </div>
+                      )}
+                      {i === 1 && (
+                        <div className="flex flex-col gap-3 w-full max-w-sm">
+                          <div className="flex items-start gap-4 p-3 rounded-xl hover:bg-muted/50 transition-colors border border-transparent hover:border-border cursor-pointer">
+                            <FileText className="h-7 w-7 text-primary shrink-0 mt-0.5" />
+                            <div className="min-w-0">
+                              <h4 className="font-medium text-sm">Midterm Study Guide</h4>
+                              <p className="text-xs text-muted-foreground mb-1.5">Comprehensive review of chapters 1-5.</p>
+                              <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                                <span className="flex items-center gap-1"><Star className="h-3 w-3 fill-primary text-primary" /> 4.9</span>
+                                <span>124 downloads</span>
+                              </div>
+                            </div>
+                          </div>
+                          <div className="flex items-start gap-4 p-3 rounded-xl bg-muted/30 border border-border">
+                            <Video className="h-7 w-7 text-primary shrink-0 mt-0.5" />
+                            <div className="min-w-0">
+                              <h4 className="font-medium text-sm">Lecture 04: Thermodynamics</h4>
+                              <p className="text-xs text-muted-foreground mb-1.5">Full recording with transcript.</p>
+                              <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                                <span className="flex items-center gap-1"><Star className="h-3 w-3 fill-primary text-primary" /> 4.7</span>
+                                <span>89 views</span>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                      {i === 2 && (
+                        <div className="flex flex-col items-center gap-4">
+                          <div className="w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center relative">
+                            <Upload className="h-9 w-9 text-primary" />
+                            <div className="absolute -top-1 -right-1 w-7 h-7 bg-background rounded-full flex items-center justify-center border border-border shadow-sm">
+                              <Star className="h-3.5 w-3.5 text-primary fill-primary" />
+                            </div>
+                          </div>
+                          <h4 className="font-medium text-base text-center">Contribute &amp; Earn Recognition</h4>
+                          <p className="text-xs text-muted-foreground text-center max-w-[200px]">
+                            Upload your own exceptional notes to help peers and build your academic profile.
+                          </p>
+                          <div className="mt-2 px-4 py-2 bg-muted hover:bg-muted/80 rounded-full text-sm font-medium transition-colors cursor-pointer">
+                            Upload Material
+                          </div>
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>
+                {/* Text side */}
                 <div className="w-full md:w-1/2 max-w-lg">
                   <div className="text-primary font-serif text-6xl opacity-20 mb-4">{step.number}</div>
                   <h3 className="text-3xl font-serif mb-4 tracking-tight">{step.title}</h3>
