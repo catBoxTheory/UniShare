@@ -4,6 +4,7 @@ import Link from "next/link"
 import { motion, useScroll, useTransform } from "framer-motion"
 import { useRef } from "react"
 import { Button } from "@/components/ui/button"
+import { cn } from "@/lib/utils"
 import { ArrowRight, BookOpen, Users, Share2, Search, Upload, Heart, FileText, Video, MessageCircle, Star, Library, Shield, Zap } from "lucide-react"
 import { Navbar } from "@/components/layout/Navbar"
 import { Footer } from "@/components/layout/Footer"
@@ -19,13 +20,13 @@ const steps = [
     number: "02",
     icon: BookOpen,
     title: "Access premium materials instantly",
-    desc: "No subscription required. Download PDFs, watch lectures, and read notes right in your browser. All content organized by week and topic for easy navigation.",
+    desc: "No subscription required. Download PDFs, watch lectures, and read notes right in your browser. All content is organized by week and topic for easy navigation.",
   },
   {
     number: "03",
     icon: Upload,
     title: "Give back to the community",
-    desc: "Upload your own notes and help the next cohort. High-quality contributions are upvoted, building your reputation as a top contributor.",
+    desc: "Notice something missing? Upload your own notes or recordings. High-quality contributions are upvoted, building your reputation as a top contributor.",
   },
 ]
 
@@ -243,9 +244,9 @@ export function MarketingPage() {
             whileInView={{ opacity: 1, y: 0 }}
             transition={{ type: "spring", stiffness: 100, damping: 20 }}
             viewport={{ once: true }}
-            className="mb-20"
+            className="mb-20 text-center max-w-2xl mx-auto"
           >
-            <h2 className="font-serif text-4xl md:text-5xl tracking-tighter mb-4">How UniShare works.</h2>
+            <h2 className="font-serif text-4xl md:text-5xl mb-4">How UniShare works.</h2>
             <p className="text-muted-foreground text-lg max-w-2xl">
               A simple, transparent process designed to get you the information you need, faster.
             </p>
@@ -266,12 +267,12 @@ export function MarketingPage() {
                 {/* Visual panel — content varies per step */}
                 <div className="w-full md:w-1/2">
                   <div className="aspect-[4/3] rounded-3xl overflow-hidden glass-card border border-border p-2">
-                    <div className="w-full h-full rounded-2xl bg-card border border-border/50 flex flex-col items-center justify-center p-8 relative overflow-hidden">
+                    <div className={cn("w-full h-full rounded-2xl bg-card border border-border/50 flex flex-col items-center justify-center relative overflow-hidden", i === 1 ? "p-6" : "p-8")}>
                       <div className="absolute -right-4 -top-4 w-32 h-32 bg-primary/5 rounded-full blur-3xl" />
                       {i === 0 && (
                         <div className="flex flex-col items-center gap-6 w-full max-w-xs">
-                          <Search className="h-12 w-12 text-primary/40" />
-                          <div className="w-full h-11 bg-muted rounded-full border border-border flex items-center px-4">
+                          <Search className="h-16 w-16 text-primary/40 mb-6" />
+                          <div className="w-full h-12 bg-muted rounded-full border border-border flex items-center px-4">
                             <Search className="h-4 w-4 text-muted-foreground mr-3" />
                             <div className="h-2 w-24 bg-muted-foreground/30 rounded-full" />
                           </div>
@@ -284,8 +285,8 @@ export function MarketingPage() {
                       )}
                       {i === 1 && (
                         <div className="flex flex-col gap-3 w-full max-w-sm">
-                          <div className="flex items-start gap-4 p-3 rounded-xl hover:bg-muted/50 transition-colors border border-transparent hover:border-border cursor-pointer">
-                            <FileText className="h-7 w-7 text-primary shrink-0 mt-0.5" />
+                          <div className="flex items-start gap-4 p-4 rounded-xl hover:bg-muted/50 transition-colors border border-transparent hover:border-border cursor-pointer">
+                            <FileText className="h-8 w-8 text-primary shrink-0" />
                             <div className="min-w-0">
                               <h4 className="font-medium text-sm">Midterm Study Guide</h4>
                               <p className="text-xs text-muted-foreground mb-1.5">Comprehensive review of chapters 1-5.</p>
@@ -295,8 +296,8 @@ export function MarketingPage() {
                               </div>
                             </div>
                           </div>
-                          <div className="flex items-start gap-4 p-3 rounded-xl bg-muted/30 border border-border">
-                            <Video className="h-7 w-7 text-primary shrink-0 mt-0.5" />
+                          <div className="flex items-start gap-4 p-4 rounded-xl bg-muted/30 border border-border">
+                            <Video className="h-8 w-8 text-primary shrink-0" />
                             <div className="min-w-0">
                               <h4 className="font-medium text-sm">Lecture 04: Thermodynamics</h4>
                               <p className="text-xs text-muted-foreground mb-1.5">Full recording with transcript.</p>
@@ -310,14 +311,14 @@ export function MarketingPage() {
                       )}
                       {i === 2 && (
                         <div className="flex flex-col items-center gap-4">
-                          <div className="w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center relative">
-                            <Upload className="h-9 w-9 text-primary" />
-                            <div className="absolute -top-1 -right-1 w-7 h-7 bg-background rounded-full flex items-center justify-center border border-border shadow-sm">
-                              <Star className="h-3.5 w-3.5 text-primary fill-primary" />
+                          <div className="w-24 h-24 rounded-full bg-primary/10 flex items-center justify-center relative">
+                            <Zap className="h-10 w-10 text-primary" />
+                            <div className="absolute -top-1 -right-1 w-8 h-8 bg-background rounded-full flex items-center justify-center border border-border shadow-sm">
+                              <Star className="h-4 w-4 text-emerald-500 fill-emerald-500" />
                             </div>
                           </div>
-                          <h4 className="font-medium text-base text-center">Contribute &amp; Earn Recognition</h4>
-                          <p className="text-xs text-muted-foreground text-center max-w-[200px]">
+                          <h4 className="font-medium text-lg text-center">Contribute &amp; Earn Recognition</h4>
+                          <p className="text-sm text-muted-foreground text-center max-w-xs">
                             Upload your own exceptional notes to help peers and build your academic profile.
                           </p>
                           <div className="mt-2 px-4 py-2 bg-muted hover:bg-muted/80 rounded-full text-sm font-medium transition-colors cursor-pointer">
@@ -331,7 +332,7 @@ export function MarketingPage() {
                 {/* Text side */}
                 <div className="w-full md:w-1/2 max-w-lg">
                   <div className="text-primary font-serif text-6xl opacity-20 mb-4">{step.number}</div>
-                  <h3 className="text-3xl font-serif mb-4 tracking-tight">{step.title}</h3>
+                  <h3 className="text-3xl font-serif mb-4">{step.title}</h3>
                   <p className="text-muted-foreground text-lg leading-relaxed">{step.desc}</p>
                 </div>
               </motion.div>
