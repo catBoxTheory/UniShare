@@ -1,0 +1,1217 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>UniShare — Redesigned</title>
+<style>
+  /* ===== Tokens ===== */
+  :root {
+    --bg: oklch(98% 0.004 95);
+    --surface: oklch(100% 0.002 95);
+    --fg: oklch(18% 0.018 70);
+    --muted: oklch(50% 0.012 70);
+    --border: oklch(90% 0.006 95);
+    --accent: oklch(48% 0.12 160);
+    --accent-light: oklch(95% 0.04 160);
+    --accent-fg: oklch(100% 0 0);
+
+    --font-display: 'Iowan Old Style', 'Charter', Georgia, serif;
+    --font-body: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+    --font-mono: 'JetBrains Mono', 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+
+    --radius: 16px;
+    --radius-sm: 10px;
+    --radius-lg: 24px;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: oklch(14% 0.012 160);
+      --surface: oklch(18% 0.012 160);
+      --fg: oklch(93% 0.006 95);
+      --muted: oklch(60% 0.012 95);
+      --border: oklch(26% 0.012 160);
+      --accent: oklch(65% 0.14 160);
+      --accent-light: oklch(22% 0.04 160);
+      --accent-fg: oklch(14% 0.012 160);
+    }
+  }
+
+  /* ===== Reset ===== */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; -webkit-font-smoothing: antialiased; }
+  body {
+    font-family: var(--font-body);
+    background: var(--bg);
+    color: var(--fg);
+    line-height: 1.6;
+  }
+  a { color: inherit; text-decoration: none; }
+  img { display: block; max-width: 100%; }
+
+  /* ===== Utilities ===== */
+  .container { max-width: 1200px; margin: 0 auto; padding: 0 24px; }
+  .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0,0,0,0); }
+
+  /* ===== Typography ===== */
+  .display { font-family: var(--font-display); letter-spacing: -0.025em; line-height: 1.1; }
+  .eyebrow {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--accent);
+  }
+  .mono { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+
+  /* ===== Topnav ===== */
+  .topnav {
+    position: sticky; top: 0; z-index: 100;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 16px 24px;
+    background: color-mix(in oklch, var(--bg) 85%, transparent);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--border);
+  }
+  .topnav-brand {
+    font-family: var(--font-display);
+    font-size: 20px;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .topnav-brand .dot {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: var(--accent);
+  }
+  .topnav-links { display: flex; align-items: center; gap: 32px; }
+  .topnav-links a {
+    font-size: 14px; font-weight: 500; color: var(--muted);
+    transition: color 0.2s;
+  }
+  .topnav-links a:hover { color: var(--fg); }
+
+  /* ===== Buttons ===== */
+  .btn {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 12px 28px;
+    font-size: 14px; font-weight: 600;
+    border-radius: var(--radius-sm);
+    border: none; cursor: pointer;
+    transition: all 0.2s;
+  }
+  .btn-primary {
+    background: var(--accent);
+    color: var(--accent-fg);
+  }
+  .btn-primary:hover { filter: brightness(1.1); transform: translateY(-1px); }
+  .btn-outline {
+    background: transparent;
+    color: var(--fg);
+    border: 1.5px solid var(--border);
+  }
+  .btn-outline:hover { border-color: var(--muted); }
+  .btn-ghost {
+    background: transparent;
+    color: var(--muted);
+    border: none;
+    padding: 8px 16px;
+  }
+  .btn-ghost:hover { color: var(--fg); }
+  .btn-white {
+    background: var(--surface);
+    color: var(--accent);
+    font-weight: 700;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+  }
+  .btn-white:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+
+  /* ===== Sections ===== */
+  .section { padding: 100px 0; }
+  .section-sm { padding: 64px 0; }
+
+  /* ===== Hero ===== */
+  .hero {
+    position: relative;
+    min-height: 85vh;
+    display: flex; align-items: center;
+    overflow: hidden;
+    background: linear-gradient(135deg, oklch(16% 0.02 160) 0%, oklch(20% 0.03 140) 50%, oklch(14% 0.02 180) 100%);
+    color: oklch(95% 0.004 95);
+  }
+  .hero::before {
+    content: '';
+    position: absolute; inset: 0;
+    background:
+      radial-gradient(ellipse 600px 400px at 20% 50%, oklch(48% 0.12 160 / 0.15) 0%, transparent 70%),
+      radial-gradient(ellipse 400px 300px at 80% 30%, oklch(48% 0.08 200 / 0.1) 0%, transparent 70%);
+    pointer-events: none;
+  }
+  .hero::after {
+    content: '';
+    position: absolute; bottom: 0; left: 0; right: 0; height: 200px;
+    background: linear-gradient(to top, var(--bg), transparent);
+    pointer-events: none;
+  }
+  .hero-content { position: relative; z-index: 2; max-width: 640px; }
+  .hero-badge {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 6px 16px;
+    background: oklch(100% 0 0 / 0.08);
+    border: 1px solid oklch(100% 0 0 / 0.12);
+    border-radius: 100px;
+    font-size: 13px; font-weight: 500;
+    margin-bottom: 32px;
+    backdrop-filter: blur(8px);
+  }
+  .hero-badge .star { color: var(--accent); font-size: 14px; }
+  .hero h1 {
+    font-family: var(--font-display);
+    font-size: clamp(42px, 6vw, 72px);
+    font-weight: 700;
+    letter-spacing: -0.03em;
+    line-height: 1.05;
+    margin-bottom: 24px;
+  }
+  .hero h1 .accent {
+    color: var(--accent);
+    font-style: italic;
+  }
+  .hero p {
+    font-size: 18px;
+    line-height: 1.7;
+    color: oklch(80% 0.006 95);
+    margin-bottom: 40px;
+    max-width: 500px;
+  }
+  .hero-actions { display: flex; gap: 12px; flex-wrap: wrap; }
+  .hero-actions .btn-primary,
+  .hero-actions .btn-outline {
+    padding: 14px 32px;
+    font-size: 15px;
+  }
+  .hero-actions .btn-outline {
+    border-color: oklch(100% 0 0 / 0.2);
+    color: oklch(95% 0.004 95);
+  }
+  .hero-actions .btn-outline:hover { background: oklch(100% 0 0 / 0.08); border-color: oklch(100% 0 0 / 0.3); }
+
+  /* Grid pattern overlay */
+  .hero-grid {
+    position: absolute; top: 0; right: 0; bottom: 0;
+    width: 50%;
+    opacity: 0.06;
+    background-image:
+      linear-gradient(oklch(100% 0 0) 1px, transparent 1px),
+      linear-gradient(90deg, oklch(100% 0 0) 1px, transparent 1px);
+    background-size: 60px 60px;
+    mask-image: linear-gradient(to left, black 0%, transparent 100%);
+    -webkit-mask-image: linear-gradient(to left, black 0%, transparent 100%);
+    pointer-events: none;
+  }
+
+  /* Floating course cards */
+  .hero-float {
+    position: absolute;
+    z-index: 1;
+    background: oklch(100% 0 0 / 0.06);
+    border: 1px solid oklch(100% 0 0 / 0.1);
+    border-radius: var(--radius);
+    backdrop-filter: blur(16px);
+    padding: 20px;
+    animation: float 6s ease-in-out infinite;
+  }
+  .hero-float-1 { right: 8%; top: 20%; animation-delay: 0s; }
+  .hero-float-2 { right: 15%; bottom: 25%; animation-delay: 2s; }
+  .hero-float-3 { right: 4%; bottom: 35%; animation-delay: 4s; display: none; }
+  @media (min-width: 1100px) { .hero-float-3 { display: block; } }
+  @keyframes float {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-8px); }
+  }
+  .float-card-title {
+    font-size: 13px; font-weight: 600; margin-bottom: 4px;
+    color: oklch(95% 0.004 95);
+  }
+  .float-card-sub {
+    font-size: 11px; color: oklch(70% 0.006 95); margin-bottom: 12px;
+  }
+  .float-bar {
+    height: 6px; border-radius: 3px;
+    background: oklch(100% 0 0 / 0.08);
+    margin-bottom: 6px;
+    overflow: hidden;
+  }
+  .float-bar-fill {
+    height: 100%; border-radius: 3px;
+    background: var(--accent);
+  }
+
+  /* ===== Features Grid ===== */
+  .features-header {
+    margin-bottom: 56px;
+  }
+  .features-header h2 {
+    font-family: var(--font-display);
+    font-size: clamp(32px, 4vw, 48px);
+    font-weight: 700;
+    letter-spacing: -0.025em;
+    margin-bottom: 16px;
+  }
+  .features-header p {
+    font-size: 17px;
+    color: var(--muted);
+    max-width: 520px;
+    line-height: 1.6;
+  }
+
+  .features-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+  }
+  @media (max-width: 768px) { .features-grid { grid-template-columns: 1fr; } }
+
+  .feature-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 36px;
+    transition: border-color 0.3s, box-shadow 0.3s;
+  }
+  .feature-card:hover {
+    border-color: color-mix(in oklch, var(--accent) 30%, var(--border));
+    box-shadow: 0 8px 32px oklch(0% 0 0 / 0.04);
+  }
+  .feature-card.large {
+    grid-column: span 2;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 40px;
+    align-items: center;
+  }
+  @media (max-width: 768px) { .feature-card.large { grid-column: span 1; grid-template-columns: 1fr; } }
+
+  .feature-icon {
+    width: 44px; height: 44px;
+    border-radius: var(--radius-sm);
+    background: var(--accent-light);
+    display: flex; align-items: center; justify-content: center;
+    margin-bottom: 20px;
+    color: var(--accent);
+    font-size: 20px;
+  }
+  .feature-card h3 {
+    font-family: var(--font-display);
+    font-size: 22px;
+    font-weight: 700;
+    letter-spacing: -0.015em;
+    margin-bottom: 10px;
+  }
+  .feature-card p {
+    font-size: 15px;
+    color: var(--muted);
+    line-height: 1.6;
+  }
+
+  /* Mock UI inside large feature card */
+  .mock-notes {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 20px;
+  }
+  .mock-notes-header {
+    display: flex; align-items: center; gap: 12px;
+    margin-bottom: 16px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--border);
+  }
+  .mock-avatar {
+    width: 36px; height: 36px;
+    border-radius: 50%;
+    background: var(--accent-light);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 12px; font-weight: 700;
+    color: var(--accent);
+  }
+  .mock-notes-title { font-size: 14px; font-weight: 600; }
+  .mock-notes-sub { font-size: 12px; color: var(--muted); }
+  .mock-line {
+    height: 8px;
+    background: var(--border);
+    border-radius: 4px;
+    margin-bottom: 8px;
+  }
+  .mock-line.short { width: 60%; }
+  .mock-line.med { width: 80%; }
+  .mock-line.accent { background: var(--accent-light); }
+
+  /* Video preview mock */
+  .mock-video {
+    aspect-ratio: 16/9;
+    background: linear-gradient(135deg, oklch(20% 0.02 160), oklch(25% 0.03 180));
+    border-radius: var(--radius);
+    position: relative;
+    overflow: hidden;
+    border: 1px solid var(--border);
+    margin-top: 20px;
+  }
+  .mock-play {
+    position: absolute; inset: 0;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .mock-play-btn {
+    width: 48px; height: 48px;
+    border-radius: 50%;
+    background: oklch(100% 0 0 / 0.15);
+    backdrop-filter: blur(8px);
+    display: flex; align-items: center; justify-content: center;
+    border: 1px solid oklch(100% 0 0 / 0.2);
+    transition: transform 0.2s;
+  }
+  .mock-video:hover .mock-play-btn { transform: scale(1.1); }
+  .mock-play-btn svg { width: 18px; height: 18px; fill: white; margin-left: 2px; }
+
+  /* ===== Stats ===== */
+  .stats-section {
+    background: var(--surface);
+    border-top: 1px solid var(--border);
+    border-bottom: 1px solid var(--border);
+  }
+  .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 32px;
+    text-align: center;
+  }
+  @media (max-width: 640px) { .stats-grid { grid-template-columns: repeat(2, 1fr); } }
+  .stat-num {
+    font-family: var(--font-display);
+    font-size: clamp(36px, 5vw, 56px);
+    font-weight: 700;
+    letter-spacing: -0.03em;
+    color: var(--fg);
+  }
+  .stat-label {
+    font-size: 14px;
+    color: var(--muted);
+    margin-top: 4px;
+  }
+
+  /* ===== How It Works ===== */
+  .how-header {
+    text-align: center;
+    margin-bottom: 64px;
+  }
+  .how-header h2 {
+    font-family: var(--font-display);
+    font-size: clamp(32px, 4vw, 48px);
+    font-weight: 700;
+    letter-spacing: -0.025em;
+    margin-bottom: 12px;
+  }
+  .how-header p {
+    font-size: 17px;
+    color: var(--muted);
+    max-width: 480px;
+    margin: 0 auto;
+  }
+
+  .steps {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 40px;
+    position: relative;
+  }
+  @media (max-width: 768px) { .steps { grid-template-columns: 1fr; gap: 48px; } }
+
+  .step-num {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--accent);
+    letter-spacing: 0.06em;
+    margin-bottom: 16px;
+    display: flex; align-items: center; gap: 12px;
+  }
+  .step-num::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--border);
+  }
+  .step h3 {
+    font-family: var(--font-display);
+    font-size: 24px;
+    font-weight: 700;
+    letter-spacing: -0.015em;
+    margin-bottom: 12px;
+  }
+  .step p {
+    font-size: 15px;
+    color: var(--muted);
+    line-height: 1.6;
+  }
+
+  /* ===== Values ===== */
+  .values-layout {
+    display: grid;
+    grid-template-columns: 1.2fr 1fr;
+    gap: 64px;
+    align-items: start;
+  }
+  @media (max-width: 768px) { .values-layout { grid-template-columns: 1fr; gap: 40px; } }
+  .values-left h2 {
+    font-family: var(--font-display);
+    font-size: clamp(32px, 4vw, 48px);
+    font-weight: 700;
+    letter-spacing: -0.025em;
+    margin-bottom: 16px;
+  }
+  .values-left > p {
+    font-size: 17px;
+    color: var(--muted);
+    line-height: 1.6;
+    margin-bottom: 40px;
+    max-width: 460px;
+  }
+  .values-stats {
+    display: flex; gap: 48px;
+  }
+  .values-stat-num {
+    font-family: var(--font-display);
+    font-size: 36px;
+    font-weight: 700;
+    letter-spacing: -0.025em;
+  }
+  .values-stat-label {
+    font-size: 13px;
+    color: var(--muted);
+    margin-top: 4px;
+  }
+
+  .value-item {
+    display: flex; gap: 16px;
+    padding: 20px;
+    border-radius: var(--radius);
+    transition: background 0.2s;
+    cursor: default;
+  }
+  .value-item:hover { background: var(--accent-light); }
+  .value-icon {
+    width: 44px; height: 44px;
+    border-radius: var(--radius-sm);
+    background: var(--accent-light);
+    border: 1px solid color-mix(in oklch, var(--accent) 20%, transparent);
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+    color: var(--accent);
+    font-size: 18px;
+    transition: transform 0.2s;
+  }
+  .value-item:hover .value-icon { transform: scale(1.05); }
+  .value-title { font-size: 16px; font-weight: 700; margin-bottom: 4px; }
+  .value-desc { font-size: 14px; color: var(--muted); line-height: 1.5; }
+
+  /* ===== CTA ===== */
+  .cta-section {
+    background: linear-gradient(135deg, oklch(48% 0.12 160), oklch(42% 0.10 175));
+    color: oklch(98% 0.004 95);
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+  }
+  .cta-section::before {
+    content: '';
+    position: absolute; top: -100px; right: -100px;
+    width: 400px; height: 400px;
+    border-radius: 50%;
+    background: oklch(100% 0 0 / 0.04);
+    pointer-events: none;
+  }
+  .cta-section h2 {
+    font-family: var(--font-display);
+    font-size: clamp(32px, 5vw, 52px);
+    font-weight: 700;
+    letter-spacing: -0.025em;
+    margin-bottom: 16px;
+  }
+  .cta-section p {
+    font-size: 17px;
+    color: oklch(90% 0.006 95);
+    max-width: 480px;
+    margin: 0 auto 36px;
+    line-height: 1.6;
+  }
+  .cta-actions { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+  .cta-section .btn-white { color: oklch(48% 0.12 160); }
+  .cta-section .btn-outline {
+    border-color: oklch(100% 0 0 / 0.25);
+    color: oklch(98% 0.004 95);
+  }
+  .cta-section .btn-outline:hover {
+    background: oklch(100% 0 0 / 0.1);
+    border-color: oklch(100% 0 0 / 0.4);
+  }
+
+  /* ===== Footer ===== */
+  .footer {
+    padding: 40px 0;
+    border-top: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: space-between;
+    font-size: 13px;
+    color: var(--muted);
+  }
+  .footer-links { display: flex; gap: 24px; }
+  .footer-links a { color: var(--muted); transition: color 0.2s; }
+  .footer-links a:hover { color: var(--fg); }
+
+  /* ===== Dashboard Section ===== */
+  .dash-section {
+    background: var(--bg);
+    border-top: 1px solid var(--border);
+  }
+  .dash-header {
+    text-align: center;
+    margin-bottom: 48px;
+  }
+  .dash-header h2 {
+    font-family: var(--font-display);
+    font-size: clamp(28px, 3.5vw, 40px);
+    font-weight: 700;
+    letter-spacing: -0.025em;
+    margin-bottom: 8px;
+  }
+  .dash-header p {
+    font-size: 16px;
+    color: var(--muted);
+  }
+
+  .dash-frame {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    box-shadow: 0 24px 64px oklch(0% 0 0 / 0.06);
+  }
+  .dash-topbar {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 14px 24px;
+    border-bottom: 1px solid var(--border);
+    background: var(--surface);
+  }
+  .dash-search {
+    display: flex; align-items: center; gap: 8px;
+    padding: 8px 16px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    font-size: 13px;
+    color: var(--muted);
+    min-width: 240px;
+  }
+  .dash-search kbd {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    padding: 2px 6px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    margin-left: auto;
+  }
+  .dash-user {
+    display: flex; align-items: center; gap: 10px;
+  }
+  .dash-user-avatar {
+    width: 32px; height: 32px;
+    border-radius: 50%;
+    background: var(--accent-light);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 13px; font-weight: 700;
+    color: var(--accent);
+  }
+  .dash-user-name { font-size: 14px; font-weight: 600; }
+
+  .dash-body {
+    display: grid;
+    grid-template-columns: 220px 1fr;
+    min-height: 480px;
+  }
+  @media (max-width: 768px) { .dash-body { grid-template-columns: 1fr; } }
+
+  .dash-sidebar {
+    border-right: 1px solid var(--border);
+    padding: 20px 16px;
+    background: var(--bg);
+  }
+  .dash-sidebar-item {
+    display: flex; align-items: center; gap: 10px;
+    padding: 10px 14px;
+    border-radius: var(--radius-sm);
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--muted);
+    margin-bottom: 4px;
+    transition: all 0.15s;
+    cursor: pointer;
+  }
+  .dash-sidebar-item:hover { background: var(--accent-light); color: var(--fg); }
+  .dash-sidebar-item.active {
+    background: var(--accent-light);
+    color: var(--accent);
+    font-weight: 600;
+  }
+  .dash-sidebar-item svg { width: 18px; height: 18px; opacity: 0.7; }
+  .dash-sidebar-item.active svg { opacity: 1; }
+
+  .dash-content { padding: 24px; }
+  .dash-greeting {
+    font-family: var(--font-display);
+    font-size: 28px;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    margin-bottom: 24px;
+  }
+
+  /* Stats row */
+  .dash-stats {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+    margin-bottom: 32px;
+  }
+  @media (max-width: 900px) { .dash-stats { grid-template-columns: repeat(2, 1fr); } }
+  .dash-stat-card {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 20px;
+  }
+  .dash-stat-card .stat-icon {
+    width: 36px; height: 36px;
+    border-radius: var(--radius-sm);
+    background: var(--accent-light);
+    display: flex; align-items: center; justify-content: center;
+    margin-bottom: 12px;
+    color: var(--accent);
+    font-size: 16px;
+  }
+  .dash-stat-card .stat-val {
+    font-family: var(--font-mono);
+    font-size: 28px;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    margin-bottom: 2px;
+  }
+  .dash-stat-card .stat-lbl {
+    font-size: 12px;
+    color: var(--muted);
+  }
+
+  /* Course cards in dashboard */
+  .dash-section-title {
+    display: flex; align-items: center; gap: 8px;
+    font-size: 16px; font-weight: 700;
+    margin-bottom: 16px;
+  }
+  .dash-section-title svg { width: 18px; height: 18px; color: var(--accent); }
+
+  .dash-courses {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+  }
+  @media (max-width: 900px) { .dash-courses { grid-template-columns: repeat(2, 1fr); } }
+  @media (max-width: 600px) { .dash-courses { grid-template-columns: 1fr; } }
+  .dash-course-card {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 20px;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    cursor: pointer;
+  }
+  .dash-course-card:hover {
+    border-color: color-mix(in oklch, var(--accent) 30%, var(--border));
+    box-shadow: 0 4px 16px oklch(0% 0 0 / 0.04);
+  }
+  .dash-course-code {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--accent);
+    letter-spacing: 0.04em;
+    margin-bottom: 6px;
+  }
+  .dash-course-title {
+    font-size: 15px;
+    font-weight: 700;
+    margin-bottom: 4px;
+    line-height: 1.3;
+  }
+  .dash-course-dept {
+    font-size: 12px;
+    color: var(--muted);
+    margin-bottom: 12px;
+  }
+  .dash-course-meta {
+    display: flex; align-items: center; gap: 12px;
+    font-size: 12px;
+    color: var(--muted);
+  }
+  .dash-course-meta .dot {
+    width: 3px; height: 3px;
+    border-radius: 50%;
+    background: var(--muted);
+  }
+
+  /* ===== Responsive helpers ===== */
+  @media (max-width: 640px) {
+    .hero { min-height: 70vh; }
+    .hero-float { display: none; }
+    .topnav-links { display: none; }
+    .section { padding: 64px 0; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ===== NAV ===== -->
+<nav class="topnav">
+  <div class="topnav-brand">
+    <span class="dot"></span>
+    UniShare
+  </div>
+  <div class="topnav-links">
+    <a href="#features">Features</a>
+    <a href="#how">How It Works</a>
+    <a href="#values">Values</a>
+    <a href="#dashboard-preview">Dashboard</a>
+    <a href="#" class="btn btn-primary" style="padding: 8px 20px; font-size: 13px;">Sign Up Free</a>
+  </div>
+</nav>
+
+<!-- ===== HERO ===== -->
+<section class="hero" id="top">
+  <div class="hero-grid"></div>
+
+  <div class="hero-float hero-float-1">
+    <div class="float-card-title">CS 310 — Algorithms</div>
+    <div class="float-card-sub">Midterm Review &middot; 14 materials</div>
+    <div class="float-bar"><div class="float-bar-fill" style="width:75%"></div></div>
+    <div class="float-bar"><div class="float-bar-fill" style="width:60%"></div></div>
+    <div class="float-bar"><div class="float-bar-fill" style="width:45%"></div></div>
+  </div>
+
+  <div class="hero-float hero-float-2">
+    <div class="float-card-title">ECON 201 — Microeconomics</div>
+    <div class="float-card-sub">Lecture 08 &middot; Prof. Lee</div>
+    <div class="float-bar"><div class="float-bar-fill" style="width:90%"></div></div>
+    <div class="float-bar"><div class="float-bar-fill" style="width:70%"></div></div>
+  </div>
+
+  <div class="hero-float hero-float-3">
+    <div class="float-card-title">STAT 200 — Probability</div>
+    <div class="float-card-sub">Tutorial Notes &middot; Week 10</div>
+    <div class="float-bar"><div class="float-bar-fill" style="width:55%"></div></div>
+    <div class="float-bar"><div class="float-bar-fill" style="width:80%"></div></div>
+    <div class="float-bar"><div class="float-bar-fill" style="width:35%"></div></div>
+  </div>
+
+  <div class="container">
+    <div class="hero-content">
+      <div class="hero-badge">
+        <span class="star">&#9733;</span>
+        By students, for students. Always free.
+      </div>
+      <h1 class="display">
+        Academic knowledge<br>
+        <span class="accent">without boundaries.</span>
+      </h1>
+      <p>
+        Access lecture notes, course videos, and study materials shared by your peers. No paywalls, no credit systems — just shared learning.
+      </p>
+      <div class="hero-actions">
+        <a href="#" class="btn btn-primary">Join the Community &rarr;</a>
+        <a href="#" class="btn btn-outline">Explore Resources</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== FEATURES ===== -->
+<section class="section" id="features">
+  <div class="container">
+    <div class="features-header">
+      <p class="eyebrow">What you get</p>
+      <h2 class="display">Everything you need to excel.</h2>
+      <p>A unified platform for all your academic resources, curated and verified by students like you.</p>
+    </div>
+
+    <div class="features-grid">
+      <!-- Large card -->
+      <div class="feature-card large">
+        <div>
+          <div class="feature-icon">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/></svg>
+          </div>
+          <h3>Comprehensive Lecture Notes</h3>
+          <p>Stop scrambling to copy down slides. Access beautifully formatted, peer-reviewed notes for your specific courses, updated after every lecture.</p>
+        </div>
+        <div class="mock-notes">
+          <div class="mock-notes-header">
+            <div class="mock-avatar">CS</div>
+            <div>
+              <div class="mock-notes-title">Data Structures &amp; Algorithms</div>
+              <div class="mock-notes-sub">Prof. Smith &middot; Fall 2025</div>
+            </div>
+          </div>
+          <div class="mock-line med accent"></div>
+          <div class="mock-line short"></div>
+          <div class="mock-line"></div>
+          <div class="mock-line med"></div>
+          <div class="mock-line short accent"></div>
+          <div class="mock-line"></div>
+          <div class="mock-line short"></div>
+        </div>
+      </div>
+
+      <!-- Small cards -->
+      <div class="feature-card">
+        <div class="feature-icon">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+        </div>
+        <h3>Recorded Lectures</h3>
+        <p>Rewatch complex topics at your own pace. Community recordings with timestamps and bilingual subtitles.</p>
+        <div class="mock-video">
+          <div class="mock-play">
+            <div class="mock-play-btn">
+              <svg viewBox="0 0 24 24"><polygon points="8,5 19,12 8,19"/></svg>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="feature-card">
+        <div class="feature-icon">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        </div>
+        <h3>Community Driven</h3>
+        <p>Knowledge is verified through community upvotes and peer reviews from students who took the exact same course.</p>
+        <div style="display:flex;gap:0;margin-top:16px;">
+          <div class="mock-avatar" style="width:32px;height:32px;font-size:11px;border:2px solid var(--surface);margin-right:-8px;z-index:4;">A</div>
+          <div class="mock-avatar" style="width:32px;height:32px;font-size:11px;border:2px solid var(--surface);margin-right:-8px;z-index:3;">M</div>
+          <div class="mock-avatar" style="width:32px;height:32px;font-size:11px;border:2px solid var(--surface);margin-right:-8px;z-index:2;">K</div>
+          <div class="mock-avatar" style="width:32px;height:32px;font-size:11px;border:2px solid var(--surface);background:var(--accent);color:var(--accent-fg);z-index:1;">+2k</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== STATS ===== -->
+<section class="stats-section section-sm">
+  <div class="container">
+    <div class="stats-grid">
+      <div>
+        <div class="stat-num display">100%</div>
+        <div class="stat-label">Free, forever</div>
+      </div>
+      <div>
+        <div class="stat-num display">Open</div>
+        <div class="stat-label">Source ethos</div>
+      </div>
+      <div>
+        <div class="stat-num display">2,400+</div>
+        <div class="stat-label">Materials shared</div>
+      </div>
+      <div>
+        <div class="stat-num display">850+</div>
+        <div class="stat-label">Active students</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== HOW IT WORKS ===== -->
+<section class="section" id="how" style="background: var(--bg);">
+  <div class="container">
+    <div class="how-header">
+      <p class="eyebrow">How it works</p>
+      <h2 class="display">Three steps to smarter studying.</h2>
+      <p>A simple, transparent process designed to get you the information you need, faster.</p>
+    </div>
+
+    <div class="steps">
+      <div class="step">
+        <div class="step-num">01</div>
+        <h3>Find your course</h3>
+        <p>Search by course code, professor name, or university. Our cataloging system ensures you find materials for your exact syllabus.</p>
+      </div>
+      <div class="step">
+        <div class="step-num">02</div>
+        <h3>Access materials instantly</h3>
+        <p>No subscription required. Download PDFs, watch lectures, and read notes in your browser — organized by week and topic.</p>
+      </div>
+      <div class="step">
+        <div class="step-num">03</div>
+        <h3>Give back to peers</h3>
+        <p>Upload your own notes or recordings. High-quality contributions are upvoted, building your reputation as a top contributor.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== VALUES ===== -->
+<section class="section" id="values">
+  <div class="container">
+    <div class="values-layout">
+      <div class="values-left">
+        <p class="eyebrow">Our principles</p>
+        <h2 class="display">Built on shared values.</h2>
+        <p>We believe education should be accessible to everyone, not just those who can afford expensive subscription services.</p>
+        <div class="values-stats">
+          <div>
+            <div class="values-stat-num display">100%</div>
+            <div class="values-stat-label">Free, forever</div>
+          </div>
+          <div>
+            <div class="values-stat-num display">Open</div>
+            <div class="values-stat-label">Source ethos</div>
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <div class="value-item">
+          <div class="value-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+          </div>
+          <div>
+            <div class="value-title">Strictly No Paywalls</div>
+            <div class="value-desc">Every note, video, and guide on UniShare is 100% free, forever. We fundamentally oppose monetizing basic course materials.</div>
+          </div>
+        </div>
+
+        <div class="value-item">
+          <div class="value-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><polyline points="16 11 18 13 22 9"/></svg>
+          </div>
+          <div>
+            <div class="value-title">Peer Reviewed</div>
+            <div class="value-desc">Quality is maintained through a robust upvote system. The most accurate and helpful resources naturally rise to the top.</div>
+          </div>
+        </div>
+
+        <div class="value-item">
+          <div class="value-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+          </div>
+          <div>
+            <div class="value-title">Academic Integrity</div>
+            <div class="value-desc">We share study guides and notes, not assignments or test answers. Our platform promotes learning, not shortcuts.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== DASHBOARD PREVIEW ===== -->
+<section class="dash-section section" id="dashboard-preview">
+  <div class="container">
+    <div class="dash-header">
+      <p class="eyebrow">Your workspace</p>
+      <h2 class="display">A dashboard built for focus.</h2>
+      <p>Everything you need, nothing you don't. Track your courses, discover new materials, and stay on top of your studies.</p>
+    </div>
+
+    <div class="dash-frame">
+      <!-- Topbar -->
+      <div class="dash-topbar">
+        <div class="dash-search">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          Search courses, materials...
+          <kbd>&#8984;K</kbd>
+        </div>
+        <div class="dash-user">
+          <div class="dash-user-avatar">W</div>
+          <span class="dash-user-name">Wilson</span>
+        </div>
+      </div>
+
+      <div class="dash-body">
+        <!-- Sidebar -->
+        <div class="dash-sidebar">
+          <div class="dash-sidebar-item active">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+            Home
+          </div>
+          <div class="dash-sidebar-item">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+            Library
+          </div>
+          <div class="dash-sidebar-item">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            Search
+          </div>
+          <div class="dash-sidebar-item">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
+            Saved
+          </div>
+          <div class="dash-sidebar-item">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+            Settings
+          </div>
+        </div>
+
+        <!-- Main content -->
+        <div class="dash-content">
+          <div class="dash-greeting display">Good morning, Wilson</div>
+
+          <!-- Stats -->
+          <div class="dash-stats">
+            <div class="dash-stat-card">
+              <div class="stat-icon">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+              </div>
+              <div class="stat-val mono">8</div>
+              <div class="stat-lbl">Enrolled Courses</div>
+            </div>
+            <div class="dash-stat-card">
+              <div class="stat-icon">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/></svg>
+              </div>
+              <div class="stat-val mono">47</div>
+              <div class="stat-lbl">Total Materials</div>
+            </div>
+            <div class="dash-stat-card">
+              <div class="stat-icon" style="background:oklch(94% 0.04 145);color:oklch(50% 0.12 145);">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
+              </div>
+              <div class="stat-val mono">5</div>
+              <div class="stat-lbl">New This Week</div>
+            </div>
+            <div class="dash-stat-card">
+              <div class="stat-icon" style="background:oklch(94% 0.04 85);color:oklch(55% 0.14 85);">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+              </div>
+              <div class="stat-val mono">12</div>
+              <div class="stat-lbl">Ratings Given</div>
+            </div>
+          </div>
+
+          <!-- Trending Courses -->
+          <div class="dash-section-title">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
+            Trending Courses
+          </div>
+          <div class="dash-courses" style="margin-bottom:32px;">
+            <div class="dash-course-card">
+              <div class="dash-course-code">CS 310</div>
+              <div class="dash-course-title">Design &amp; Analysis of Algorithms</div>
+              <div class="dash-course-dept">Computer Science</div>
+              <div class="dash-course-meta">
+                <span>24 materials</span>
+                <span class="dot"></span>
+                <span>8 this week</span>
+              </div>
+            </div>
+            <div class="dash-course-card">
+              <div class="dash-course-code">ECON 201</div>
+              <div class="dash-course-title">Microeconomics</div>
+              <div class="dash-course-dept">Economics</div>
+              <div class="dash-course-meta">
+                <span>18 materials</span>
+                <span class="dot"></span>
+                <span>5 this week</span>
+              </div>
+            </div>
+            <div class="dash-course-card">
+              <div class="dash-course-code">STAT 200</div>
+              <div class="dash-course-title">Probability &amp; Statistics</div>
+              <div class="dash-course-dept">Mathematics</div>
+              <div class="dash-course-meta">
+                <span>31 materials</span>
+                <span class="dot"></span>
+                <span>12 this week</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Recently Viewed -->
+          <div class="dash-section-title">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+            Recently Viewed
+          </div>
+          <div class="dash-courses">
+            <div class="dash-course-card">
+              <div class="dash-course-code">CS 201</div>
+              <div class="dash-course-title">Data Structures</div>
+              <div class="dash-course-dept">Computer Science</div>
+              <div class="dash-course-meta">
+                <span>16 materials</span>
+                <span class="dot"></span>
+                <span>Viewed 2h ago</span>
+              </div>
+            </div>
+            <div class="dash-course-card">
+              <div class="dash-course-code">GE 1301</div>
+              <div class="dash-course-title">English for Academic Purposes</div>
+              <div class="dash-course-dept">General Education</div>
+              <div class="dash-course-meta">
+                <span>9 materials</span>
+                <span class="dot"></span>
+                <span>Viewed yesterday</span>
+              </div>
+            </div>
+            <div class="dash-course-card">
+              <div class="dash-course-code">MATH 201</div>
+              <div class="dash-course-title">Linear Algebra</div>
+              <div class="dash-course-dept">Mathematics</div>
+              <div class="dash-course-meta">
+                <span>22 materials</span>
+                <span class="dot"></span>
+                <span>Viewed 3 days ago</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== CTA ===== -->
+<section class="cta-section section">
+  <div class="container">
+    <h2 class="display">Ready to ace your semester?</h2>
+    <p>Join thousands of students already sharing knowledge and studying smarter on UniShare.</p>
+    <div class="cta-actions">
+      <a href="#" class="btn btn-white">Create Free Account</a>
+      <a href="#" class="btn btn-outline">Browse Courses First</a>
+    </div>
+  </div>
+</section>
+
+<!-- ===== FOOTER ===== -->
+<footer class="footer">
+  <div class="container" style="display:flex;align-items:center;justify-content:space-between;width:100%;flex-wrap:wrap;gap:16px;">
+    <div style="display:flex;align-items:center;gap:6px;font-weight:600;">
+      <span style="width:6px;height:6px;border-radius:50%;background:var(--accent);display:inline-block;"></span>
+      UniShare
+    </div>
+    <div class="footer-links">
+      <a href="#">Privacy</a>
+      <a href="#">Terms</a>
+      <a href="#">Contact</a>
+    </div>
+    <div>&copy; 2026 UniShare. By students, for students.</div>
+  </div>
+</footer>
+
+</body>
+</html>

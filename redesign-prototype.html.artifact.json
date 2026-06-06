@@ -1,0 +1,19 @@
+{
+  "version": 1,
+  "kind": "html",
+  "title": "redesign-prototype.html",
+  "entry": "redesign-prototype.html",
+  "renderer": "html",
+  "status": "complete",
+  "exports": [
+    "html",
+    "pdf",
+    "zip"
+  ],
+  "createdAt": "2026-06-06T12:24:39.894Z",
+  "updatedAt": "2026-06-06T12:24:39.894Z",
+  "metadata": {
+    "inferred": true,
+    "reconciled": true
+  }
+}
