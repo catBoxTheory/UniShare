@@ -1,78 +1,53 @@
 "use client"
 
 import Link from "next/link"
-import { motion, useScroll, useTransform } from "framer-motion"
-import { useRef } from "react"
+import { motion } from "framer-motion"
 import { Button } from "@/components/ui/button"
-import { cn } from "@/lib/utils"
-import { ArrowRight, BookOpen, Users, Share2, Search, Upload, Heart, FileText, Video, MessageCircle, Star, Library, Shield, Zap } from "lucide-react"
+import { ArrowRight, Star, FileText, Video, Users, Shield, Zap, Search, Home, BookMarked, Settings, BarChart3, Clock } from "lucide-react"
 import { Navbar } from "@/components/layout/Navbar"
 import { Footer } from "@/components/layout/Footer"
 
-const steps = [
-  {
-    number: "01",
-    icon: Search,
-    title: "Find your exact course",
-    desc: "Search by course code, professor name, or university. Our precise cataloging system ensures you find materials relevant to your exact syllabus, not just generic topics.",
-  },
-  {
-    number: "02",
-    icon: BookOpen,
-    title: "Access premium materials instantly",
-    desc: "No subscription required. Download PDFs, watch lectures, and read notes right in your browser. All content is organized by week and topic for easy navigation.",
-  },
-  {
-    number: "03",
-    icon: Upload,
-    title: "Give back to the community",
-    desc: "Notice something missing? Upload your own notes or recordings. High-quality contributions are upvoted, building your reputation as a top contributor.",
-  },
-]
-
-const values = [
-  { icon: Shield, title: "Strictly No Paywalls", desc: "We fundamentally oppose monetizing basic course materials. Every note, video, and guide on UniShare is 100% free, forever." },
-  { icon: Users, title: "Peer Reviewed", desc: "Quality is maintained through a robust upvote system. The most accurate and helpful resources naturally rise to the top." },
-  { icon: Zap, title: "Academic Integrity", desc: "We share study guides and notes, not assignments or test answers. Our platform promotes learning, not shortcuts." },
-]
-
 const staggerContainer = {
   hidden: { opacity: 0 },
-  visible: {
-    opacity: 1,
-    transition: { staggerChildren: 0.12, delayChildren: 0.2 },
-  },
+  visible: { opacity: 1, transition: { staggerChildren: 0.12, delayChildren: 0.2 } },
 }
 
 const fadeUpItem = {
   hidden: { opacity: 0, y: 24 },
-  visible: {
-    opacity: 1,
-    y: 0,
-    transition: { type: "spring", stiffness: 100, damping: 20 },
-  },
+  visible: { opacity: 1, y: 0, transition: { type: "spring", stiffness: 100, damping: 20 } },
 }
 
-function HeroVideo() {
-  const ref = useRef<HTMLDivElement>(null)
-  const { scrollYProgress } = useScroll({ target: ref, offset: ["start start", "end start"] })
-  const scale = useTransform(scrollYProgress, [0, 1], [1, 1.08])
-  const opacity = useTransform(scrollYProgress, [0, 0.8], [1, 0.4])
+const steps = [
+  { number: "01", title: "Find your course", desc: "Search by course code, professor name, or university. Our cataloging system ensures you find materials for your exact syllabus." },
+  { number: "02", title: "Access materials instantly", desc: "No subscription required. Download PDFs, watch lectures, and read notes in your browser — organized by week and topic." },
+  { number: "03", title: "Give back to peers", desc: "Upload your own notes or recordings. High-quality contributions are upvoted, building your reputation as a top contributor." },
+]
 
-  return (
-    <div ref={ref} className="absolute inset-0 z-0 overflow-hidden">
-      <motion.video
-        autoPlay muted loop playsInline
-        style={{ scale, opacity }}
-        className="absolute inset-0 w-full h-full object-cover"
-      >
-        <source src="/c_f_a_c_c_b_cdmp_.mp4" type="video/mp4" />
-      </motion.video>
-      <div className="absolute inset-0 bg-gradient-to-r from-stone-950/90 via-stone-950/70 to-transparent" />
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(0,0,0,0)_0%,rgba(0,0,0,0.6)_100%)]" />
-    </div>
-  )
-}
+const values = [
+  { icon: Shield, title: "Strictly No Paywalls", desc: "Every note, video, and guide on UniShare is 100% free, forever. We fundamentally oppose monetizing basic course materials." },
+  { icon: Users, title: "Peer Reviewed", desc: "Quality is maintained through a robust upvote system. The most accurate and helpful resources naturally rise to the top." },
+  { icon: Zap, title: "Academic Integrity", desc: "We share study guides and notes, not assignments or test answers. Our platform promotes learning, not shortcuts." },
+]
+
+const trendingCourses = [
+  { code: "CS 310", title: "Design & Analysis of Algorithms", dept: "Computer Science", materials: 24, weekly: 8 },
+  { code: "ECON 201", title: "Microeconomics", dept: "Economics", materials: 18, weekly: 5 },
+  { code: "STAT 200", title: "Probability & Statistics", dept: "Mathematics", materials: 31, weekly: 12 },
+]
+
+const recentCourses = [
+  { code: "CS 201", title: "Data Structures", dept: "Computer Science", materials: 16, viewed: "2h ago" },
+  { code: "GE 1301", title: "English for Academic Purposes", dept: "General Education", materials: 9, viewed: "yesterday" },
+  { code: "MATH 201", title: "Linear Algebra", dept: "Mathematics", materials: 22, viewed: "3 days ago" },
+]
+
+const sidebarItems = [
+  { icon: Home, label: "Home", active: true },
+  { icon: BookMarked, label: "Library" },
+  { icon: Search, label: "Search" },
+  { icon: Clock, label: "Saved" },
+  { icon: Settings, label: "Settings" },
+]
 
 export function MarketingPage() {
   return (
@@ -80,31 +55,65 @@ export function MarketingPage() {
       <Navbar variant="default" />
 
       {/* ===== Hero ===== */}
-      <section className="relative min-h-[90dvh] flex items-center overflow-hidden isolate">
-        <HeroVideo />
+      <section className="relative min-h-[85vh] flex items-center overflow-hidden">
+        {/* Dark gradient background */}
+        <div className="absolute inset-0 bg-gradient-to-br from-stone-950 via-emerald-950/80 to-stone-950" />
+        {/* Radial glows */}
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_600px_400px_at_20%_50%,rgba(16,185,129,0.15)_0%,transparent_70%)]" />
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_400px_300px_at_80%_30%,rgba(59,130,246,0.1)_0%,transparent_70%)]" />
+        {/* Grid pattern */}
+        <div className="absolute inset-y-0 right-0 w-1/2 opacity-[0.06] bg-[linear-gradient(to_bottom,rgba(255,255,255,1)_1px,transparent_1px),linear-gradient(to_right,rgba(255,255,255,1)_1px,transparent_1px)] bg-[length:60px_60px] [mask-image:linear-gradient(to_left,black_0%,transparent_100%)] pointer-events-none" />
 
-        <div className="relative z-10 container px-4 md:px-6 mx-auto py-32 lg:py-40">
+        {/* Floating course cards */}
+        <div className="hidden md:block absolute right-[8%] top-[20%] z-10 bg-white/[0.06] border border-white/10 rounded-2xl backdrop-blur-xl p-5 animate-[float_6s_ease-in-out_infinite]">
+          <div className="text-sm font-semibold text-white mb-1">CS 310 — Algorithms</div>
+          <div className="text-xs text-white/60 mb-3">Midterm Review · 14 materials</div>
+          <div className="h-1.5 rounded-full bg-white/10 mb-1.5 overflow-hidden"><div className="h-full w-3/4 rounded-full bg-emerald-400" /></div>
+          <div className="h-1.5 rounded-full bg-white/10 mb-1.5 overflow-hidden"><div className="h-full w-3/5 rounded-full bg-emerald-400" /></div>
+          <div className="h-1.5 rounded-full bg-white/10 overflow-hidden"><div className="h-full w-[45%] rounded-full bg-emerald-400" /></div>
+        </div>
+
+        <div className="hidden md:block absolute right-[15%] bottom-[25%] z-10 bg-white/[0.06] border border-white/10 rounded-2xl backdrop-blur-xl p-5 animate-[float_6s_ease-in-out_infinite_2s]">
+          <div className="text-sm font-semibold text-white mb-1">ECON 201 — Microeconomics</div>
+          <div className="text-xs text-white/60 mb-3">Lecture 08 · Prof. Lee</div>
+          <div className="h-1.5 rounded-full bg-white/10 mb-1.5 overflow-hidden"><div className="h-full w-[90%] rounded-full bg-emerald-400" /></div>
+          <div className="h-1.5 rounded-full bg-white/10 overflow-hidden"><div className="h-full w-[70%] rounded-full bg-emerald-400" /></div>
+        </div>
+
+        <div className="hidden xl:block absolute right-[4%] bottom-[35%] z-10 bg-white/[0.06] border border-white/10 rounded-2xl backdrop-blur-xl p-5 animate-[float_6s_ease-in-out_infinite_4s]">
+          <div className="text-sm font-semibold text-white mb-1">STAT 200 — Probability</div>
+          <div className="text-xs text-white/60 mb-3">Tutorial Notes · Week 10</div>
+          <div className="h-1.5 rounded-full bg-white/10 mb-1.5 overflow-hidden"><div className="h-full w-[55%] rounded-full bg-emerald-400" /></div>
+          <div className="h-1.5 rounded-full bg-white/10 mb-1.5 overflow-hidden"><div className="h-full w-[80%] rounded-full bg-emerald-400" /></div>
+          <div className="h-1.5 rounded-full bg-white/10 overflow-hidden"><div className="h-full w-[35%] rounded-full bg-emerald-400" /></div>
+        </div>
+
+        {/* Fade to bg at bottom */}
+        <div className="absolute bottom-0 left-0 right-0 h-48 bg-gradient-to-t from-background to-transparent pointer-events-none z-10" />
+
+        {/* Content */}
+        <div className="relative z-20 container px-4 md:px-6 mx-auto py-32 lg:py-40">
           <motion.div variants={staggerContainer} initial="hidden" animate="visible" className="max-w-2xl">
             <motion.div variants={fadeUpItem}>
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 backdrop-blur-md border border-white/20 text-white/90 text-sm font-medium mb-6">
+              <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/[0.08] backdrop-blur-md border border-white/[0.12] text-white/90 text-sm font-medium mb-8">
                 <Star className="h-4 w-4 text-emerald-400" />
                 <span>By students, for students. Always free.</span>
               </div>
             </motion.div>
 
-            <motion.h1 variants={fadeUpItem} className="font-serif text-5xl sm:text-6xl md:text-7xl lg:text-8xl text-white mb-6 leading-[1.1] tracking-tighter">
-              Academic knowledge{" "}
+            <motion.h1 variants={fadeUpItem} className="font-serif text-5xl sm:text-6xl md:text-7xl text-white mb-6 leading-[1.05] tracking-tighter">
+              Academic knowledge<br />
               <span className="text-emerald-400 italic">without boundaries.</span>
             </motion.h1>
 
-            <motion.p variants={fadeUpItem} className="text-lg sm:text-xl text-white/70 mb-10 max-w-xl leading-relaxed">
+            <motion.p variants={fadeUpItem} className="text-lg text-white/70 mb-10 max-w-xl leading-relaxed">
               Access lecture notes, course videos, and study materials shared by your peers. No paywalls, no credit systems — just shared learning.
             </motion.p>
 
             <motion.div variants={fadeUpItem} className="flex flex-col sm:flex-row gap-4">
               <Button asChild size="lg" className="font-semibold text-base h-12 px-8 bg-emerald-600 hover:bg-emerald-500">
                 <Link href="/register">
-                  Join the Community <ArrowRight className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                  Join the Community <ArrowRight className="ml-2 w-5 h-5" />
                 </Link>
               </Button>
               <Button asChild variant="outline" size="lg" className="font-semibold text-base h-12 px-8 border-white/20 text-white hover:bg-white/10 hover:text-white">
@@ -115,253 +124,186 @@ export function MarketingPage() {
         </div>
       </section>
 
-      {/* ===== Bento Grid Features ===== */}
-      <section className="py-24 bg-background relative overflow-hidden">
-        <div className="absolute top-0 inset-x-0 h-40 bg-gradient-to-b from-muted/30 to-transparent pointer-events-none" />
+      {/* ===== Features ===== */}
+      <section className="py-24 bg-background relative">
         <div className="container px-4 md:px-6 mx-auto max-w-7xl">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             transition={{ type: "spring", stiffness: 100, damping: 20 }}
             viewport={{ once: true }}
-            className="mb-16"
+            className="mb-14"
           >
-            <h2 className="font-serif text-4xl md:text-5xl tracking-tighter mb-4">
-              Everything you need to excel.
-            </h2>
-            <p className="text-muted-foreground text-lg max-w-2xl">
-              A unified platform for all your academic resources, curated and verified by students like you.
-            </p>
+            <p className="text-xs font-semibold tracking-widest uppercase text-primary mb-3">What you get</p>
+            <h2 className="font-serif text-4xl md:text-5xl tracking-tighter mb-4">Everything you need to excel.</h2>
+            <p className="text-muted-foreground text-lg max-w-xl">A unified platform for all your academic resources, curated and verified by students like you.</p>
           </motion.div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
-            {/* Large card — Lecture Notes */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+            {/* Large spanning card */}
             <motion.div
               initial={{ opacity: 0, y: 30 }}
               whileInView={{ opacity: 1, y: 0 }}
               transition={{ type: "spring", stiffness: 100, damping: 20, delay: 0.1 }}
               viewport={{ once: true }}
-              className="lg:col-span-3 glass-card rounded-3xl p-8 md:p-12 relative overflow-hidden group"
+              className="lg:col-span-2 bg-card border border-border rounded-3xl p-8 md:p-10 grid lg:grid-cols-2 gap-10 items-center hover:border-primary/30 hover:shadow-lg transition-all duration-300"
             >
-              <div className="absolute top-0 right-0 p-8 opacity-10 group-hover:opacity-20 transition-opacity">
-                <BookOpen className="w-48 h-48" />
-              </div>
-              <div className="relative z-10 h-full flex flex-col justify-between">
-                <div>
-                  <div className="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center mb-6">
-                    <FileText className="h-6 w-6 text-primary" />
-                  </div>
-                  <h3 className="text-3xl font-serif mb-4 tracking-tight">Comprehensive Lecture Notes</h3>
-                  <p className="text-muted-foreground text-lg max-w-md mb-8">
-                    Stop scrambling to copy down slides. Access beautifully formatted, peer-reviewed notes for your specific courses, updated after every lecture.
-                  </p>
+              <div>
+                <div className="w-11 h-11 rounded-xl bg-primary/10 flex items-center justify-center mb-5">
+                  <FileText className="h-5 w-5 text-primary" />
                 </div>
-                <div className="glass-card rounded-2xl p-6 border border-border/50 max-w-sm transform group-hover:-translate-y-2 transition-transform duration-500">
-                  <div className="flex items-center gap-4 mb-4">
-                    <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center font-serif font-medium text-sm">CS</div>
-                    <div>
-                      <h4 className="font-medium text-sm">Data Structures &amp; Algorithms</h4>
-                      <p className="text-xs text-muted-foreground">Prof. Smith &middot; Fall 2023</p>
-                    </div>
+                <h3 className="font-serif text-2xl font-bold tracking-tight mb-3">Comprehensive Lecture Notes</h3>
+                <p className="text-muted-foreground leading-relaxed">Stop scrambling to copy down slides. Access beautifully formatted, peer-reviewed notes for your specific courses, updated after every lecture.</p>
+              </div>
+              <div className="bg-background border border-border rounded-2xl p-5">
+                <div className="flex items-center gap-3 mb-4 pb-3 border-b border-border">
+                  <div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center text-xs font-bold text-primary">CS</div>
+                  <div>
+                    <div className="text-sm font-semibold">Data Structures & Algorithms</div>
+                    <div className="text-xs text-muted-foreground">Prof. Smith · Fall 2025</div>
                   </div>
-                  <div className="space-y-2">
-                    <div className="h-2 w-full bg-muted rounded-full overflow-hidden"><div className="h-full w-3/4 bg-primary/40 rounded-full" /></div>
-                    <div className="h-2 w-5/6 bg-muted rounded-full overflow-hidden"><div className="h-full w-2/3 bg-primary/40 rounded-full" /></div>
-                    <div className="h-2 w-4/6 bg-muted rounded-full overflow-hidden"><div className="h-full w-1/2 bg-primary/40 rounded-full" /></div>
+                </div>
+                <div className="space-y-2">
+                  <div className="h-2 rounded-full bg-primary/10" />
+                  <div className="h-2 rounded-full bg-border w-3/5" />
+                  <div className="h-2 rounded-full bg-border" />
+                  <div className="h-2 rounded-full bg-border w-4/5" />
+                  <div className="h-2 rounded-full bg-primary/10 w-3/5" />
+                  <div className="h-2 rounded-full bg-border" />
+                  <div className="h-2 rounded-full bg-border w-3/5" />
+                </div>
+              </div>
+            </motion.div>
+
+            {/* Recorded Lectures */}
+            <motion.div
+              initial={{ opacity: 0, y: 30 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              transition={{ type: "spring", stiffness: 100, damping: 20, delay: 0.2 }}
+              viewport={{ once: true }}
+              className="bg-card border border-border rounded-3xl p-8 hover:border-primary/30 hover:shadow-lg transition-all duration-300"
+            >
+              <div className="w-11 h-11 rounded-xl bg-primary/10 flex items-center justify-center mb-5">
+                <Video className="h-5 w-5 text-primary" />
+              </div>
+              <h3 className="font-serif text-2xl font-bold tracking-tight mb-3">Recorded Lectures</h3>
+              <p className="text-muted-foreground text-sm mb-5 leading-relaxed">Rewatch complex topics at your own pace. Community recordings with timestamps and bilingual subtitles.</p>
+              <div className="aspect-video rounded-xl bg-gradient-to-br from-emerald-900/30 via-stone-900/20 to-stone-900/10 relative overflow-hidden border border-border cursor-pointer group">
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <div className="w-12 h-12 rounded-full bg-white/15 backdrop-blur-md flex items-center justify-center border border-white/20 group-hover:scale-110 transition-transform">
+                    <svg className="w-5 h-5 text-white ml-0.5" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z" /></svg>
                   </div>
                 </div>
               </div>
             </motion.div>
 
-            {/* Stacked right column */}
-            <div className="lg:col-span-2 flex flex-col gap-6">
-              <motion.div
-                initial={{ opacity: 0, y: 30 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                transition={{ type: "spring", stiffness: 100, damping: 20, delay: 0.2 }}
-                viewport={{ once: true }}
-                className="flex-1 glass-card rounded-3xl p-8 relative overflow-hidden group"
-              >
-                <div className="absolute -right-6 -bottom-6 opacity-5 group-hover:opacity-10 transition-opacity">
-                  <Video className="w-40 h-40" />
-                </div>
-                <div className="relative z-10">
-                  <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center mb-4">
-                    <Video className="h-5 w-5 text-primary" />
-                  </div>
-                  <h3 className="text-2xl font-serif mb-2 tracking-tight">Recorded Lectures</h3>
-                  <p className="text-muted-foreground text-sm mb-6">
-                    Rewatch complex topics at your own pace. High-quality community recordings with timestamps and bilingual subtitles.
-                  </p>
-                  <div className="aspect-video rounded-xl bg-muted relative overflow-hidden group/vid cursor-pointer border border-border/50">
-                    <div className="absolute inset-0 bg-gradient-to-br from-emerald-900/30 via-stone-900/20 to-transparent" />
-                    <div className="absolute inset-0 flex items-center justify-center">
-                      <div className="w-12 h-12 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center group-hover/vid:scale-110 transition-transform duration-300">
-                        <svg className="w-5 h-5 text-white ml-0.5" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </motion.div>
-
-              <motion.div
-                initial={{ opacity: 0, y: 30 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                transition={{ type: "spring", stiffness: 100, damping: 20, delay: 0.3 }}
-                viewport={{ once: true }}
-                className="flex-1 glass-card rounded-3xl p-8 relative overflow-hidden group"
-              >
-                <div className="relative z-10">
-                  <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center mb-4">
-                    <Users className="h-5 w-5 text-primary" />
-                  </div>
-                  <h3 className="text-2xl font-serif mb-2 tracking-tight">Community Driven</h3>
-                  <p className="text-muted-foreground text-sm">
-                    No artificial barriers. Knowledge is verified through community upvotes and peer reviews from students who took the exact same course.
-                  </p>
-                  <div className="mt-6 flex -space-x-2">
-                    {["A", "M", "K", "J"].map((init, i) => (
-                      <div key={i} className="w-9 h-9 rounded-full border-2 border-card bg-muted flex items-center justify-center text-xs font-medium">
-                        {init}
-                      </div>
-                    ))}
-                    <div className="w-9 h-9 rounded-full border-2 border-card bg-primary text-primary-foreground flex items-center justify-center text-xs font-medium z-10">
-                      +2k
-                    </div>
-                  </div>
-                </div>
-              </motion.div>
-            </div>
+            {/* Community Driven */}
+            <motion.div
+              initial={{ opacity: 0, y: 30 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              transition={{ type: "spring", stiffness: 100, damping: 20, delay: 0.3 }}
+              viewport={{ once: true }}
+              className="bg-card border border-border rounded-3xl p-8 hover:border-primary/30 hover:shadow-lg transition-all duration-300"
+            >
+              <div className="w-11 h-11 rounded-xl bg-primary/10 flex items-center justify-center mb-5">
+                <Users className="h-5 w-5 text-primary" />
+              </div>
+              <h3 className="font-serif text-2xl font-bold tracking-tight mb-3">Community Driven</h3>
+              <p className="text-muted-foreground text-sm leading-relaxed">Knowledge is verified through community upvotes and peer reviews from students who took the exact same course.</p>
+              <div className="mt-6 flex -space-x-2">
+                {["A", "M", "K"].map((init, i) => (
+                  <div key={i} className="w-8 h-8 rounded-full border-2 border-card bg-muted flex items-center justify-center text-xs font-medium">{init}</div>
+                ))}
+                <div className="w-8 h-8 rounded-full border-2 border-card bg-primary text-primary-foreground flex items-center justify-center text-xs font-medium z-10">+2k</div>
+              </div>
+            </motion.div>
           </div>
         </div>
       </section>
 
-      {/* ===== How It Works ===== */}
-      <section className="py-24 bg-muted/30">
+      {/* ===== Stats ===== */}
+      <section className="py-16 bg-card border-y border-border">
         <div className="container px-4 md:px-6 mx-auto max-w-7xl">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            transition={{ type: "spring", stiffness: 100, damping: 20 }}
-            viewport={{ once: true }}
-            className="mb-20 text-center max-w-2xl mx-auto"
-          >
-            <h2 className="font-serif text-4xl md:text-5xl mb-4">How UniShare works.</h2>
-            <p className="text-muted-foreground text-lg max-w-2xl">
-              A simple, transparent process designed to get you the information you need, faster.
-            </p>
-          </motion.div>
-
-          <div className="space-y-24 md:space-y-32">
-            {steps.map((step, i) => (
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
+            {[
+              { num: "100%", label: "Free, forever" },
+              { num: "Open", label: "Source ethos" },
+              { num: "2,400+", label: "Materials shared" },
+              { num: "850+", label: "Active students" },
+            ].map((stat) => (
               <motion.div
-                key={step.title}
-                initial={{ opacity: 0, y: 40 }}
+                key={stat.label}
+                initial={{ opacity: 0, y: 20 }}
                 whileInView={{ opacity: 1, y: 0 }}
-                transition={{ type: "spring", stiffness: 100, damping: 20, delay: i * 0.1 }}
-                viewport={{ once: true, margin: "-100px" }}
-                className={`flex flex-col gap-12 lg:gap-20 ${
-                  i % 2 === 0 ? "md:flex-row" : "md:flex-row-reverse"
-                } items-center`}
+                transition={{ type: "spring", stiffness: 100, damping: 20 }}
+                viewport={{ once: true }}
               >
-                {/* Visual panel — content varies per step */}
-                <div className="w-full md:w-1/2">
-                  <div className="aspect-[4/3] rounded-3xl overflow-hidden glass-card border border-border p-2">
-                    <div className={cn("w-full h-full rounded-2xl bg-card border border-border/50 flex flex-col items-center justify-center relative overflow-hidden", i === 1 ? "p-6" : "p-8")}>
-                      <div className="absolute -right-4 -top-4 w-32 h-32 bg-primary/5 rounded-full blur-3xl" />
-                      {i === 0 && (
-                        <div className="flex flex-col items-center gap-6 w-full max-w-xs">
-                          <Search className="h-16 w-16 text-primary/40 mb-6" />
-                          <div className="w-full h-12 bg-muted rounded-full border border-border flex items-center px-4">
-                            <Search className="h-4 w-4 text-muted-foreground mr-3" />
-                            <div className="h-2 w-24 bg-muted-foreground/30 rounded-full" />
-                          </div>
-                          <div className="flex gap-2 flex-wrap justify-center">
-                            <span className="px-3 py-1.5 rounded-full bg-muted text-xs font-medium">ECON 101</span>
-                            <span className="px-3 py-1.5 rounded-full bg-primary/10 text-primary text-xs font-medium">BIOL 204</span>
-                            <span className="px-3 py-1.5 rounded-full bg-muted text-xs font-medium">CHEM 300</span>
-                          </div>
-                        </div>
-                      )}
-                      {i === 1 && (
-                        <div className="flex flex-col gap-3 w-full max-w-sm">
-                          <div className="flex items-start gap-4 p-4 rounded-xl hover:bg-muted/50 transition-colors border border-transparent hover:border-border cursor-pointer">
-                            <FileText className="h-8 w-8 text-primary shrink-0" />
-                            <div className="min-w-0">
-                              <h4 className="font-medium text-sm">Midterm Study Guide</h4>
-                              <p className="text-xs text-muted-foreground mb-1.5">Comprehensive review of chapters 1-5.</p>
-                              <div className="flex items-center gap-3 text-xs text-muted-foreground">
-                                <span className="flex items-center gap-1"><Star className="h-3 w-3 fill-primary text-primary" /> 4.9</span>
-                                <span>124 downloads</span>
-                              </div>
-                            </div>
-                          </div>
-                          <div className="flex items-start gap-4 p-4 rounded-xl bg-muted/30 border border-border">
-                            <Video className="h-8 w-8 text-primary shrink-0" />
-                            <div className="min-w-0">
-                              <h4 className="font-medium text-sm">Lecture 04: Thermodynamics</h4>
-                              <p className="text-xs text-muted-foreground mb-1.5">Full recording with transcript.</p>
-                              <div className="flex items-center gap-3 text-xs text-muted-foreground">
-                                <span className="flex items-center gap-1"><Star className="h-3 w-3 fill-primary text-primary" /> 4.7</span>
-                                <span>89 views</span>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      )}
-                      {i === 2 && (
-                        <div className="flex flex-col items-center gap-4">
-                          <div className="w-24 h-24 rounded-full bg-primary/10 flex items-center justify-center relative">
-                            <Zap className="h-10 w-10 text-primary" />
-                            <div className="absolute -top-1 -right-1 w-8 h-8 bg-background rounded-full flex items-center justify-center border border-border shadow-sm">
-                              <Star className="h-4 w-4 text-emerald-500 fill-emerald-500" />
-                            </div>
-                          </div>
-                          <h4 className="font-medium text-lg text-center">Contribute &amp; Earn Recognition</h4>
-                          <p className="text-sm text-muted-foreground text-center max-w-xs">
-                            Upload your own exceptional notes to help peers and build your academic profile.
-                          </p>
-                          <div className="mt-2 px-4 py-2 bg-muted hover:bg-muted/80 rounded-full text-sm font-medium transition-colors cursor-pointer">
-                            Upload Material
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </div>
-                {/* Text side */}
-                <div className="w-full md:w-1/2 max-w-lg">
-                  <div className="text-primary font-serif text-6xl opacity-20 mb-4">{step.number}</div>
-                  <h3 className="text-3xl font-serif mb-4">{step.title}</h3>
-                  <p className="text-muted-foreground text-lg leading-relaxed">{step.desc}</p>
-                </div>
+                <div className="font-serif text-4xl md:text-5xl font-bold tracking-tighter">{stat.num}</div>
+                <div className="text-sm text-muted-foreground mt-1">{stat.label}</div>
               </motion.div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* ===== Community Values — asymmetric ===== */}
+      {/* ===== How It Works ===== */}
       <section className="py-24 bg-background">
         <div className="container px-4 md:px-6 mx-auto max-w-7xl">
-          <div className="grid md:grid-cols-[1.2fr_0.8fr] gap-16 items-start">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ type: "spring", stiffness: 100, damping: 20 }}
+            viewport={{ once: true }}
+            className="text-center mb-16"
+          >
+            <p className="text-xs font-semibold tracking-widest uppercase text-primary mb-3">How it works</p>
+            <h2 className="font-serif text-4xl md:text-5xl tracking-tighter mb-3">Three steps to smarter studying.</h2>
+            <p className="text-muted-foreground text-lg max-w-lg mx-auto">A simple, transparent process designed to get you the information you need, faster.</p>
+          </motion.div>
+
+          <div className="grid md:grid-cols-3 gap-10">
+            {steps.map((step, i) => (
+              <motion.div
+                key={step.number}
+                initial={{ opacity: 0, y: 30 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                transition={{ type: "spring", stiffness: 100, damping: 20, delay: i * 0.1 }}
+                viewport={{ once: true }}
+              >
+                <div className="flex items-center gap-3 mb-5">
+                  <span className="text-xs font-bold tracking-widest text-primary">{step.number}</span>
+                  <div className="flex-1 h-px bg-border" />
+                </div>
+                <h3 className="font-serif text-2xl font-bold tracking-tight mb-3">{step.title}</h3>
+                <p className="text-muted-foreground leading-relaxed">{step.desc}</p>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ===== Values ===== */}
+      <section className="py-24 bg-card border-y border-border">
+        <div className="container px-4 md:px-6 mx-auto max-w-7xl">
+          <div className="grid md:grid-cols-[1.2fr_1fr] gap-16 items-start">
             <motion.div
               initial={{ opacity: 0, x: -30 }}
               whileInView={{ opacity: 1, x: 0 }}
               transition={{ type: "spring", stiffness: 100, damping: 20 }}
               viewport={{ once: true }}
             >
-              <h2 className="font-serif text-4xl md:text-5xl tracking-tighter mb-4">Our core values.</h2>
-              <p className="text-muted-foreground text-lg max-w-lg mb-10">
+              <p className="text-xs font-semibold tracking-widest uppercase text-primary mb-3">Our principles</p>
+              <h2 className="font-serif text-4xl md:text-5xl tracking-tighter mb-4">Built on shared values.</h2>
+              <p className="text-muted-foreground text-lg max-w-lg mb-10 leading-relaxed">
                 We believe education should be accessible to everyone, not just those who can afford expensive subscription services.
               </p>
               <div className="flex gap-12">
                 <div>
-                  <div className="text-4xl font-bold tracking-tighter">100%</div>
+                  <div className="font-serif text-4xl font-bold tracking-tighter">100%</div>
                   <div className="text-sm text-muted-foreground mt-1">Free, forever</div>
                 </div>
                 <div>
-                  <div className="text-4xl font-bold tracking-tighter">Open</div>
+                  <div className="font-serif text-4xl font-bold tracking-tighter">Open</div>
                   <div className="text-sm text-muted-foreground mt-1">Source ethos</div>
                 </div>
               </div>
@@ -372,24 +314,142 @@ export function MarketingPage() {
               whileInView={{ opacity: 1, x: 0 }}
               transition={{ type: "spring", stiffness: 100, damping: 20 }}
               viewport={{ once: true }}
-              className="space-y-1"
+              className="space-y-2"
             >
               {values.map((v) => (
                 <div
                   key={v.title}
-                  className="flex items-center gap-4 p-5 rounded-2xl hover:bg-emerald-50/50 dark:hover:bg-emerald-950/20 transition-colors duration-300 group"
+                  className="flex items-start gap-4 p-5 rounded-2xl hover:bg-primary/5 transition-colors duration-300 group"
                 >
-                  <div className="w-12 h-12 rounded-xl bg-emerald-100 dark:bg-emerald-900/20 border border-emerald-200/50 dark:border-emerald-800/30 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform duration-300">
-                    <v.icon className="w-6 h-6 text-primary" />
+                  <div className="w-11 h-11 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform duration-300">
+                    <v.icon className="w-5 h-5 text-primary" />
                   </div>
                   <div>
-                    <p className="font-semibold text-lg">{v.title}</p>
-                    <p className="text-sm text-muted-foreground">{v.desc}</p>
+                    <p className="font-semibold text-base mb-1">{v.title}</p>
+                    <p className="text-sm text-muted-foreground leading-relaxed">{v.desc}</p>
                   </div>
                 </div>
               ))}
             </motion.div>
           </div>
+        </div>
+      </section>
+
+      {/* ===== Dashboard Preview ===== */}
+      <section className="py-24 bg-background">
+        <div className="container px-4 md:px-6 mx-auto max-w-7xl">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ type: "spring", stiffness: 100, damping: 20 }}
+            viewport={{ once: true }}
+            className="text-center mb-12"
+          >
+            <p className="text-xs font-semibold tracking-widest uppercase text-primary mb-3">Your workspace</p>
+            <h2 className="font-serif text-4xl md:text-5xl tracking-tighter mb-3">A dashboard built for focus.</h2>
+            <p className="text-muted-foreground text-lg max-w-lg mx-auto">Everything you need, nothing you don&apos;t. Track your courses, discover new materials, and stay on top of your studies.</p>
+          </motion.div>
+
+          <motion.div
+            initial={{ opacity: 0, y: 40 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ type: "spring", stiffness: 80, damping: 20 }}
+            viewport={{ once: true }}
+            className="bg-card border border-border rounded-3xl overflow-hidden shadow-2xl"
+          >
+            {/* Dashboard topbar */}
+            <div className="flex items-center justify-between px-6 py-3.5 border-b border-border">
+              <div className="flex items-center gap-2 px-4 py-2 bg-background border border-border rounded-xl text-sm text-muted-foreground min-w-[240px]">
+                <Search className="h-4 w-4" />
+                <span>Search courses, materials...</span>
+                <kbd className="ml-auto text-[11px] px-1.5 py-0.5 bg-card border border-border rounded font-mono">⌘K</kbd>
+              </div>
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-xs font-bold text-primary">W</div>
+                <span className="text-sm font-semibold">Wilson</span>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-[220px_1fr] min-h-[480px] max-md:grid-cols-1">
+              {/* Sidebar */}
+              <div className="border-r border-border p-5 bg-background max-md:hidden">
+                {sidebarItems.map((item) => (
+                  <div
+                    key={item.label}
+                    className={`flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-medium mb-1 cursor-pointer transition-colors ${
+                      item.active ? "bg-primary/10 text-primary font-semibold" : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                    }`}
+                  >
+                    <item.icon className="w-[18px] h-[18px]" />
+                    {item.label}
+                  </div>
+                ))}
+              </div>
+
+              {/* Main content */}
+              <div className="p-6">
+                <div className="font-serif text-2xl font-bold tracking-tight mb-6">Good morning, Wilson</div>
+
+                {/* Stats row */}
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+                  {[
+                    { icon: BookMarked, val: "8", label: "Enrolled Courses", color: "" },
+                    { icon: FileText, val: "47", label: "Total Materials", color: "" },
+                    { icon: BarChart3, val: "5", label: "New This Week", color: "text-emerald-600 bg-emerald-50 dark:text-emerald-400 dark:bg-emerald-950/30" },
+                    { icon: Star, val: "12", label: "Ratings Given", color: "text-amber-600 bg-amber-50 dark:text-amber-400 dark:bg-amber-950/30" },
+                  ].map((s) => (
+                    <div key={s.label} className="bg-background border border-border rounded-2xl p-5">
+                      <div className={`w-9 h-9 rounded-xl flex items-center justify-center mb-3 ${s.color || "bg-primary/10 text-primary"}`}>
+                        <s.icon className="h-4 w-4" />
+                      </div>
+                      <div className="font-mono text-2xl font-bold tracking-tight">{s.val}</div>
+                      <div className="text-xs text-muted-foreground">{s.label}</div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Trending */}
+                <div className="flex items-center gap-2 font-semibold text-base mb-4">
+                  <BarChart3 className="w-[18px] h-[18px] text-primary" />
+                  Trending Courses
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
+                  {trendingCourses.map((c) => (
+                    <div key={c.code} className="bg-background border border-border rounded-2xl p-5 hover:border-primary/30 hover:shadow-md transition-all cursor-pointer">
+                      <div className="text-[11px] font-bold tracking-widest text-primary mb-1.5">{c.code}</div>
+                      <div className="text-sm font-bold mb-1 leading-snug">{c.title}</div>
+                      <div className="text-xs text-muted-foreground mb-3">{c.dept}</div>
+                      <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                        <span>{c.materials} materials</span>
+                        <span className="w-1 h-1 rounded-full bg-muted-foreground" />
+                        <span>{c.weekly} this week</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Recently Viewed */}
+                <div className="flex items-center gap-2 font-semibold text-base mb-4">
+                  <Clock className="w-[18px] h-[18px] text-primary" />
+                  Recently Viewed
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {recentCourses.map((c) => (
+                    <div key={c.code} className="bg-background border border-border rounded-2xl p-5 hover:border-primary/30 hover:shadow-md transition-all cursor-pointer">
+                      <div className="text-[11px] font-bold tracking-widest text-primary mb-1.5">{c.code}</div>
+                      <div className="text-sm font-bold mb-1 leading-snug">{c.title}</div>
+                      <div className="text-xs text-muted-foreground mb-3">{c.dept}</div>
+                      <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                        <span>{c.materials} materials</span>
+                        <span className="w-1 h-1 rounded-full bg-muted-foreground" />
+                        <span>Viewed {c.viewed}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </motion.div>
         </div>
       </section>
 
